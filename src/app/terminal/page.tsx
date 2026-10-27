@@ -21,6 +21,8 @@ import {
   Layers,
   ChevronDown,
   Sparkles,
+  Pause,
+  Play,
 } from "lucide-react";
 import { TOP_MODELS, AIStrategyModel, TradeOrder } from "@/lib/engineTypes";
 
@@ -87,12 +89,15 @@ export default function TerminalPage() {
   const [recentTrades, setRecentTrades] = useState<TradeOrder[]>([]);
   const [dockTab, setDockTab] = useState<"radar" | "trades">("radar");
   const [isLoading, setIsLoading] = useState(true);
-  const [isExecutingAI, setIsExecutingAI] = useState(false);
-  const [executionFeedback, setExecutionFeedback] = useState<string | null>(null);
+  const [autoTradingEnabled, setAutoTradingEnabled] = useState(true);
+  const [autonomousStatus, setAutonomousStatus] = useState<string>("Autonomous AI Engine: Scanning Binance 15m feed...");
+  const [lastActionTick, setLastActionTick] = useState<string>("");
   const [lastUpdated, setLastUpdated] = useState<string>("Connecting...");
 
   const activeModel = TOP_MODELS.find((m) => m.id === activeModelId) || TOP_MODELS[0];
   const riskPercent = 1.0; // 1% risk = ₹10.00 on ₹1,000
+  const activeTrades = recentTrades.filter((t) => t.status === "ACTIVE" || t.status === "BE_ACTIVATED");
+  const currentActiveTrade = activeTrades[0] || null;
 
   // Fetch current live account balance and trade logs from MongoDB Atlas
   const fetchCurrentBalance = async () => {
@@ -109,6 +114,54 @@ export default function TerminalPage() {
       }
     } catch (e) {
       console.warn("Could not fetch balance:", e);
+    }
+  };
+
+  // Autonomous Background AI Market Evaluation & Execution Loop (Automatic Trade & Hold)
+  useEffect(() => {
+    let isMounted = true;
+    if (!autoTradingEnabled) return;
+
+    const runAutonomousCycle = async () => {
+      try {
+        const res = await fetch("/api/cron/scalp");
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted) {
+            if (data.actions && data.actions.length > 0) {
+              setAutonomousStatus(data.actions[0]);
+              setLastActionTick(new Date().toLocaleTimeString());
+            } else if (data.message) {
+              setAutonomousStatus(data.message);
+            }
+            fetchCurrentBalance();
+          }
+        }
+      } catch (err) {
+        console.warn("Autonomous loop cycle error:", err);
+      }
+    };
+
+    runAutonomousCycle();
+    const cycleInterval = setInterval(runAutonomousCycle, 12000);
+    return () => {
+      isMounted = false;
+      clearInterval(cycleInterval);
+    };
+  }, [autoTradingEnabled, activeModelId]);
+
+  // Toggle Autonomous Trading Engine state
+  const handleToggleAutoTrading = async () => {
+    const newState = !autoTradingEnabled;
+    setAutoTradingEnabled(newState);
+    try {
+      await fetch("/api/engine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ autoTradingEnabled: newState }),
+      });
+    } catch (e) {
+      console.warn("Failed to toggle auto trading:", e);
     }
   };
 
@@ -145,46 +198,7 @@ export default function TerminalPage() {
     }
   };
 
-  // Execute trade order directly on AI signal instinct
-  const handleExecuteAIOrder = async () => {
-    if (!livePrice) return;
-    setIsExecutingAI(true);
-    setExecutionFeedback(null);
-    try {
-      // Determine direction: prioritize model prediction signal, fallback to recommendation
-      let direction: "LONG" | "SHORT" = "LONG";
-      if (aiPrediction && aiPrediction.signal !== "NEUTRAL") {
-        direction = aiPrediction.signal === "BUY" ? "LONG" : "SHORT";
-      } else if (recommendation) {
-        direction = recommendation.action.includes("BUY") ? "LONG" : "SHORT";
-      }
 
-      const res = await fetch("/api/trades", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          symbol,
-          direction,
-          entryPrice: livePrice,
-          atr: indicators?.atr || livePrice * 0.0055,
-          modelId: activeModel.id,
-          triggerReason: `Terminal AI Execution [${activeModel.shortName}]: Model Edge ${aiPrediction?.confidence || 85}% (P_Long: ${aiPrediction?.pLong || "—"}, P_Short: ${aiPrediction?.pShort || "—"}) on ${symbol}`,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setExecutionFeedback(`✔ Scalp order ${data.trade.id.slice(-8)} placed on ₹${accountBalanceINR.toFixed(2)} capital & logged to MongoDB Atlas!`);
-        fetchCurrentBalance();
-        setTimeout(() => setExecutionFeedback(null), 6000);
-      } else {
-        setExecutionFeedback(`Error: ${data.error || "Failed to execute"}`);
-      }
-    } catch (err: any) {
-      setExecutionFeedback(`Execution error: ${err.message}`);
-    } finally {
-      setIsExecutingAI(false);
-    }
-  };
 
   // Switch Active Model
   const handleSelectModel = (newModelId: string) => {
@@ -769,8 +783,8 @@ export default function TerminalPage() {
                       })
                     ) : (
                       <tr>
-                        <td colSpan={10} className="py-8 text-center text-gray-400 text-xs">
-                          No active trades yet. Click <strong>"⚡ Execute AI Order"</strong> on the right to open a scalp on your ₹{accountBalanceINR.toFixed(2)} capital!
+                        <td colSpan={10} className="py-8 text-center text-gray-400 text-xs font-mono">
+                          No active trades currently open. The Autonomous AI Engine is scanning Binance live bars every 12s to automatically execute and hold scalps on your ₹{accountBalanceINR.toFixed(2)} capital!
                         </td>
                       </tr>
                     )}
@@ -931,31 +945,136 @@ export default function TerminalPage() {
               {recommendation?.actionGuidance || "Analyzing live market structure for optimal order entry..."}
             </div>
 
-            {/* PROMINENT EXECUTE AI ORDER BUTTON */}
-            <button
-              onClick={handleExecuteAIOrder}
-              disabled={isExecutingAI || !livePrice}
-              className="w-full mt-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-[0.99] text-white py-3 rounded-lg font-mono text-sm font-extrabold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all disabled:opacity-50 cursor-pointer"
-            >
-              {isExecutingAI ? (
-                <>
-                  <RotateCw className="w-4 h-4 animate-spin text-white" />
-                  <span>EXECUTING ON LIVE MARKET...</span>
-                </>
-              ) : (
-                <>
-                  <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
-                  <span>⚡ Execute AI Order (₹{accountBalanceINR.toFixed(2)} Capital)</span>
-                </>
-              )}
-            </button>
-
-            {/* Live Feedback Toast Notification */}
-            {executionFeedback && (
-              <div className="p-2.5 rounded-lg bg-emerald-100 border border-emerald-400 text-emerald-900 font-mono text-xs font-bold text-center animate-fade-in shadow-xs">
-                {executionFeedback}
+            {/* AUTONOMOUS AI TRADING & HOLDING ENGINE STATUS */}
+            <div className={`rounded-xl p-3.5 border transition-all ${
+              currentActiveTrade
+                ? "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-300 shadow-sm"
+                : "bg-gradient-to-br from-gray-900 via-gray-900 to-slate-900 border-gray-800 text-white shadow-md"
+            }`}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className={`w-2.5 h-2.5 rounded-full ${
+                    autoTradingEnabled
+                      ? currentActiveTrade
+                        ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]"
+                        : "bg-emerald-400 animate-ping"
+                      : "bg-gray-400"
+                  }`} />
+                  <span className={`font-mono text-xs font-black tracking-wide uppercase ${
+                    currentActiveTrade ? "text-emerald-950" : "text-white"
+                  }`}>
+                    {autoTradingEnabled
+                      ? currentActiveTrade
+                        ? `AI HOLDING ${currentActiveTrade.direction} POSITION`
+                        : "AI AUTO-TRADER: ACTIVE & SCANNING"
+                      : "AUTONOMOUS AI: PAUSED"}
+                  </span>
+                </div>
+                
+                {/* Auto-Trading Active Toggle */}
+                <button
+                  onClick={handleToggleAutoTrading}
+                  className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-md transition-colors cursor-pointer flex items-center gap-1 ${
+                    autoTradingEnabled
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                      : "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                  }`}
+                  title="Toggle Autonomous Trading"
+                >
+                  {autoTradingEnabled ? (
+                    <>
+                      <Pause className="w-3 h-3" />
+                      <span>PAUSE AI</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-3 h-3" />
+                      <span>START AI</span>
+                    </>
+                  )}
+                </button>
               </div>
-            )}
+
+              {currentActiveTrade ? (
+                /* LIVE ACTIVE POSITION DETAILS BEING HELD BY AI */
+                <div className="flex flex-col gap-2 font-mono text-xs pt-2 border-t border-emerald-200">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600 text-[11px]">Active Position:</span>
+                    <span className={`font-black px-2 py-0.5 rounded text-[11px] ${
+                      currentActiveTrade.direction === "LONG"
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-rose-100 text-rose-800"
+                    }`}>
+                      {currentActiveTrade.direction} @ ${currentActiveTrade.entryPrice.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600 text-[11px]">Compounding Capital:</span>
+                    <span className="font-bold text-gray-900">₹{currentActiveTrade.positionSizeINR.toFixed(2)}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600 text-[11px]">Net Post-Tax PnL:</span>
+                    {livePrice ? (() => {
+                      const pts = currentActiveTrade.direction === "LONG"
+                        ? livePrice - currentActiveTrade.entryPrice
+                        : currentActiveTrade.entryPrice - livePrice;
+                      const returnPct = pts / currentActiveTrade.entryPrice;
+                      const grossINR = currentActiveTrade.positionSizeINR * returnPct;
+                      const feeINR = currentActiveTrade.positionSizeINR * (0.040 / 100) * 1.18 * 2;
+                      const netINR = grossINR - feeINR;
+                      const isProfit = netINR >= 0;
+                      return (
+                        <span className={`font-black ${isProfit ? "text-emerald-700" : "text-rose-700"}`}>
+                          {isProfit ? "+" : ""}₹{netINR.toFixed(2)} ({isProfit ? "+" : ""}{(returnPct * 100).toFixed(2)}%)
+                        </span>
+                      );
+                    })() : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] pt-1 border-t border-emerald-100">
+                    <span className="text-gray-500">Breakeven Ratchet:</span>
+                    <span className={`font-bold ${currentActiveTrade.breakevenActivated ? "text-emerald-700" : "text-blue-700"}`}>
+                      {currentActiveTrade.breakevenActivated
+                        ? "✔ LOCKED (+0.05R FEE SHIELD)"
+                        : `ARMED @ $${currentActiveTrade.breakevenTrigger.toFixed(1)}`}
+                    </span>
+                  </div>
+
+                  <div className="text-[10px] text-gray-600 italic bg-white/70 p-1.5 rounded border border-emerald-200 mt-0.5">
+                    🤖 <strong>Autonomous Hold</strong>: AI is holding and tracking this scalp. It will automatically trail SL to Breakeven at +{activeModel.ratchetTriggerR.toFixed(2)}R and close at target TP (+1.0R).
+                  </div>
+                </div>
+              ) : (
+                /* STANDBY SCANNING STATUS */
+                <div className="flex flex-col gap-1.5 font-mono text-[11px] text-gray-300 pt-1">
+                  <div className="flex items-center justify-between text-gray-400">
+                    <span>Live Autonomous Cycle:</span>
+                    <span className="text-emerald-400 font-bold">12s Tick Active</span>
+                  </div>
+                  <div className="flex items-center justify-between text-gray-400">
+                    <span>Capital Allocation:</span>
+                    <span className="text-white font-bold">₹{accountBalanceINR.toFixed(2)} INR</span>
+                  </div>
+                  <div className="flex items-center justify-between text-gray-400">
+                    <span>Strategy Model:</span>
+                    <span className="text-emerald-300 font-semibold">{activeModel.shortName}</span>
+                  </div>
+                  <div className="p-2 rounded bg-black/40 border border-white/10 text-[10px] text-gray-300 leading-normal mt-1">
+                    🤖 <strong>Autonomous Trade & Hold</strong>: The AI monitors 15M Donchian-20 breakouts & LightGBM probabilities. When triggered, the AI automatically opens the position, protects capital, holds, and ratchets to breakeven without manual clicks.
+                  </div>
+                  {lastActionTick && (
+                    <div className="text-[9px] text-gray-400 flex items-center justify-between pt-1 border-t border-white/10">
+                      <span>Last Evaluation Tick:</span>
+                      <span className="font-bold text-emerald-400">{lastActionTick}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
           </div>
 

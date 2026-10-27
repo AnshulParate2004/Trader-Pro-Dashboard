@@ -762,7 +762,7 @@ export default function AiEnginePage() {
                             No Live Trade Data Available
                           </span>
                           <span className="text-xs text-gray-400 max-w-sm">
-                            Click <strong>"Simulate Scalp"</strong> above or <strong>"Execute AI Order"</strong> in Terminal to place live trades on MongoDB Atlas! Or click the <strong>"Verified Historical OOS Trades"</strong> tab to view past backtested trades.
+                            The Autonomous AI Trading Engine automatically executes and holds scalps on MongoDB Atlas! Or switch to the <strong>"Verified Historical OOS Trades"</strong> tab to view backtested trades.
                           </span>
                         </div>
                       </td>
