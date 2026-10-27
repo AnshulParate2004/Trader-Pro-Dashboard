@@ -1,4 +1,5 @@
 import Link from "next/link";
+import UserAuthPill from "@/components/UserAuthPill";
 import {
   ArrowUpRight,
   ShieldCheck,
@@ -45,6 +46,8 @@ export default function LandingPage() {
             Launch Terminal
             <ArrowUpRight className="w-3.5 h-3.5" />
           </Link>
+
+          <UserAuthPill />
         </nav>
       </header>
 

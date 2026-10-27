@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import UserAuthPill from "@/components/UserAuthPill";
 import {
   ArrowLeft,
   Activity,
@@ -247,6 +248,8 @@ export default function AiEnginePage() {
             <RotateCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-emerald-600" : ""}`} />
             <span className="hidden md:inline">{lastUpdated}</span>
           </button>
+
+          <UserAuthPill />
         </div>
       </header>
 

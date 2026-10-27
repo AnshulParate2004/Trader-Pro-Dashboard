@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import UserAuthPill from "@/components/UserAuthPill";
 import TradingViewChart from "@/components/TradingViewChart";
 import {
   ArrowLeft,
@@ -511,6 +512,8 @@ export default function TerminalPage() {
             <RotateCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-emerald-600" : "text-gray-400"}`} />
             <span className="hidden lg:inline">{lastUpdated}</span>
           </div>
+
+          <UserAuthPill />
         </div>
       </header>
 
