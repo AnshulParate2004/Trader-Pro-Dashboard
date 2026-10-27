@@ -5,8 +5,18 @@ export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
 ) {
+  return handleClose(req, params.id);
+}
+
+export async function POST(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  return handleClose(req, params.id);
+}
+
+async function handleClose(req: Request, tradeId: string) {
   try {
-    const tradeId = params.id;
     const body = await req.json();
     const { exitPrice, reason } = body;
 

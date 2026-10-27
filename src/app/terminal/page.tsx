@@ -22,7 +22,7 @@ import {
   ChevronDown,
   Sparkles,
 } from "lucide-react";
-import { TOP_MODELS, AIStrategyModel } from "@/lib/engineTypes";
+import { TOP_MODELS, AIStrategyModel, TradeOrder } from "@/lib/engineTypes";
 
 interface RealIndicators {
   atr: number;
@@ -84,6 +84,8 @@ export default function TerminalPage() {
   const [recommendation, setRecommendation] = useState<TradeRecommendation | null>(null);
   const [aiPrediction, setAiPrediction] = useState<AIPredictionState | null>(null);
   const [accountBalanceINR, setAccountBalanceINR] = useState<number>(1000);
+  const [recentTrades, setRecentTrades] = useState<TradeOrder[]>([]);
+  const [dockTab, setDockTab] = useState<"radar" | "trades">("radar");
   const [isLoading, setIsLoading] = useState(true);
   const [isExecutingAI, setIsExecutingAI] = useState(false);
   const [executionFeedback, setExecutionFeedback] = useState<string | null>(null);
@@ -92,7 +94,7 @@ export default function TerminalPage() {
   const activeModel = TOP_MODELS.find((m) => m.id === activeModelId) || TOP_MODELS[0];
   const riskPercent = 1.0; // 1% risk = ₹10.00 on ₹1,000
 
-  // Fetch current live account balance from MongoDB
+  // Fetch current live account balance and trade logs from MongoDB Atlas
   const fetchCurrentBalance = async () => {
     try {
       const res = await fetch(`/api/trades?modelId=${activeModelId}`);
@@ -101,9 +103,30 @@ export default function TerminalPage() {
         if (data.metrics?.currentBalanceINR) {
           setAccountBalanceINR(data.metrics.currentBalanceINR);
         }
+        if (data.trades) {
+          setRecentTrades(data.trades);
+        }
       }
     } catch (e) {
       console.warn("Could not fetch balance:", e);
+    }
+  };
+
+  // Close trade directly from Terminal
+  const handleCloseTrade = async (tradeId: string) => {
+    if (!livePrice) return;
+    try {
+      await fetch(`/api/trades/${tradeId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          exitPrice: livePrice,
+          reason: "Manual Terminal Market Exit",
+        }),
+      });
+      fetchCurrentBalance();
+    } catch (err) {
+      console.error("Close trade error:", err);
     }
   };
 
@@ -528,99 +551,233 @@ export default function TerminalPage() {
             <TradingViewChart symbol={`BINANCE:${symbol}`} interval={timeframe} />
           </div>
 
-          {/* Bottom Dock: Multi-Timeframe Alignment & Volatility Microstructure */}
-          <div className="h-44 bg-[#f8f9fa] border-t border-[#e5e7eb] p-3 grid grid-cols-1 md:grid-cols-2 gap-3 overflow-y-auto shrink-0">
-            
-            {/* Multi-Timeframe Alignment */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[11px] font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-emerald-600" /> Cross-Timeframe Alignment & Invariants
+          {/* Bottom Dock Header with Tabs */}
+          <div className="bg-[#f0f2f5] border-t border-[#e5e7eb] px-3 py-1.5 flex items-center justify-between shrink-0 font-mono text-xs">
+            <div className="flex bg-[#e2e5e9] p-0.5 rounded-md gap-0.5">
+              <button
+                onClick={() => setDockTab("radar")}
+                className={`px-2.5 py-1 rounded font-bold text-[11px] transition-all cursor-pointer ${
+                  dockTab === "radar"
+                    ? "bg-white text-gray-900 shadow-2xs"
+                    : "text-gray-500 hover:text-gray-900"
+                }`}
+              >
+                📊 Alignment & Radar
+              </button>
+              <button
+                onClick={() => setDockTab("trades")}
+                className={`px-2.5 py-1 rounded font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+                  dockTab === "trades"
+                    ? "bg-white text-gray-900 shadow-2xs"
+                    : "text-gray-500 hover:text-gray-900"
+                }`}
+              >
+                <span>⚡ Live Scalp Orders</span>
+                <span className="bg-emerald-100 text-emerald-800 text-[9px] px-1.5 py-0.2 rounded-full font-extrabold">
+                  {recentTrades.length}
                 </span>
-                <span className="text-[10px] font-mono text-gray-400 font-semibold">Active: {activeModel.shortName}</span>
-              </div>
-
-              <div className="grid grid-cols-4 gap-2 text-center">
-                <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col items-center justify-center shadow-2xs">
-                  <span className="text-[10px] font-mono text-gray-500 font-bold">5M MICRO</span>
-                  <span className="text-xs font-bold font-mono text-emerald-600 mt-0.5">
-                    {aiPrediction?.donchianBreakout === "BULLISH" ? "BREAKOUT ▲" : aiPrediction?.donchianBreakout === "BEARISH" ? "BREAKDOWN ▼" : "CONSOLIDATE"}
-                  </span>
-                  <span className="text-[9px] font-mono text-gray-400">Donchian-20</span>
-                </div>
-
-                <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col items-center justify-center shadow-2xs">
-                  <span className="text-[10px] font-mono text-gray-500 font-bold">15M MODEL</span>
-                  <span className={`text-xs font-bold font-mono mt-0.5 ${
-                    (aiPrediction?.pLong || 0) >= 0.5457 ? "text-emerald-600" : "text-gray-600"
-                  }`}>
-                    {aiPrediction ? `${(aiPrediction.pLong * 100).toFixed(1)}% L` : "54.6% L"}
-                  </span>
-                  <span className="text-[9px] font-mono text-gray-400">Purged LGBM</span>
-                </div>
-
-                <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col items-center justify-center shadow-2xs">
-                  <span className="text-[10px] font-mono text-gray-500 font-bold">4H MASTER</span>
-                  <span className={`text-xs font-bold font-mono mt-0.5 ${
-                    aiPrediction?.gate4HPassed ? "text-emerald-600" : "text-amber-600"
-                  }`}>
-                    {aiPrediction?.gate4HPassed ? "ALIGNED ✔" : "FILTERED"}
-                  </span>
-                  <span className="text-[9px] font-mono text-gray-400">Macro Trend Gate</span>
-                </div>
-
-                <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col items-center justify-center shadow-2xs">
-                  <span className="text-[10px] font-mono text-gray-500 font-bold">RATCHET</span>
-                  <span className="text-xs font-bold font-mono text-blue-600 mt-0.5">
-                    +{activeModel.ratchetTriggerR.toFixed(2)}R
-                  </span>
-                  <span className="text-[9px] font-mono text-gray-400">+0.05R Shield</span>
-                </div>
-              </div>
+              </button>
             </div>
 
-            {/* Volatility & Regime Microstructure */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[11px] font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
-                  <Activity className="w-3.5 h-3.5 text-blue-600" /> Volatility & Microstructure Radar
-                </span>
-                <span className="text-[10px] font-mono text-gray-400">50-Bar Rolling</span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
-                <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col gap-0.5 shadow-2xs">
-                  <span className="text-[9px] font-mono text-gray-500 uppercase">EMA 20/50 SPREAD</span>
-                  <span className={`text-xs font-bold font-mono ${indicators && indicators.emaSpreadPct >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-                    {indicators ? `${indicators.emaSpreadPct >= 0 ? "+" : ""}${indicators.emaSpreadPct.toFixed(3)}%` : "—"}
-                  </span>
-                  <div className="w-full h-1 bg-gray-100 border border-gray-200 rounded overflow-hidden mt-1">
-                    <div className="h-full bg-blue-500" style={{ width: indicators ? `${Math.min(100, Math.abs(indicators.emaSpreadPct) * 400)}%` : "30%" }}></div>
-                  </div>
-                </div>
-
-                <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col gap-0.5 shadow-2xs">
-                  <span className="text-[9px] font-mono text-gray-500 uppercase">RSI (14)</span>
-                  <span className="text-xs font-bold font-mono text-emerald-600">
-                    {indicators ? indicators.rsi.toFixed(1) : "—"}
-                  </span>
-                  <div className="w-full h-1 bg-gray-100 border border-gray-200 rounded overflow-hidden mt-1">
-                    <div className="h-full bg-emerald-500" style={{ width: indicators ? `${indicators.rsi}%` : "50%" }}></div>
-                  </div>
-                </div>
-
-                <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col gap-0.5 shadow-2xs">
-                  <span className="text-[9px] font-mono text-gray-500 uppercase">Garman-Klass Vol</span>
-                  <span className="text-xs font-bold font-mono text-amber-600">
-                    {indicators ? (indicators.garmanKlass * 1000).toFixed(4) : "—"}
-                  </span>
-                  <div className="w-full h-1 bg-gray-100 border border-gray-200 rounded overflow-hidden mt-1">
-                    <div className="h-full bg-amber-500" style={{ width: indicators ? `${Math.max(10, Math.min(100, indicators.garmanKlass * 100000))}%` : "40%" }}></div>
-                  </div>
-                </div>
-              </div>
+            <div className="text-[10px] text-gray-500 hidden sm:inline">
+              Available Capital: <strong className="text-gray-900">₹{accountBalanceINR.toFixed(2)}</strong> · Post-Tax Net PnL (0.040% Taker + 18% GST)
             </div>
+          </div>
 
+          {/* Bottom Dock Content: Alignment Radar OR Live Trade Execution Log */}
+          <div className="h-44 bg-[#f8f9fa] p-3 overflow-y-auto shrink-0">
+            {dockTab === "radar" ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Multi-Timeframe Alignment */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[11px] font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-emerald-600" /> Cross-Timeframe Alignment & Invariants
+                    </span>
+                    <span className="text-[10px] font-mono text-gray-400 font-semibold">Active: {activeModel.shortName}</span>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-2 text-center">
+                    <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col items-center justify-center shadow-2xs">
+                      <span className="text-[10px] font-mono text-gray-500 font-bold">5M MICRO</span>
+                      <span className="text-xs font-bold font-mono text-emerald-600 mt-0.5">
+                        {aiPrediction?.donchianBreakout === "BULLISH" ? "BREAKOUT ▲" : aiPrediction?.donchianBreakout === "BEARISH" ? "BREAKDOWN ▼" : "CONSOLIDATE"}
+                      </span>
+                      <span className="text-[9px] font-mono text-gray-400">Donchian-20</span>
+                    </div>
+
+                    <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col items-center justify-center shadow-2xs">
+                      <span className="text-[10px] font-mono text-gray-500 font-bold">15M MODEL</span>
+                      <span className={`text-xs font-bold font-mono mt-0.5 ${
+                        (aiPrediction?.pLong || 0) >= 0.5457 ? "text-emerald-600" : "text-gray-600"
+                      }`}>
+                        {aiPrediction ? `${(aiPrediction.pLong * 100).toFixed(1)}% L` : "54.6% L"}
+                      </span>
+                      <span className="text-[9px] font-mono text-gray-400">Purged LGBM</span>
+                    </div>
+
+                    <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col items-center justify-center shadow-2xs">
+                      <span className="text-[10px] font-mono text-gray-500 font-bold">4H MASTER</span>
+                      <span className={`text-xs font-bold font-mono mt-0.5 ${
+                        aiPrediction?.gate4HPassed ? "text-emerald-600" : "text-amber-600"
+                      }`}>
+                        {aiPrediction?.gate4HPassed ? "ALIGNED ✔" : "FILTERED"}
+                      </span>
+                      <span className="text-[9px] font-mono text-gray-400">Macro Trend Gate</span>
+                    </div>
+
+                    <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col items-center justify-center shadow-2xs">
+                      <span className="text-[10px] font-mono text-gray-500 font-bold">RATCHET</span>
+                      <span className="text-xs font-bold font-mono text-blue-600 mt-0.5">
+                        +{activeModel.ratchetTriggerR.toFixed(2)}R
+                      </span>
+                      <span className="text-[9px] font-mono text-gray-400">+0.05R Shield</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Volatility & Regime Microstructure */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[11px] font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                      <Activity className="w-3.5 h-3.5 text-blue-600" /> Volatility & Microstructure Radar
+                    </span>
+                    <span className="text-[10px] font-mono text-gray-400">50-Bar Rolling</span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col gap-0.5 shadow-2xs">
+                      <span className="text-[9px] font-mono text-gray-500 uppercase">EMA 20/50 SPREAD</span>
+                      <span className={`text-xs font-bold font-mono ${indicators && indicators.emaSpreadPct >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                        {indicators ? `${indicators.emaSpreadPct >= 0 ? "+" : ""}${indicators.emaSpreadPct.toFixed(3)}%` : "—"}
+                      </span>
+                      <div className="w-full h-1 bg-gray-100 border border-gray-200 rounded overflow-hidden mt-1">
+                        <div className="h-full bg-blue-500" style={{ width: indicators ? `${Math.min(100, Math.abs(indicators.emaSpreadPct) * 400)}%` : "30%" }}></div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col gap-0.5 shadow-2xs">
+                      <span className="text-[9px] font-mono text-gray-500 uppercase">RSI (14)</span>
+                      <span className="text-xs font-bold font-mono text-emerald-600">
+                        {indicators ? indicators.rsi.toFixed(1) : "—"}
+                      </span>
+                      <div className="w-full h-1 bg-gray-100 border border-gray-200 rounded overflow-hidden mt-1">
+                        <div className="h-full bg-emerald-500" style={{ width: indicators ? `${indicators.rsi}%` : "50%" }}></div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col gap-0.5 shadow-2xs">
+                      <span className="text-[9px] font-mono text-gray-500 uppercase">Garman-Klass Vol</span>
+                      <span className="text-xs font-bold font-mono text-amber-600">
+                        {indicators ? (indicators.garmanKlass * 1000).toFixed(4) : "—"}
+                      </span>
+                      <div className="w-full h-1 bg-gray-100 border border-gray-200 rounded overflow-hidden mt-1">
+                        <div className="h-full bg-amber-500" style={{ width: indicators ? `${Math.max(10, Math.min(100, indicators.garmanKlass * 100000))}%` : "40%" }}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse font-mono text-xs">
+                  <thead>
+                    <tr className="bg-gray-100 border-b border-gray-200 text-gray-500 uppercase text-[10px]">
+                      <th className="py-2 px-2.5">Time</th>
+                      <th className="py-2 px-2.5">AI Model</th>
+                      <th className="py-2 px-2.5">Side</th>
+                      <th className="py-2 px-2.5">Entry Price</th>
+                      <th className="py-2 px-2.5">Exit Price</th>
+                      <th className="py-2 px-2.5">Position (INR)</th>
+                      <th className="py-2 px-2.5">Shark Fee (w/ GST)</th>
+                      <th className="py-2 px-2.5">Net PnL (Post-Tax)</th>
+                      <th className="py-2 px-2.5">Status</th>
+                      <th className="py-2 px-2.5">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200/60 bg-white">
+                    {recentTrades.length > 0 ? (
+                      recentTrades.map((t) => {
+                        const isClosed = t.status === "CLOSED";
+                        const isPositive = (t.netPnLINR || 0) >= 0;
+
+                        return (
+                          <tr key={t.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="py-2 px-2.5 text-gray-400 text-[10px] whitespace-nowrap">
+                              {new Date(t.openedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                            </td>
+                            <td className="py-2 px-2.5 text-[10px] font-bold text-gray-800 whitespace-nowrap">
+                              {t.modelName || "15M Sniper"}
+                            </td>
+                            <td className="py-2 px-2.5">
+                              <span
+                                className={`px-1.5 py-0.5 rounded font-extrabold text-[10px] ${
+                                  t.direction === "LONG"
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    : "bg-rose-50 text-rose-700 border border-rose-200"
+                                }`}
+                              >
+                                {t.direction}
+                              </span>
+                            </td>
+                            <td className="py-2 px-2.5 font-bold text-gray-900">
+                              ${t.entryPrice.toLocaleString(undefined, { minimumFractionDigits: 1 })}
+                            </td>
+                            <td className="py-2 px-2.5 font-bold text-gray-900">
+                              {t.exitPrice ? `$${t.exitPrice.toLocaleString(undefined, { minimumFractionDigits: 1 })}` : "—"}
+                            </td>
+                            <td className="py-2 px-2.5 text-gray-700 font-semibold">
+                              ₹{t.positionSizeINR.toFixed(2)}
+                            </td>
+                            <td className="py-2 px-2.5 text-blue-600 font-semibold">
+                              ₹{t.totalFeeINR?.toFixed(3) || "0.000"}
+                            </td>
+                            <td className="py-2 px-2.5 font-black">
+                              {isClosed ? (
+                                <span className={isPositive ? "text-emerald-600" : "text-rose-600"}>
+                                  {isPositive ? "+" : ""}₹{t.netPnLINR?.toFixed(2)}
+                                </span>
+                              ) : (
+                                <span className="text-blue-500 animate-pulse">Running</span>
+                              )}
+                            </td>
+                            <td className="py-2 px-2.5">
+                              <span
+                                className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                                  isClosed
+                                    ? "bg-gray-100 text-gray-600 border border-gray-200"
+                                    : "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                }`}
+                              >
+                                {t.status}
+                              </span>
+                            </td>
+                            <td className="py-2 px-2.5">
+                              {!isClosed ? (
+                                <button
+                                  onClick={() => handleCloseTrade(t.id)}
+                                  className="bg-gray-900 hover:bg-black text-white text-[9px] font-bold px-2 py-0.5 rounded transition-colors cursor-pointer"
+                                >
+                                  Close
+                                </button>
+                              ) : (
+                                <span className="text-gray-400 text-[9px]">{t.exitReason || "Done"}</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={10} className="py-8 text-center text-gray-400 text-xs">
+                          No active trades yet. Click <strong>"⚡ Execute AI Order"</strong> on the right to open a scalp on your ₹{accountBalanceINR.toFixed(2)} capital!
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
 
