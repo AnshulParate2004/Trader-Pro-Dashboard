@@ -1,0 +1,16 @@
+name: 24-7 Cloud AI Scalp Runner
+
+on:
+  schedule:
+    # Runs every 5 minutes (maximum frequency permitted by GitHub Actions cron)
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  run-scalp-cycle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Trader-Pro Scalp Endpoint
+        run: |
+          echo "Calling Vercel AI Scalp Engine..."
+          curl -s -X GET "https://trader-pro-dashboard.vercel.app/api/cron/scalp" | jq . || true
