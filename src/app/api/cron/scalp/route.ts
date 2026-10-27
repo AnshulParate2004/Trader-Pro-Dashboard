@@ -166,12 +166,14 @@ export async function GET(req: Request) {
       }
     }
 
-    // 4. Check If Autonomous AI Trade Should Be Executed (strictly on Model Signal)
+    // 4. Strict Single-Position Hold Invariant: Never open more than 1 trade at a time!
     const remainingActive = allTrades.filter(
       (t) => t.status === "ACTIVE" || t.status === "BE_ACTIVATED"
     ).length;
 
-    if (remainingActive < config.maxConcurrentTrades) {
+    if (remainingActive >= 1) {
+      actionsTaken.push(`AI Holding 1 Active Position: Capital fully allocated. Awaiting Target TP or Breakeven Ratchet exit before taking next trade.`);
+    } else if (remainingActive === 0) {
       if (prediction.signal === "BUY") {
         const newTrade = await executeNewTrade({
           symbol: "BTCUSDT",

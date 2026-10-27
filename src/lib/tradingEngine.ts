@@ -53,7 +53,7 @@ let memoryConfig: EngineConfig = {
   gstPercent: 18.0,         // 18% GST
   riskPerTradePercent: 1.0, // 1% risk = ₹10 on ₹1,000
   ratchetEnabled: true,
-  maxConcurrentTrades: 2,
+  maxConcurrentTrades: 1,
   activeModelId: "15m-sniper-030", // Default: Rank #1 15M Sniper Scalp (+0.30R Ratchet)
 };
 
