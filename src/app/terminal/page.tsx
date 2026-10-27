@@ -9,7 +9,6 @@ import {
   Activity,
   Zap,
   BarChart2,
-  SlidersHorizontal,
   RotateCw,
   TrendingUp,
   Maximize2,
@@ -638,50 +637,6 @@ export default function TerminalPage() {
                 <span className="text-xs font-bold text-emerald-700">
                   {indicators ? `$${indicators.nearestSupport.toFixed(1)} (-${indicators.distToSupportATR.toFixed(1)}R)` : "—"}
                 </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Position Sizing Calculator (Shark Exchange ₹1,000 Capital) */}
-          <div className="bg-white border border-[#e5e7eb] rounded-lg p-3 flex flex-col gap-2 shadow-sm">
-            <span className="font-mono text-xs font-bold uppercase text-gray-900 flex items-center gap-1.5">
-              <SlidersHorizontal className="w-3.5 h-3.5 text-gray-600" /> Shark Exchange Sizing (₹1,000 Capital)
-            </span>
-
-            <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-              <div>
-                <label className="text-[9px] text-gray-400 uppercase font-semibold">Account Size (₹)</label>
-                <input
-                  type="number"
-                  value={accountBalance}
-                  onChange={(e) => setAccountBalance(Number(e.target.value))}
-                  className="w-full bg-gray-50 border border-gray-300 rounded px-2 py-1 text-gray-900 focus:outline-none focus:border-emerald-500 font-bold"
-                />
-              </div>
-              <div>
-                <label className="text-[9px] text-gray-400 uppercase font-semibold">Risk Per Trade (%)</label>
-                <input
-                  type="number"
-                  step="0.5"
-                  value={riskPercent}
-                  onChange={(e) => setRiskPercent(Number(e.target.value))}
-                  className="w-full bg-gray-50 border border-gray-300 rounded px-2 py-1 text-gray-900 focus:outline-none focus:border-emerald-500 font-bold"
-                />
-              </div>
-            </div>
-
-            <div className="bg-gray-50 border border-gray-200 rounded p-2 flex flex-col gap-1 font-mono text-[11px]">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Max Risk (1%):</span>
-                <span className="font-bold text-rose-600">₹{(accountBalance * riskPercent / 100).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Potential Profit (1.5R):</span>
-                <span className="font-bold text-emerald-600">+₹{(accountBalance * riskPercent / 100 * 1.5).toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Shark Fee (0.040% + GST):</span>
-                <span className="font-bold text-blue-600">₹{recommendation?.sharkExchangeFeeINR || "0.94"}</span>
               </div>
             </div>
           </div>
