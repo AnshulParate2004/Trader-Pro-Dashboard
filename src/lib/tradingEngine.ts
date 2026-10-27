@@ -135,7 +135,7 @@ export async function getTradeLogs(limit: number = 50, modelId?: string): Promis
         .limit(limit)
         .toArray();
 
-      if (trades && trades.length > 0) {
+      if (Array.isArray(trades)) {
         return trades.map((t: any) => ({
           id: t.id || t._id.toString(),
           symbol: t.symbol,

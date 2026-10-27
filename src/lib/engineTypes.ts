@@ -128,6 +128,7 @@ export interface EngineConfig {
   riskPerTradePercent: number; // 1% risk = ₹10 per scalp
   ratchetEnabled: boolean;
   maxConcurrentTrades: number;
+  lastProcessedClosedBarTime?: number;
   activeModelId: string; // "15m-sniper-030" | "15m-precision-035" | "master-confluence-multi" | "5m-15m-confluence"
 }
 

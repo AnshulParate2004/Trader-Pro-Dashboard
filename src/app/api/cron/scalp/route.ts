@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   getEngineConfig,
+  updateEngineConfig,
   getTradeLogs,
   executeNewTrade,
   closeTrade,
@@ -35,7 +36,8 @@ export async function GET(req: Request) {
       throw new Error("Insufficient kline bars returned from Binance");
     }
 
-    const candles: Candle[] = rawKlines.map((d: any) => ({
+    const now = Date.now();
+    const allCandles: Candle[] = rawKlines.map((d: any) => ({
       openTime: Number(d[0]),
       open: parseFloat(d[1]),
       high: parseFloat(d[2]),
@@ -45,8 +47,14 @@ export async function GET(req: Request) {
       takerBuyBase: parseFloat(d[9] || "0"),
     }));
 
-    const lastCandle = candles[candles.length - 1];
-    const currentPrice = lastCandle.close;
+    // Live tick price for real-time Stop Loss / Take Profit / Ratchet tracking
+    const liveCandle = allCandles[allCandles.length - 1];
+    const currentPrice = liveCandle.close;
+
+    // Strictly separate fully CLOSED candles (allCandles[last] is still forming/open)
+    const closedCandles = allCandles.slice(0, -1);
+    const latestClosedCandle = closedCandles[closedCandles.length - 1];
+    const candleClosingInSeconds = Math.max(0, Math.round((liveCandle.openTime + 15 * 60 * 1000 - now) / 1000));
 
     // Optional 5m & 4h candles for multi-timeframe confluence models
     let candles5m: Candle[] | undefined;
@@ -96,8 +104,10 @@ export async function GET(req: Request) {
       }
     }
 
-    // 2. Evaluate Exact Machine Learning Model Prediction (from 01, 06, 07 notebooks)
-    const prediction = await getModelPrediction(config.activeModelId, candles, candles5m, candles4h);
+    // 2. Evaluate Exact Machine Learning Model Prediction strictly on CLOSED candles (Zero Lookahead)
+    const closedCandles5m = candles5m ? candles5m.slice(0, -1) : undefined;
+    const closedCandles4h = candles4h ? candles4h.slice(0, -1) : undefined;
+    const prediction = await getModelPrediction(config.activeModelId, closedCandles, closedCandles5m, closedCandles4h);
     const atr = prediction.atr || currentPrice * 0.0055;
 
     const actionsTaken: string[] = [];
@@ -166,38 +176,54 @@ export async function GET(req: Request) {
       }
     }
 
-    // 4. Strict Single-Position Hold Invariant: Never open more than 1 trade at a time!
+    // 4. Strict Single-Position & CANDLE-CLOSE Execution Rule:
+    // User Rule: "IT WILL DO TRADE AFTER THE CANDLE CLOSE ONLY ELSE IT WILL NOT DO THE TRADE"
     const remainingActive = allTrades.filter(
       (t) => t.status === "ACTIVE" || t.status === "BE_ACTIVATED"
     ).length;
 
     if (remainingActive >= 1) {
       actionsTaken.push(`AI Holding 1 Active Position: Capital fully allocated. Awaiting Target TP or Breakeven Ratchet exit before taking next trade.`);
-    } else if (remainingActive === 0) {
-      if (prediction.signal === "BUY") {
-        const newTrade = await executeNewTrade({
-          symbol: "BTCUSDT",
-          direction: "LONG",
-          entryPrice: currentPrice,
-          atr,
-          triggerReason: `AI Model Instinct [${prediction.modelName}]: Donchian Breakout + LightGBM P_Long ${(prediction.pLong * 100).toFixed(1)}% (Conviction ${prediction.confidence}%)`,
-          customFeePercent: config.tradingFeePercent,
-          modelId: config.activeModelId,
-        });
-        actionsTaken.push(`[AI AUTONOMOUS LONG EXECUTED] ${newTrade.id} opened at $${currentPrice.toFixed(1)} on ₹${newTrade.positionSizeINR.toFixed(2)} capital (${newTrade.modelName})`);
-      } else if (prediction.signal === "SELL") {
-        const newTrade = await executeNewTrade({
-          symbol: "BTCUSDT",
-          direction: "SHORT",
-          entryPrice: currentPrice,
-          atr,
-          triggerReason: `AI Model Instinct [${prediction.modelName}]: Donchian Breakdown + LightGBM P_Short ${(prediction.pShort * 100).toFixed(1)}% (Conviction ${prediction.confidence}%)`,
-          customFeePercent: config.tradingFeePercent,
-          modelId: config.activeModelId,
-        });
-        actionsTaken.push(`[AI AUTONOMOUS SHORT EXECUTED] ${newTrade.id} opened at $${currentPrice.toFixed(1)} on ₹${newTrade.positionSizeINR.toFixed(2)} capital (${newTrade.modelName})`);
+    } else {
+      // Check if a brand-new 15M candle has just closed
+      const lastProcessedTime = config.lastProcessedClosedBarTime || 0;
+      const isNewClosedCandle = latestClosedCandle.openTime > lastProcessedTime;
+
+      if (!isNewClosedCandle) {
+        const minsLeft = Math.floor(candleClosingInSeconds / 60);
+        const secsLeft = candleClosingInSeconds % 60;
+        actionsTaken.push(`Candle-Close Standby: Current 15M candle is forming (closes in ${minsLeft}m ${secsLeft}s). Next trade evaluation strictly on candle close.`);
       } else {
-        actionsTaken.push(`AI Standby: Waiting for Model Signal (P_Long: ${(prediction.pLong * 100).toFixed(1)}%, P_Short: ${(prediction.pShort * 100).toFixed(1)}%, Donchian: ${prediction.donchianBreakout})`);
+        // A new 15M candle has just closed! Evaluate signal on this closed candle:
+        if (prediction.signal === "BUY") {
+          const newTrade = await executeNewTrade({
+            symbol: "BTCUSDT",
+            direction: "LONG",
+            entryPrice: currentPrice,
+            atr,
+            triggerReason: `Candle Close Signal [${prediction.modelName}]: Bar ${new Date(latestClosedCandle.openTime).toISOString()} Closed + LightGBM P_Long ${(prediction.pLong * 100).toFixed(1)}% (Conviction ${prediction.confidence}%)`,
+            customFeePercent: config.tradingFeePercent,
+            modelId: config.activeModelId,
+          });
+          await updateEngineConfig({ lastProcessedClosedBarTime: latestClosedCandle.openTime });
+          actionsTaken.push(`[AI AUTONOMOUS LONG ON CANDLE CLOSE] ${newTrade.id} opened at $${currentPrice.toFixed(1)} on ₹${newTrade.positionSizeINR.toFixed(2)} capital (${newTrade.modelName})`);
+        } else if (prediction.signal === "SELL") {
+          const newTrade = await executeNewTrade({
+            symbol: "BTCUSDT",
+            direction: "SHORT",
+            entryPrice: currentPrice,
+            atr,
+            triggerReason: `Candle Close Signal [${prediction.modelName}]: Bar ${new Date(latestClosedCandle.openTime).toISOString()} Closed + LightGBM P_Short ${(prediction.pShort * 100).toFixed(1)}% (Conviction ${prediction.confidence}%)`,
+            customFeePercent: config.tradingFeePercent,
+            modelId: config.activeModelId,
+          });
+          await updateEngineConfig({ lastProcessedClosedBarTime: latestClosedCandle.openTime });
+          actionsTaken.push(`[AI AUTONOMOUS SHORT ON CANDLE CLOSE] ${newTrade.id} opened at $${currentPrice.toFixed(1)} on ₹${newTrade.positionSizeINR.toFixed(2)} capital (${newTrade.modelName})`);
+        } else {
+          // Closed candle did not have edge; mark bar as processed so we wait for NEXT candle close!
+          await updateEngineConfig({ lastProcessedClosedBarTime: latestClosedCandle.openTime });
+          actionsTaken.push(`Candle Closed Neutral: Bar ${new Date(latestClosedCandle.openTime).toISOString()} closed without edge (P_L: ${(prediction.pLong * 100).toFixed(1)}%, P_S: ${(prediction.pShort * 100).toFixed(1)}%). Next evaluation strictly on next 15M candle close.`);
+        }
       }
     }
 
