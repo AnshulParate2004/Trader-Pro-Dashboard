@@ -21,11 +21,18 @@ import {
   Shield,
   Coins,
 } from "lucide-react";
-import { TradeOrder, EngineConfig, EnginePerformanceMetrics } from "@/lib/tradingEngine";
+import {
+  TradeOrder,
+  EngineConfig,
+  EnginePerformanceMetrics,
+  TOP_MODELS,
+  AIStrategyModel,
+} from "@/lib/engineTypes";
 
 export default function AiEnginePage() {
   const [trades, setTrades] = useState<TradeOrder[]>([]);
   const [metrics, setMetrics] = useState<EnginePerformanceMetrics | null>(null);
+  const [selectedModelId, setSelectedModelId] = useState<string>("15m-sniper-030");
   const [config, setConfig] = useState<EngineConfig>({
     autoTradingEnabled: true,
     currency: "INR",
@@ -36,16 +43,18 @@ export default function AiEnginePage() {
     riskPerTradePercent: 1.0, // 1% = ₹10
     ratchetEnabled: true,
     maxConcurrentTrades: 2,
+    activeModelId: "15m-sniper-030",
   });
   const [mongoConnected, setMongoConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSimulating, setIsSimulating] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>("Connecting...");
 
-  // Fetch engine data and trade logs
-  const fetchData = async () => {
+  // Fetch engine data and trade logs for selected model
+  const fetchData = async (modelIdToFetch?: string) => {
     try {
-      const res = await fetch("/api/trades");
+      const activeM = modelIdToFetch !== undefined ? modelIdToFetch : selectedModelId;
+      const res = await fetch(`/api/trades?modelId=${activeM}`);
       if (!res.ok) throw new Error("Failed to fetch engine data");
       const data = await res.json();
       if (data.success) {
@@ -62,10 +71,27 @@ export default function AiEnginePage() {
   };
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 3000);
+    fetchData(selectedModelId);
+    const interval = setInterval(() => fetchData(selectedModelId), 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedModelId]);
+
+  // Handle Model Selection Change
+  const handleModelChange = async (newModelId: string) => {
+    setSelectedModelId(newModelId);
+    if (newModelId !== "all") {
+      try {
+        await fetch("/api/engine", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ activeModelId: newModelId }),
+        });
+      } catch (err) {
+        console.error("Error switching active model in engine:", err);
+      }
+    }
+    fetchData(newModelId);
+  };
 
   // Update Fee Percentage (Shark Exchange presets)
   const handleFeeChange = async (newFee: number) => {
@@ -109,6 +135,8 @@ export default function AiEnginePage() {
 
       const direction = Math.random() > 0.45 ? "LONG" : "SHORT";
       const atr = currentPrice * 0.0055;
+      const modelToUse = selectedModelId !== "all" ? selectedModelId : "15m-sniper-030";
+      const modelInfo = TOP_MODELS.find((m) => m.id === modelToUse) || TOP_MODELS[0];
 
       await fetch("/api/trades", {
         method: "POST",
@@ -118,8 +146,9 @@ export default function AiEnginePage() {
           direction,
           entryPrice: currentPrice,
           atr,
+          modelId: modelInfo.id,
           customFeePercent: config.tradingFeePercent,
-          triggerReason: `Shark Exchange Scalp: 50-Bar Pivot ${direction === "LONG" ? "Support Bounce" : "Resistance Defense"}`,
+          triggerReason: `AI Model Scalp [${modelInfo.shortName}]: Dynamic 50-Bar Pivot ${direction === "LONG" ? "Support Bounce" : "Resistance Defense"}`,
         }),
       });
 
@@ -211,7 +240,7 @@ export default function AiEnginePage() {
           </Link>
 
           <button
-            onClick={fetchData}
+            onClick={() => fetchData()}
             className="flex items-center gap-1.5 text-xs font-mono text-gray-500 hover:text-gray-900 px-2 py-1"
             title="Refresh AI Engine Metrics"
           >
@@ -352,7 +381,98 @@ export default function AiEnginePage() {
 
         </section>
 
-        {/* 3. Engine Control Deck & Shark Exchange Execution */}
+        {/* 3. AI Strategy Model Selector Deck (Top 4 Backtested Models) */}
+        {(() => {
+          const currentModel = TOP_MODELS.find((m) => m.id === selectedModelId) || null;
+          return (
+            <section className="bg-white border-2 border-emerald-500/30 rounded-xl p-4 sm:p-5 shadow-sm flex flex-col gap-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-emerald-50 border border-emerald-300 flex items-center justify-center text-lg shrink-0">
+                    {currentModel ? (currentModel.rank === 1 ? "🥇" : currentModel.rank === 2 ? "🥈" : currentModel.rank === 3 ? "🥉" : "🎯") : "🌐"}
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-sm font-extrabold text-gray-900">
+                        {currentModel ? currentModel.name : "All Top 4 Models (Combined Portfolio)"}
+                      </span>
+                      {currentModel && (
+                        <span className="text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-300">
+                          RANK #{currentModel.rank}
+                        </span>
+                      )}
+                      <span className="text-[10px] font-mono font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">
+                        {currentModel ? currentModel.timeframe.toUpperCase() : "MULTI-TIMEFRAME"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 max-w-2xl leading-relaxed">
+                      {currentModel
+                        ? currentModel.description
+                        : "Aggregated performance and execution logs across all 4 top-ranked algorithmic models from the backtesting suite."}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Model Dropdown Selector */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 shrink-0">
+                  <label className="text-xs font-mono font-bold text-gray-600 whitespace-nowrap">
+                    Active AI Model:
+                  </label>
+                  <select
+                    value={selectedModelId}
+                    onChange={(e) => handleModelChange(e.target.value)}
+                    className="font-mono text-xs font-bold bg-[#f8f9fa] border-2 border-gray-300 rounded-lg px-3 py-2 text-gray-900 hover:border-emerald-500 focus:outline-none focus:border-emerald-600 shadow-inner cursor-pointer"
+                  >
+                    {TOP_MODELS.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.rank === 1 ? "🥇" : m.rank === 2 ? "🥈" : m.rank === 3 ? "🥉" : "🎯"} #{m.rank}: {m.name} ({m.winRateFull5Yr}% WR)
+                      </option>
+                    ))}
+                    <option value="all">🌐 All Models Combined (Aggregate Portfolio)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Benchmarked Model Metrics Strip */}
+              {currentModel && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 pt-3 border-t border-gray-100 font-mono text-xs">
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5 flex flex-col">
+                    <span className="text-[10px] text-gray-500 uppercase font-bold">5-Yr Win Rate</span>
+                    <span className="text-base font-black text-emerald-600 mt-0.5">{currentModel.winRateFull5Yr}%</span>
+                    <span className="text-[9px] text-gray-400">Full Backtest</span>
+                  </div>
+                  <div className="bg-emerald-50/60 border border-emerald-200 rounded-lg p-2.5 flex flex-col">
+                    <span className="text-[10px] text-emerald-800 uppercase font-bold">Hold-Out OOS</span>
+                    <span className="text-base font-black text-emerald-700 mt-0.5">{currentModel.holdOutWinRate}%</span>
+                    <span className="text-[9px] text-emerald-600">2024–2026 Sealed</span>
+                  </div>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5 flex flex-col">
+                    <span className="text-[10px] text-gray-500 uppercase font-bold">Sharpe Ratio</span>
+                    <span className="text-base font-black text-gray-900 mt-0.5">{currentModel.sharpeRatio}</span>
+                    <span className="text-[9px] text-gray-400">Risk-Adjusted</span>
+                  </div>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5 flex flex-col">
+                    <span className="text-[10px] text-gray-500 uppercase font-bold">Profit Factor</span>
+                    <span className="text-base font-black text-gray-900 mt-0.5">{currentModel.profitFactor}</span>
+                    <span className="text-[9px] text-gray-400">Gross Win / Loss</span>
+                  </div>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5 flex flex-col">
+                    <span className="text-[10px] text-gray-500 uppercase font-bold">Max Drawdown</span>
+                    <span className="text-base font-black text-blue-600 mt-0.5">{currentModel.maxDrawdown}%</span>
+                    <span className="text-[9px] text-gray-400">Peak-to-Trough</span>
+                  </div>
+                  <div className="bg-amber-50/60 border border-amber-200 rounded-lg p-2.5 flex flex-col">
+                    <span className="text-[10px] text-amber-800 uppercase font-bold">Ratchet Trigger</span>
+                    <span className="text-base font-black text-amber-700 mt-0.5">+{currentModel.ratchetTriggerR.toFixed(2)}R</span>
+                    <span className="text-[9px] text-amber-700">Fee Buffer Shield</span>
+                  </div>
+                </div>
+              )}
+            </section>
+          );
+        })()}
+
+        {/* 4. Engine Control Deck & Shark Exchange Execution */}
         <section className="bg-[#f8f9fa] border border-[#e5e7eb] rounded-xl p-4 sm:p-5 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2">
@@ -413,6 +533,7 @@ export default function AiEnginePage() {
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200 text-gray-500 uppercase text-[10px]">
                   <th className="py-2.5 px-3">Time</th>
+                  <th className="py-2.5 px-3">AI Model</th>
                   <th className="py-2.5 px-3">Pair</th>
                   <th className="py-2.5 px-3">Type</th>
                   <th className="py-2.5 px-3">Entry Price</th>
@@ -435,6 +556,11 @@ export default function AiEnginePage() {
                       <tr key={trade.id} className="hover:bg-gray-50/80 transition-colors">
                         <td className="py-2.5 px-3 text-gray-400 text-[11px] whitespace-nowrap">
                           {new Date(trade.openedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                        </td>
+                        <td className="py-2.5 px-3 whitespace-nowrap">
+                          <span className="px-2 py-0.5 rounded bg-gray-100 border border-gray-300 font-bold text-[10px] text-gray-800">
+                            {trade.modelName || "15M Sniper"}
+                          </span>
                         </td>
                         <td className="py-2.5 px-3 font-bold text-gray-900">{trade.symbol}</td>
                         <td className="py-2.5 px-3">
@@ -508,7 +634,7 @@ export default function AiEnginePage() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={11} className="py-16 text-center">
+                    <td colSpan={12} className="py-16 text-center">
                       <div className="flex flex-col items-center justify-center gap-2">
                         <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 text-base">
                           📋

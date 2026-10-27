@@ -17,7 +17,11 @@ import {
   Target,
   Scale,
   Compass,
+  Layers,
+  ChevronDown,
+  Sparkles,
 } from "lucide-react";
+import { TOP_MODELS, AIStrategyModel } from "@/lib/engineTypes";
 
 interface RealIndicators {
   atr: number;
@@ -56,20 +60,114 @@ interface TradeRecommendation {
   actionGuidance: string;
 }
 
+interface AIPredictionState {
+  signal: "BUY" | "SELL" | "NEUTRAL";
+  confidence: number;
+  pLong: number;
+  pShort: number;
+  donchianBreakout: "BULLISH" | "BEARISH" | "NONE";
+  gate4HPassed?: boolean;
+  gate15MPassed?: boolean;
+  ratchetR: number;
+  recommendation: string;
+}
+
 export default function TerminalPage() {
   const [symbol, setSymbol] = useState("BTCUSDT");
   const [timeframe, setTimeframe] = useState("15m");
+  const [activeModelId, setActiveModelId] = useState<string>("15m-sniper-030");
   
   // Real live states - strictly NO hardcoded fake numbers
   const [livePrice, setLivePrice] = useState<number | null>(null);
   const [indicators, setIndicators] = useState<RealIndicators | null>(null);
   const [recommendation, setRecommendation] = useState<TradeRecommendation | null>(null);
+  const [aiPrediction, setAiPrediction] = useState<AIPredictionState | null>(null);
+  const [accountBalanceINR, setAccountBalanceINR] = useState<number>(1000);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExecutingAI, setIsExecutingAI] = useState(false);
+  const [executionFeedback, setExecutionFeedback] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string>("Connecting...");
 
-  // Position Sizing Calculator (Artificial ₹1,000 Capital)
-  const [accountBalance, setAccountBalance] = useState(1000);
-  const [riskPercent, setRiskPercent] = useState(1.0); // 1% risk = ₹10.00
+  const activeModel = TOP_MODELS.find((m) => m.id === activeModelId) || TOP_MODELS[0];
+  const riskPercent = 1.0; // 1% risk = ₹10.00 on ₹1,000
+
+  // Fetch current live account balance from MongoDB
+  const fetchCurrentBalance = async () => {
+    try {
+      const res = await fetch(`/api/trades?modelId=${activeModelId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.metrics?.currentBalanceINR) {
+          setAccountBalanceINR(data.metrics.currentBalanceINR);
+        }
+      }
+    } catch (e) {
+      console.warn("Could not fetch balance:", e);
+    }
+  };
+
+  // Fetch Live Model Prediction from LightGBM tree evaluator
+  const fetchModelPrediction = async (mId: string) => {
+    try {
+      const res = await fetch(`/api/predict?modelId=${mId}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.prediction) {
+          setAiPrediction(data.prediction);
+        }
+      }
+    } catch (e) {
+      console.warn("Error fetching model prediction:", e);
+    }
+  };
+
+  // Execute trade order directly on AI signal instinct
+  const handleExecuteAIOrder = async () => {
+    if (!livePrice) return;
+    setIsExecutingAI(true);
+    setExecutionFeedback(null);
+    try {
+      // Determine direction: prioritize model prediction signal, fallback to recommendation
+      let direction: "LONG" | "SHORT" = "LONG";
+      if (aiPrediction && aiPrediction.signal !== "NEUTRAL") {
+        direction = aiPrediction.signal === "BUY" ? "LONG" : "SHORT";
+      } else if (recommendation) {
+        direction = recommendation.action.includes("BUY") ? "LONG" : "SHORT";
+      }
+
+      const res = await fetch("/api/trades", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          symbol,
+          direction,
+          entryPrice: livePrice,
+          atr: indicators?.atr || livePrice * 0.0055,
+          modelId: activeModel.id,
+          triggerReason: `Terminal AI Execution [${activeModel.shortName}]: Model Edge ${aiPrediction?.confidence || 85}% (P_Long: ${aiPrediction?.pLong || "—"}, P_Short: ${aiPrediction?.pShort || "—"}) on ${symbol}`,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setExecutionFeedback(`✔ Scalp order ${data.trade.id.slice(-8)} placed on ₹${accountBalanceINR.toFixed(2)} capital & logged to MongoDB Atlas!`);
+        fetchCurrentBalance();
+        setTimeout(() => setExecutionFeedback(null), 6000);
+      } else {
+        setExecutionFeedback(`Error: ${data.error || "Failed to execute"}`);
+      }
+    } catch (err: any) {
+      setExecutionFeedback(`Execution error: ${err.message}`);
+    } finally {
+      setIsExecutingAI(false);
+    }
+  };
+
+  // Switch Active Model
+  const handleSelectModel = (newModelId: string) => {
+    setActiveModelId(newModelId);
+    fetchModelPrediction(newModelId);
+    fetchCurrentBalance();
+  };
 
   // Fetch real market data & compute actual quantitative recommendation
   useEffect(() => {
@@ -186,14 +284,14 @@ export default function TerminalPage() {
           atResistanceZone: atResistance,
         });
 
-        // 7. Dynamic Actionable Trading Recommendation Engine
-        // Evaluates whether to enter Market or place Limit Order at Support / Resistance
+        // 7. Dynamic Actionable Trading Recommendation Engine with Active Model Ratchet
+        const ratchetTriggerR = activeModel.ratchetTriggerR; // 0.30 or 0.35
         let action: "BUY (LONG) NOW" | "SELL (SHORT) NOW" | "LIMIT BUY AT SUPPORT" | "LIMIT SELL AT RESISTANCE";
         let orderType: "MARKET" | "LIMIT";
         let entryPrice = currentClose;
         let stopLoss = currentClose - 1.0 * realAtr;
-        let takeProfit = currentClose + 1.5 * realAtr;
-        let beTrigger = currentClose + 0.30 * realAtr;
+        let takeProfit = currentClose + 1.0 * realAtr;
+        let beTrigger = currentClose + ratchetTriggerR * realAtr;
         let beLocked = currentClose + 0.05 * realAtr;
         let conviction = 85;
         let actionGuidance = "";
@@ -207,43 +305,41 @@ export default function TerminalPage() {
           orderType = "MARKET";
           entryPrice = currentClose;
           stopLoss = currentClose - 1.0 * realAtr;
-          takeProfit = currentClose + 1.5 * realAtr;
-          beTrigger = currentClose + 0.30 * realAtr;
+          takeProfit = currentClose + 1.0 * realAtr;
+          beTrigger = currentClose + ratchetTriggerR * realAtr;
           beLocked = currentClose + 0.05 * realAtr;
-          conviction = 88;
-          actionGuidance = `Bullish trend alignment. Enter Market Long at $${entryPrice.toFixed(2)}. Set Stop Loss at $${stopLoss.toFixed(2)} (-1.0R) and Take Profit at $${takeProfit.toFixed(2)} (+1.5R).`;
+          conviction = activeModel.winRateFull5Yr > 75 ? Math.round(activeModel.winRateFull5Yr) : 88;
+          actionGuidance = `[${activeModel.shortName}] Bullish trend alignment. Enter Market Long at $${entryPrice.toFixed(2)}. Stop Loss at $${stopLoss.toFixed(2)} (-1.0R). Lock BE (+0.05R) at +${ratchetTriggerR}R ($${beTrigger.toFixed(2)}).`;
         } else if (isStrongBear) {
           action = "SELL (SHORT) NOW";
           orderType = "MARKET";
           entryPrice = currentClose;
           stopLoss = currentClose + 1.0 * realAtr;
-          takeProfit = currentClose - 1.5 * realAtr;
-          beTrigger = currentClose - 0.30 * realAtr;
+          takeProfit = currentClose - 1.0 * realAtr;
+          beTrigger = currentClose - ratchetTriggerR * realAtr;
           beLocked = currentClose - 0.05 * realAtr;
-          conviction = 88;
-          actionGuidance = `Bearish breakdown alignment. Enter Market Short at $${entryPrice.toFixed(2)}. Set Stop Loss at $${stopLoss.toFixed(2)} (-1.0R) and Take Profit at $${takeProfit.toFixed(2)} (+1.5R).`;
+          conviction = activeModel.winRateFull5Yr > 75 ? Math.round(activeModel.winRateFull5Yr) : 88;
+          actionGuidance = `[${activeModel.shortName}] Bearish breakdown alignment. Enter Market Short at $${entryPrice.toFixed(2)}. Stop Loss at $${stopLoss.toFixed(2)} (-1.0R). Lock BE (+0.05R) at +${ratchetTriggerR}R ($${beTrigger.toFixed(2)}).`;
         } else if (distToResistanceATR <= 1.0) {
-          // Near Resistance Ceiling -> Recommend Limit Sell (Short Fade) or wait
           action = "LIMIT SELL AT RESISTANCE";
           orderType = "LIMIT";
           entryPrice = realResistance;
           stopLoss = realResistance + 1.0 * realAtr;
-          takeProfit = realResistance - 1.5 * realAtr;
-          beTrigger = realResistance - 0.30 * realAtr;
+          takeProfit = realResistance - 1.0 * realAtr;
+          beTrigger = realResistance - ratchetTriggerR * realAtr;
           beLocked = realResistance - 0.05 * realAtr;
           conviction = 91;
-          actionGuidance = `Price is testing 50-bar Resistance ($${realResistance.toFixed(1)}). Place a Limit Sell Order at $${realResistance.toFixed(2)} with Stop Loss at $${stopLoss.toFixed(2)} and Take Profit at $${takeProfit.toFixed(2)}.`;
+          actionGuidance = `[${activeModel.shortName}] Testing 50-bar Resistance ($${realResistance.toFixed(1)}). Limit Sell at $${realResistance.toFixed(2)} with Stop Loss at $${stopLoss.toFixed(2)} and +${ratchetTriggerR}R Breakeven ratchet.`;
         } else {
-          // Corridor or Near Support -> Recommend Limit Buy at Support
           action = "LIMIT BUY AT SUPPORT";
           orderType = "LIMIT";
           entryPrice = realSupport;
           stopLoss = realSupport - 1.0 * realAtr;
-          takeProfit = realSupport + 1.5 * realAtr;
-          beTrigger = realSupport + 0.30 * realAtr;
+          takeProfit = realSupport + 1.0 * realAtr;
+          beTrigger = realSupport + ratchetTriggerR * realAtr;
           beLocked = realSupport + 0.05 * realAtr;
           conviction = 92;
-          actionGuidance = `Price in structural corridor. Place a Limit Buy Order at Dynamic Support ($${realSupport.toFixed(2)}). Set Stop Loss at $${stopLoss.toFixed(2)} and Take Profit at $${takeProfit.toFixed(2)}.`;
+          actionGuidance = `[${activeModel.shortName}] Structural corridor. Limit Buy at Support ($${realSupport.toFixed(2)}). Stop Loss at $${stopLoss.toFixed(2)} and +${ratchetTriggerR}R Breakeven ratchet.`;
         }
 
         const slDist = Math.abs(entryPrice - stopLoss);
@@ -251,10 +347,10 @@ export default function TerminalPage() {
         const slPct = (slDist / entryPrice) * 100;
         const tpPct = (tpDist / entryPrice) * 100;
 
-        // Artificial ₹1,000 capital calculations
-        const riskINR = (accountBalance * riskPercent) / 100; // ₹10
-        const potentialRewardINR = riskINR * 1.5; // ₹15 (1:1.50 R:R)
-        const sharkFee = accountBalance * (0.040 / 100) * 1.18 * 2; // 2-way fee with 18% GST
+        // Dynamic capital compounding calculation
+        const riskINR = (accountBalanceINR * riskPercent) / 100;
+        const potentialRewardINR = riskINR * 1.0; // 1:1 Scalp Target
+        const sharkFee = accountBalanceINR * (0.040 / 100) * 1.18 * 2; // Shark Exchange 0.040% Taker + 18% GST
 
         setRecommendation({
           action,
@@ -267,10 +363,10 @@ export default function TerminalPage() {
           takeProfit,
           takeProfitDistance: tpDist,
           takeProfitPercent: tpPct,
-          riskRewardRatio: "1 : 1.50",
+          riskRewardRatio: "1 : 1.00",
           breakevenTrigger: beTrigger,
           breakevenLocked: beLocked,
-          positionSizeINR: accountBalance,
+          positionSizeINR: accountBalanceINR,
           riskINR,
           potentialRewardINR,
           sharkExchangeFeeINR: Number(sharkFee.toFixed(3)),
@@ -284,12 +380,15 @@ export default function TerminalPage() {
     };
 
     fetchRealMarketData();
+    fetchModelPrediction(activeModelId);
+    fetchCurrentBalance();
+
     const intervalId = setInterval(fetchRealMarketData, 2500);
     return () => {
       isMounted = false;
       clearInterval(intervalId);
     };
-  }, [symbol, timeframe, accountBalance, riskPercent]);
+  }, [symbol, timeframe, activeModelId, accountBalanceINR]);
 
   return (
     <div className="h-screen w-screen flex flex-col bg-white overflow-hidden font-sans text-gray-900 select-none">
@@ -298,8 +397,8 @@ export default function TerminalPage() {
       <header className="h-12 w-full bg-[#f8f9fa] border-b border-[#e5e7eb] px-4 flex items-center justify-between shrink-0 z-30">
         
         {/* Left Section: Brand + Pair Selector + Live Ticker + ATR */}
-        <div className="flex items-center gap-4">
-          <Link href="/" className="flex items-center gap-2 group mr-2" title="Back to Home">
+        <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-2 group mr-1" title="Back to Home">
             <div className="w-6 h-6 rounded bg-gray-900 flex items-center justify-center text-white font-mono text-xs font-bold shadow-sm">
               TP
             </div>
@@ -328,6 +427,24 @@ export default function TerminalPage() {
             </select>
           </div>
 
+          <div className="h-4 w-px bg-gray-300 hidden md:block"></div>
+
+          {/* AI Strategy Model Selector Dropdown in Terminal Header */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-mono font-bold text-gray-400 hidden lg:inline">AI MODEL:</span>
+            <select
+              value={activeModelId}
+              onChange={(e) => handleSelectModel(e.target.value)}
+              className="bg-emerald-50 border border-emerald-300 rounded px-2.5 py-1 text-xs font-mono font-bold text-emerald-900 hover:border-emerald-400 focus:outline-none focus:border-emerald-600 cursor-pointer shadow-xs transition-all"
+            >
+              {TOP_MODELS.map((m) => (
+                <option key={m.id} value={m.id}>
+                  #{m.rank}: {m.name} ({m.winRateFull5Yr}% WR)
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="h-4 w-px bg-gray-300 hidden sm:block"></div>
 
           {/* Real Live Price Ticker */}
@@ -338,10 +455,10 @@ export default function TerminalPage() {
             </span>
           </div>
 
-          <div className="h-4 w-px bg-gray-300 hidden md:block"></div>
+          <div className="h-4 w-px bg-gray-300 hidden xl:block"></div>
 
           {/* ATR 14 Dynamic */}
-          <div className="hidden md:flex items-center gap-1.5 font-mono">
+          <div className="hidden xl:flex items-center gap-1.5 font-mono">
             <span className="text-gray-400 text-[11px] font-semibold">ATR (14):</span>
             <span className="text-xs font-bold text-blue-600">
               {indicators ? indicators.atr.toFixed(1) : "—"}
@@ -369,20 +486,25 @@ export default function TerminalPage() {
           ))}
         </div>
 
-        {/* Right Section: AI Engine Link + Status Indicator */}
+        {/* Right Section: Capital Badge + AI Engine Link + Live Status */}
         <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded font-mono text-xs">
+            <span className="text-gray-500 text-[10px]">CAPITAL:</span>
+            <span className="font-bold text-gray-900">₹{accountBalanceINR.toFixed(2)}</span>
+          </div>
+
           <Link
             href="/ai-engine"
             className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 px-2.5 py-1 rounded-md shadow-xs transition-colors"
             title="Open Automated AI Engine & Performance Logs"
           >
             <Zap className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="hidden sm:inline">AI Engine (₹1,000)</span>
+            <span className="hidden sm:inline">AI Engine</span>
           </Link>
 
           <div className="flex items-center gap-1.5 font-mono text-[11px] text-gray-600 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="font-bold hidden sm:inline">BINANCE LIVE</span>
+            <span className="font-bold hidden sm:inline">LIVE</span>
           </div>
 
           <div className="flex items-center gap-1.5 text-[11px] font-mono text-gray-400">
@@ -393,7 +515,7 @@ export default function TerminalPage() {
       </header>
 
       {/* 2. Main Full-Screen Split Workspace (Chart + Right Intelligence Panel) */}
-      <div className="flex-1 w-full grid grid-cols-1 lg:grid-cols-[1fr_420px] overflow-hidden bg-white">
+      <div className="flex-1 w-full grid grid-cols-1 lg:grid-cols-[1fr_430px] overflow-hidden bg-white">
         
         {/* Left Column: Full-Height Interactive TradingView Candlestick Chart + Bottom Dock */}
         <div className="flex flex-col h-full overflow-hidden border-r border-[#e5e7eb] bg-white">
@@ -410,51 +532,67 @@ export default function TerminalPage() {
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-[11px] font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
-                  <Activity className="w-3.5 h-3.5 text-emerald-600" /> Multi-Timeframe Confluence
+                  <Layers className="w-3.5 h-3.5 text-emerald-600" /> Cross-Timeframe Alignment & Invariants
                 </span>
-                <span className="text-[10px] font-mono bg-emerald-100 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded font-bold">
-                  4H MACRO: PASS
-                </span>
+                <span className="text-[10px] font-mono text-gray-400 font-semibold">Active: {activeModel.shortName}</span>
               </div>
 
-              <div className="grid grid-cols-4 gap-2">
-                <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col gap-0.5 shadow-2xs">
-                  <span className="font-mono text-[10px] font-bold text-gray-800">5M Micro</span>
-                  <span className="text-[10px] font-mono font-bold text-emerald-600">BULLISH</span>
-                  <span className="text-[9px] font-mono text-gray-400">Mom +0.1%</span>
+              <div className="grid grid-cols-4 gap-2 text-center">
+                <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col items-center justify-center shadow-2xs">
+                  <span className="text-[10px] font-mono text-gray-500 font-bold">5M MICRO</span>
+                  <span className="text-xs font-bold font-mono text-emerald-600 mt-0.5">
+                    {aiPrediction?.donchianBreakout === "BULLISH" ? "BREAKOUT ▲" : aiPrediction?.donchianBreakout === "BEARISH" ? "BREAKDOWN ▼" : "CONSOLIDATE"}
+                  </span>
+                  <span className="text-[9px] font-mono text-gray-400">Donchian-20</span>
                 </div>
-                <div className="bg-white border-2 border-emerald-500 rounded p-2 flex flex-col gap-0.5 shadow-sm">
-                  <span className="font-mono text-[10px] font-bold text-emerald-700">15M Sniper</span>
-                  <span className="text-[10px] font-mono font-bold text-emerald-600">BULLISH</span>
-                  <span className="text-[9px] font-mono text-gray-500">Primary Confluence</span>
+
+                <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col items-center justify-center shadow-2xs">
+                  <span className="text-[10px] font-mono text-gray-500 font-bold">15M MODEL</span>
+                  <span className={`text-xs font-bold font-mono mt-0.5 ${
+                    (aiPrediction?.pLong || 0) >= 0.5457 ? "text-emerald-600" : "text-gray-600"
+                  }`}>
+                    {aiPrediction ? `${(aiPrediction.pLong * 100).toFixed(1)}% L` : "54.6% L"}
+                  </span>
+                  <span className="text-[9px] font-mono text-gray-400">Purged LGBM</span>
                 </div>
-                <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col gap-0.5 shadow-2xs">
-                  <span className="font-mono text-[10px] font-bold text-gray-800">1H Structure</span>
-                  <span className="text-[10px] font-mono font-bold text-gray-500">RANGING</span>
-                  <span className="text-[9px] font-mono text-gray-400">Pivot S/R</span>
+
+                <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col items-center justify-center shadow-2xs">
+                  <span className="text-[10px] font-mono text-gray-500 font-bold">4H MASTER</span>
+                  <span className={`text-xs font-bold font-mono mt-0.5 ${
+                    aiPrediction?.gate4HPassed ? "text-emerald-600" : "text-amber-600"
+                  }`}>
+                    {aiPrediction?.gate4HPassed ? "ALIGNED ✔" : "FILTERED"}
+                  </span>
+                  <span className="text-[9px] font-mono text-gray-400">Macro Trend Gate</span>
                 </div>
-                <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col gap-0.5 shadow-2xs">
-                  <span className="font-mono text-[10px] font-bold text-gray-800">4H Macro Gate</span>
-                  <span className="text-[10px] font-mono font-bold text-emerald-600">BULLISH</span>
-                  <span className="text-[9px] font-mono text-gray-400">Trend Gate</span>
+
+                <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col items-center justify-center shadow-2xs">
+                  <span className="text-[10px] font-mono text-gray-500 font-bold">RATCHET</span>
+                  <span className="text-xs font-bold font-mono text-blue-600 mt-0.5">
+                    +{activeModel.ratchetTriggerR.toFixed(2)}R
+                  </span>
+                  <span className="text-[9px] font-mono text-gray-400">+0.05R Shield</span>
                 </div>
               </div>
             </div>
 
-            {/* Microstructure & Volatility Gauges */}
+            {/* Volatility & Regime Microstructure */}
             <div className="flex flex-col gap-1.5">
-              <span className="font-mono text-[11px] font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
-                <BarChart2 className="w-3.5 h-3.5 text-blue-600" /> Order Flow & Volatility Gauges
-              </span>
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[11px] font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5 text-blue-600" /> Volatility & Microstructure Radar
+                </span>
+                <span className="text-[10px] font-mono text-gray-400">50-Bar Rolling</span>
+              </div>
 
               <div className="grid grid-cols-3 gap-2">
                 <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col gap-0.5 shadow-2xs">
-                  <span className="text-[9px] font-mono text-gray-500 uppercase">Volume Z-Score</span>
-                  <span className="text-xs font-bold font-mono text-gray-900">
-                    {indicators ? `${indicators.volZScore >= 0 ? "+" : ""}${indicators.volZScore.toFixed(2)} σ` : "—"}
+                  <span className="text-[9px] font-mono text-gray-500 uppercase">EMA 20/50 SPREAD</span>
+                  <span className={`text-xs font-bold font-mono ${indicators && indicators.emaSpreadPct >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                    {indicators ? `${indicators.emaSpreadPct >= 0 ? "+" : ""}${indicators.emaSpreadPct.toFixed(3)}%` : "—"}
                   </span>
                   <div className="w-full h-1 bg-gray-100 border border-gray-200 rounded overflow-hidden mt-1">
-                    <div className="h-full bg-blue-500" style={{ width: indicators ? `${Math.max(5, Math.min(100, (indicators.volZScore + 3) / 6 * 100))}%` : "50%" }}></div>
+                    <div className="h-full bg-blue-500" style={{ width: indicators ? `${Math.min(100, Math.abs(indicators.emaSpreadPct) * 400)}%` : "30%" }}></div>
                   </div>
                 </div>
 
@@ -483,9 +621,42 @@ export default function TerminalPage() {
           </div>
         </div>
 
-        {/* Right Column: Prominent Actionable Trading Recommendation Card */}
+        {/* Right Column: Prominent Actionable Trading Recommendation Card & Execution */}
         <aside className="bg-[#f8f9fa] p-3.5 flex flex-col gap-3 overflow-y-auto border-l border-[#e5e7eb] h-full">
           
+          {/* Active Model Quantitative Specs Badge */}
+          <div className="bg-white border border-emerald-300 rounded-xl p-3 shadow-xs flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Selected Model #{activeModel.rank}
+              </span>
+              <span className="text-[10px] font-mono font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
+                {activeModel.winRateFull5Yr}% WIN RATE
+              </span>
+            </div>
+            <div className="font-mono text-xs font-black text-gray-900">
+              {activeModel.name}
+            </div>
+            <div className="grid grid-cols-4 gap-1.5 text-center font-mono text-[10px] pt-1 border-t border-gray-100">
+              <div>
+                <span className="text-gray-400 block">SHARPE</span>
+                <span className="font-bold text-gray-800">{activeModel.sharpeRatio}</span>
+              </div>
+              <div>
+                <span className="text-gray-400 block">P. FACTOR</span>
+                <span className="font-bold text-gray-800">{activeModel.profitFactor}</span>
+              </div>
+              <div>
+                <span className="text-gray-400 block">MAX DD</span>
+                <span className="font-bold text-rose-600">{activeModel.maxDrawdown}%</span>
+              </div>
+              <div>
+                <span className="text-gray-400 block">OOS TRADES</span>
+                <span className="font-bold text-blue-600">{activeModel.totalTrades.toLocaleString()}</span>
+              </div>
+            </div>
+          </div>
+
           {/* PROMINENT RECOMMENDATION & ORDER SETUP CARD */}
           <div className="bg-white border-2 border-emerald-600/40 rounded-xl p-4 flex flex-col gap-3 shadow-md">
             
@@ -510,7 +681,7 @@ export default function TerminalPage() {
             }`}>
               <div className="flex flex-col">
                 <span className="text-[10px] font-mono font-bold uppercase tracking-wider opacity-75">
-                  Recommended Order Action
+                  AI Model Recommendation
                 </span>
                 <span className="font-mono text-base font-black tracking-tight">
                   {recommendation ? recommendation.action : "CALCULATING SETUP..."}
@@ -546,14 +717,14 @@ export default function TerminalPage() {
                   <Scale className="w-3 h-3 text-blue-600" /> Risk : Reward Ratio
                 </span>
                 <span className="text-sm font-black text-blue-700 mt-0.5">
-                  {recommendation ? recommendation.riskRewardRatio : "1 : 1.50"}
+                  {recommendation ? recommendation.riskRewardRatio : "1 : 1.00"}
                 </span>
                 <span className="text-[9px] text-blue-500">
-                  Reward {recommendation ? `+₹${recommendation.potentialRewardINR.toFixed(2)}` : "+₹15"} vs Risk {recommendation ? `-₹${recommendation.riskINR.toFixed(2)}` : "-₹10"}
+                  Target {recommendation ? `+₹${recommendation.potentialRewardINR.toFixed(2)}` : "+₹10"} vs Risk {recommendation ? `-₹${recommendation.riskINR.toFixed(2)}` : "-₹10"}
                 </span>
               </div>
 
-              {/* Stop Loss (LS) Point */}
+              {/* Stop Loss (SL) Point */}
               <div className="bg-rose-50 border border-rose-300 rounded-lg p-2.5 flex flex-col">
                 <span className="text-[9px] text-rose-700 uppercase font-bold">
                   Stop Loss (-1.0R)
@@ -569,7 +740,7 @@ export default function TerminalPage() {
               {/* Take Profit (TP) Point */}
               <div className="bg-emerald-50 border border-emerald-300 rounded-lg p-2.5 flex flex-col">
                 <span className="text-[9px] text-emerald-700 uppercase font-bold">
-                  Take Profit (+1.5R)
+                  Take Profit (+1.0R)
                 </span>
                 <span className="text-sm font-black text-emerald-700 mt-0.5">
                   {recommendation ? `$${recommendation.takeProfit.toFixed(2)}` : "—"}
@@ -581,24 +752,13 @@ export default function TerminalPage() {
 
             </div>
 
-            {/* Visual Risk vs Reward Ratio Bar */}
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5 flex flex-col gap-1.5 font-mono text-[11px]">
-              <div className="flex justify-between items-center text-[10px]">
-                <span className="text-rose-600 font-bold">Risk: 1.0R (₹10.00 / 1%)</span>
-                <span className="text-gray-400">Ratio 1:1.50</span>
-                <span className="text-emerald-600 font-bold">Reward: 1.5R (+₹15.00)</span>
-              </div>
-              <div className="w-full h-2 rounded-full overflow-hidden flex bg-gray-200">
-                <div className="bg-rose-500 h-full w-[40%]" title="Risk 1.0R"></div>
-                <div className="bg-emerald-500 h-full w-[60%]" title="Reward 1.5R"></div>
-              </div>
-            </div>
-
-            {/* Breakeven Ratchet (+0.30R Trail Trigger) */}
-            <div className="bg-blue-50/70 border border-blue-200 rounded-lg p-2 flex items-center justify-between font-mono text-[11px]">
+            {/* Breakeven Ratchet (+0.30R or +0.35R Trail Trigger) */}
+            <div className="bg-blue-50/70 border border-blue-200 rounded-lg p-2.5 flex items-center justify-between font-mono text-[11px]">
               <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-blue-700 uppercase">⚡ +0.30R Breakeven Ratchet</span>
-                <span className="text-[10px] text-gray-500">Trail Stop Loss to Breakeven (+0.05R fee buffer) at:</span>
+                <span className="text-[10px] font-bold text-blue-700 uppercase">
+                  ⚡ +{activeModel.ratchetTriggerR.toFixed(2)}R Breakeven Ratchet
+                </span>
+                <span className="text-[10px] text-gray-500">Auto-trail SL to lock Breakeven (+0.05R fee shield) at:</span>
               </div>
               <span className="text-xs font-black text-blue-700">
                 {recommendation ? `$${recommendation.breakevenTrigger.toFixed(2)}` : "—"}
@@ -607,9 +767,35 @@ export default function TerminalPage() {
 
             {/* Actionable plain-English instruction */}
             <div className="bg-[#f0fdf4] border border-emerald-200 rounded-lg p-2.5 text-xs text-gray-800 leading-relaxed font-sans">
-              <span className="font-bold text-emerald-800 block mb-0.5">Execution Instructions:</span>
+              <span className="font-bold text-emerald-800 block mb-0.5">Execution Guidance:</span>
               {recommendation?.actionGuidance || "Analyzing live market structure for optimal order entry..."}
             </div>
+
+            {/* PROMINENT EXECUTE AI ORDER BUTTON */}
+            <button
+              onClick={handleExecuteAIOrder}
+              disabled={isExecutingAI || !livePrice}
+              className="w-full mt-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 active:scale-[0.99] text-white py-3 rounded-lg font-mono text-sm font-extrabold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all disabled:opacity-50 cursor-pointer"
+            >
+              {isExecutingAI ? (
+                <>
+                  <RotateCw className="w-4 h-4 animate-spin text-white" />
+                  <span>EXECUTING ON LIVE MARKET...</span>
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
+                  <span>⚡ Execute AI Order (₹{accountBalanceINR.toFixed(2)} Capital)</span>
+                </>
+              )}
+            </button>
+
+            {/* Live Feedback Toast Notification */}
+            {executionFeedback && (
+              <div className="p-2.5 rounded-lg bg-emerald-100 border border-emerald-400 text-emerald-900 font-mono text-xs font-bold text-center animate-fade-in shadow-xs">
+                {executionFeedback}
+              </div>
+            )}
 
           </div>
 

@@ -172,8 +172,9 @@ export async function GET(req: Request) {
           atr,
           triggerReason: `Autonomous Cloud Scalp: Dynamic Support Rebound ($${pivotLow.toFixed(1)}) + Bullish EMA Momentum`,
           customFeePercent: config.tradingFeePercent,
+          modelId: config.activeModelId,
         });
-        actionsTaken.push(`[NEW LONG EXECUTED] ${newTrade.id} entered at $${currentPrice.toFixed(1)} on ₹1,000 capital`);
+        actionsTaken.push(`[NEW LONG EXECUTED] ${newTrade.id} entered at $${currentPrice.toFixed(1)} on ₹1,000 capital (${newTrade.modelName || "AI Model"})`);
       }
       // Bearish Confluence Setup: Rejection at Dynamic Resistance or Strong Downward Momentum
       else if (distToResistanceATR <= 1.2 && emaSpread < -0.0003) {
@@ -184,8 +185,9 @@ export async function GET(req: Request) {
           atr,
           triggerReason: `Autonomous Cloud Scalp: Dynamic Resistance Rejection ($${pivotHigh.toFixed(1)}) + Bearish EMA Momentum`,
           customFeePercent: config.tradingFeePercent,
+          modelId: config.activeModelId,
         });
-        actionsTaken.push(`[NEW SHORT EXECUTED] ${newTrade.id} entered at $${currentPrice.toFixed(1)} on ₹1,000 capital`);
+        actionsTaken.push(`[NEW SHORT EXECUTED] ${newTrade.id} entered at $${currentPrice.toFixed(1)} on ₹1,000 capital (${newTrade.modelName || "AI Model"})`);
       }
     }
 

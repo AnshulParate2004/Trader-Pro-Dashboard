@@ -29,7 +29,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { autoTradingEnabled, tradingFeePercent, riskPerTradePercent, accountBalanceUSD, ratchetEnabled } = body;
+    const { autoTradingEnabled, tradingFeePercent, riskPerTradePercent, accountBalanceUSD, ratchetEnabled, activeModelId } = body;
 
     const updates: any = {};
     if (typeof autoTradingEnabled === "boolean") updates.autoTradingEnabled = autoTradingEnabled;
@@ -37,6 +37,7 @@ export async function POST(req: Request) {
     if (typeof riskPerTradePercent === "number") updates.riskPerTradePercent = riskPerTradePercent;
     if (typeof accountBalanceUSD === "number") updates.accountBalanceUSD = accountBalanceUSD;
     if (typeof ratchetEnabled === "boolean") updates.ratchetEnabled = ratchetEnabled;
+    if (typeof activeModelId === "string") updates.activeModelId = activeModelId;
 
     const updatedConfig = await updateEngineConfig(updates);
 

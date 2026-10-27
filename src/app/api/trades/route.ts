@@ -6,10 +6,13 @@ import {
 } from "@/lib/tradingEngine";
 import { isMongoConfigured } from "@/lib/mongodb";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const trades = await getTradeLogs(50);
-    const metrics = await computePerformanceMetrics();
+    const { searchParams } = new URL(req.url);
+    const modelId = searchParams.get("modelId") || undefined;
+
+    const trades = await getTradeLogs(50, modelId);
+    const metrics = await computePerformanceMetrics(modelId);
     const mongoStatus = isMongoConfigured();
 
     return NextResponse.json({
@@ -29,7 +32,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { symbol, direction, entryPrice, atr, triggerReason, customFeePercent } = body;
+    const { symbol, direction, entryPrice, atr, triggerReason, customFeePercent, modelId } = body;
 
     if (!symbol || !direction || !entryPrice) {
       return NextResponse.json(
@@ -45,6 +48,7 @@ export async function POST(req: Request) {
       atr: Number(atr || entryPrice * 0.005),
       triggerReason: triggerReason || "AI Quantitative Sniper Trigger",
       customFeePercent: customFeePercent ? Number(customFeePercent) : undefined,
+      modelId,
     });
 
     return NextResponse.json({

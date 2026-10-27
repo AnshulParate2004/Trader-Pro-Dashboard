@@ -1,61 +1,12 @@
 import { getDb, isMongoConfigured } from "./mongodb";
-
-export interface TradeOrder {
-  id: string;
-  symbol: string;
-  direction: "LONG" | "SHORT";
-  orderType: "TAKER" | "MAKER";
-  entryPrice: number;
-  exitPrice?: number;
-  positionSizeINR: number;
-  coins: number;
-  feePercentage: number; // Shark Exchange fee: 0.040% Taker / 0.016% Maker
-  gstPercentage: number; // 18% GST on Indian derivatives exchanges
-  entryFeeINR: number;
-  exitFeeINR?: number;
-  totalFeeINR: number; // Including 18% GST
-  grossPnLINR?: number;
-  netPnLINR?: number;
-  stopLoss: number;
-  breakevenTrigger: number;
-  breakevenLocked: number;
-  breakevenActivated: boolean;
-  takeProfit1: number;
-  takeProfit2: number;
-  status: "ACTIVE" | "BE_ACTIVATED" | "TP1_HIT" | "TP2_HIT" | "SL_HIT" | "CLOSED";
-  exitReason?: string;
-  triggerReason: string;
-  openedAt: number;
-  closedAt?: number;
-}
-
-export interface EngineConfig {
-  autoTradingEnabled: boolean;
-  currency: "INR";
-  accountBalanceINR: number; // Artificial ₹1,000 starting capital
-  tradingFeePercent: number; // Shark Exchange Taker: 0.040%
-  makerFeePercent: number;   // Shark Exchange Maker: 0.016%
-  gstPercent: number;        // 18% GST on trading fees
-  riskPerTradePercent: number; // 1% risk = ₹10 per scalp
-  ratchetEnabled: boolean;
-  maxConcurrentTrades: number;
-}
-
-export interface EnginePerformanceMetrics {
-  totalTrades: number;
-  activeTradesCount: number;
-  closedTradesCount: number;
-  winningTrades: number;
-  losingTrades: number;
-  currentBalanceINR: number;
-  grossProfitINR: number;
-  grossLossINR: number;
-  totalFeesPaidINR: number;
-  netPnLINR: number;
-  profitFactor: number;
-  averageTradeINR: number;
-  feeImpactPercent: number;
-}
+export * from "./engineTypes";
+import {
+  AIStrategyModel,
+  TOP_MODELS,
+  TradeOrder,
+  EngineConfig,
+  EnginePerformanceMetrics,
+} from "./engineTypes";
 
 // Shark Exchange Fee Calculations (0.040% Taker, 0.016% Maker, 18% Indian GST)
 export function calculateSharkExchangeFees(
@@ -103,6 +54,7 @@ let memoryConfig: EngineConfig = {
   riskPerTradePercent: 1.0, // 1% risk = ₹10 on ₹1,000
   ratchetEnabled: true,
   maxConcurrentTrades: 2,
+  activeModelId: "15m-sniper-030", // Default: Rank #1 15M Sniper Scalp (+0.30R Ratchet)
 };
 
 // Empty initial state: strictly no mock/fake trades when data is not available
@@ -125,6 +77,7 @@ export async function getEngineConfig(): Promise<EngineConfig> {
           riskPerTradePercent: Number(config.riskPerTradePercent || 1.0),
           ratchetEnabled: config.ratchetEnabled !== false,
           maxConcurrentTrades: Number(config.maxConcurrentTrades || 2),
+          activeModelId: config.activeModelId || "15m-sniper-030",
         };
       } else {
         // Initialize Shark Exchange default in DB
@@ -161,14 +114,18 @@ export async function updateEngineConfig(updates: Partial<EngineConfig>): Promis
   return memoryConfig;
 }
 
-// Get Trade Logs
-export async function getTradeLogs(limit: number = 50): Promise<TradeOrder[]> {
+// Get Trade Logs (optionally filtered by specific AI model)
+export async function getTradeLogs(limit: number = 50, modelId?: string): Promise<TradeOrder[]> {
   const db = await getDb();
   if (db) {
     try {
+      const query: any = {};
+      if (modelId && modelId !== "all") {
+        query.modelId = modelId;
+      }
       const trades = await db
         .collection("trade_logs")
-        .find({})
+        .find(query)
         .sort({ openedAt: -1 })
         .limit(limit)
         .toArray();
@@ -179,6 +136,8 @@ export async function getTradeLogs(limit: number = 50): Promise<TradeOrder[]> {
           symbol: t.symbol,
           direction: t.direction,
           orderType: t.orderType || "TAKER",
+          modelId: t.modelId || "15m-sniper-030",
+          modelName: t.modelName || "15M Sniper (+0.30R)",
           entryPrice: t.entryPrice,
           exitPrice: t.exitPrice,
           positionSizeINR: t.positionSizeINR,
@@ -208,7 +167,11 @@ export async function getTradeLogs(limit: number = 50): Promise<TradeOrder[]> {
     }
   }
 
-  return [...memoryTrades].sort((a, b) => b.openedAt - a.openedAt);
+  let list = [...memoryTrades];
+  if (modelId && modelId !== "all") {
+    list = list.filter((t) => t.modelId === modelId);
+  }
+  return list.sort((a, b) => b.openedAt - a.openedAt);
 }
 
 // Execute New Automated Trade Order sized on ₹1,000 INR
@@ -220,15 +183,20 @@ export async function executeNewTrade(params: {
   triggerReason: string;
   orderType?: "TAKER" | "MAKER";
   customFeePercent?: number;
+  modelId?: string;
 }): Promise<TradeOrder> {
   const config = await getEngineConfig();
+  const selectedModelId = params.modelId || config.activeModelId || "15m-sniper-030";
+  const model = TOP_MODELS.find((m) => m.id === selectedModelId) || TOP_MODELS[0];
+  const ratchetR = model.ratchetTriggerR; // 0.30 or 0.35
+
   const orderType = params.orderType || "TAKER";
   const feePercent = params.customFeePercent ?? (orderType === "TAKER" ? config.tradingFeePercent : config.makerFeePercent);
 
   // Dynamically size trades based on actual live account balance:
   // If a previous scalp lost ₹10 (e.g. -₹10.94 with fees), your remaining balance is ₹990.
   // The next trade will consider only ₹990 as available capital (true compounding equity).
-  const metrics = await computePerformanceMetrics();
+  const metrics = await computePerformanceMetrics(selectedModelId);
   const currentAvailableBalance = Math.max(50, metrics.currentBalanceINR || config.accountBalanceINR);
   const positionSizeINR = currentAvailableBalance;
   const riskAmountINR = (currentAvailableBalance * config.riskPerTradePercent) / 100;
@@ -236,14 +204,14 @@ export async function executeNewTrade(params: {
   // Calculate fees according to Shark Exchange (0.040% Taker + 18% GST)
   const feeCalc = calculateSharkExchangeFees(positionSizeINR, positionSizeINR, orderType, feePercent);
 
-  // Stop loss and breakeven ratchet
+  // Stop loss and breakeven ratchet according to model parameters
   const sl = params.direction === "LONG"
     ? params.entryPrice - 1.0 * params.atr
     : params.entryPrice + 1.0 * params.atr;
 
   const beTrigger = params.direction === "LONG"
-    ? params.entryPrice + 0.30 * params.atr
-    : params.entryPrice - 0.30 * params.atr;
+    ? params.entryPrice + ratchetR * params.atr
+    : params.entryPrice - ratchetR * params.atr;
 
   const beLocked = params.direction === "LONG"
     ? params.entryPrice + 0.05 * params.atr
@@ -262,6 +230,8 @@ export async function executeNewTrade(params: {
     symbol: params.symbol,
     direction: params.direction,
     orderType,
+    modelId: model.id,
+    modelName: model.shortName,
     entryPrice: params.entryPrice,
     positionSizeINR,
     coins: Number((positionSizeINR / (params.entryPrice * 88.5)).toFixed(6)), // approx BTC/INR coins
@@ -352,9 +322,9 @@ export async function closeTrade(tradeId: string, exitPrice: number, reason: str
   return trade;
 }
 
-// Compute Engine Performance in INR
-export async function computePerformanceMetrics(): Promise<EnginePerformanceMetrics> {
-  const trades = await getTradeLogs(500);
+// Compute Engine Performance in INR (all models or filtered by modelId)
+export async function computePerformanceMetrics(modelId?: string): Promise<EnginePerformanceMetrics> {
+  const trades = await getTradeLogs(500, modelId);
 
   if (!trades || trades.length === 0) {
     return {

@@ -1,0 +1,123 @@
+{
+ "symbol": "BTCUSDT",
+ "tf": "1w",
+ "saved_utc": "20261027_0949",
+ "trained_until": "2026-09-28 00:00:00+00:00",
+ "horizon_bars": 4,
+ "tp_atr": 2.0,
+ "sl_atr": 1.0,
+ "n_features": 25,
+ "features": [
+  "ret_1",
+  "ret_6",
+  "ret_24",
+  "atr_pct",
+  "atr_ratio",
+  "upper_wick",
+  "lower_wick",
+  "rsi14",
+  "macd_hist",
+  "bb_pctb",
+  "ema_dist_50",
+  "ema_20_50",
+  "vol_z",
+  "dsup_atr",
+  "dres_atr",
+  "sup_age",
+  "res_age",
+  "sup_touch",
+  "res_touch",
+  "n_sup",
+  "n_res",
+  "ev_sup",
+  "ev_res",
+  "conf_sup",
+  "conf_res"
+ ],
+ "dropped_features": [
+  "ret_3",
+  "ret_12",
+  "range_pct",
+  "body_pct",
+  "bb_width",
+  "ema_dist_20",
+  "ema20_slope",
+  "taker_ratio",
+  "vol_ratio",
+  "dsup_own",
+  "dres_own"
+ ],
+ "lgb_params": {
+  "n_estimators": 200,
+  "learning_rate": 0.03,
+  "max_depth": 3,
+  "num_leaves": 8,
+  "min_child_samples": 15,
+  "subsample": 0.8,
+  "colsample_bytree": 0.8,
+  "reg_lambda": 5.0
+ },
+ "edge_long": 0.08,
+ "edge_short": 0.08,
+ "thr_long": 0.7042,
+ "thr_short": 0.58318,
+ "mean_auc_long": 0.58924,
+ "mean_auc_short": 0.50242,
+ "verdict": [
+  {
+   "check": "Mean AUC (long & short) > 0.52",
+   "passed": true
+  },
+  {
+   "check": "OOS Sharpe > Buy & Hold Sharpe",
+   "passed": false
+  },
+  {
+   "check": "OOS Sharpe beats 95% of random-entry runs",
+   "passed": false
+  },
+  {
+   "check": "Mean R/trade > 0 (bootstrap p < 0.05)",
+   "passed": false
+  },
+  {
+   "check": "ML beats LogReg baseline (OOS Sharpe)",
+   "passed": false
+  },
+  {
+   "check": "Sealed hold-out Sharpe > 0",
+   "passed": false
+  },
+  {
+   "check": "At least 10 OOS trades",
+   "passed": false
+  }
+ ],
+ "latest_signal": {
+  "signal": "FLAT",
+  "p_long": 0.61606,
+  "p_short": 0.44938,
+  "bar": "2026-10-26 00:00:00+00:00"
+ },
+ "expected_move": {
+  "unit": "ATR",
+  "up": 1.76808,
+  "down": 1.03431,
+  "net": 0.28686,
+  "typical": {
+   "mfe_up": 1.36873,
+   "mfe_dn": 0.98851,
+   "net": 0.39624
+  },
+  "oos_spearman": {
+   "mfe_up": -0.05189,
+   "mfe_dn": 0.21638,
+   "net": -0.08784
+  },
+  "oos_r2_vs_mean": {
+   "mfe_up": -0.67851,
+   "mfe_dn": -0.00196,
+   "net": -0.51363
+  }
+ }
+}
