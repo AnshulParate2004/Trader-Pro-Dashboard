@@ -225,10 +225,13 @@ export async function executeNewTrade(params: {
   const orderType = params.orderType || "TAKER";
   const feePercent = params.customFeePercent ?? (orderType === "TAKER" ? config.tradingFeePercent : config.makerFeePercent);
 
-  // Position sizing on ₹1,000 INR capital:
-  // 1% risk of ₹1,000 = ₹10.00 max risk per scalp
-  const riskAmountINR = (config.accountBalanceINR * config.riskPerTradePercent) / 100; // ₹10.00
-  const positionSizeINR = config.accountBalanceINR; // Scalp position sized to virtual margin ₹1,000
+  // Dynamically size trades based on actual live account balance:
+  // If a previous scalp lost ₹10 (e.g. -₹10.94 with fees), your remaining balance is ₹990.
+  // The next trade will consider only ₹990 as available capital (true compounding equity).
+  const metrics = await computePerformanceMetrics();
+  const currentAvailableBalance = Math.max(50, metrics.currentBalanceINR || config.accountBalanceINR);
+  const positionSizeINR = currentAvailableBalance;
+  const riskAmountINR = (currentAvailableBalance * config.riskPerTradePercent) / 100;
 
   // Calculate fees according to Shark Exchange (0.040% Taker + 18% GST)
   const feeCalc = calculateSharkExchangeFees(positionSizeINR, positionSizeINR, orderType, feePercent);
