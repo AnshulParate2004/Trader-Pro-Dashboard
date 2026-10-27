@@ -198,21 +198,26 @@ export async function executeNewTrade(params: {
   const orderType = params.orderType || "TAKER";
   const feePercent = params.customFeePercent ?? (orderType === "TAKER" ? config.tradingFeePercent : config.makerFeePercent);
 
-  // Dynamically size trades based on actual live account balance:
-  // If a previous scalp lost ₹10 (e.g. -₹10.94 with fees), your remaining balance is ₹990.
-  // The next trade will consider only ₹990 as available capital (true compounding equity).
+  // Dynamically size trades using exact 1R volatility risk parity (spec section 6):
+  // positionSize = equity * min(MAX_LEV, RISK_PCT / (ATR / price))
   const metrics = await computePerformanceMetrics(selectedModelId);
   const currentAvailableBalance = Math.max(50, metrics.currentBalanceINR || config.accountBalanceINR);
-  const positionSizeINR = currentAvailableBalance;
-  const riskAmountINR = (currentAvailableBalance * config.riskPerTradePercent) / 100;
+  const atrPct = params.entryPrice > 0 ? params.atr / params.entryPrice : 0.005;
+  const riskPct = (config.riskPerTradePercent || 1.0) / 100; // 0.01 = 1% risk (1R)
+  const maxLev = 3.0; // 3.0x max notional leverage cap
+  const levScale = atrPct > 0 ? Math.min(maxLev, riskPct / atrPct) : 1.0;
+  const positionSizeINR = Number((currentAvailableBalance * levScale).toFixed(2));
 
   // Calculate fees according to Shark Exchange (0.040% Taker + 18% GST)
   const feeCalc = calculateSharkExchangeFees(positionSizeINR, positionSizeINR, orderType, feePercent);
 
-  // Stop loss and breakeven ratchet according to model parameters
+  // Stop loss with hard cap (5% for 15m, 3% for 5m) guarding against flash wicks
+  const maxSlPct = model.requires5MMicro ? 0.03 : 0.05;
+  const slDist = Math.min(1.0 * params.atr, maxSlPct * params.entryPrice);
+
   const sl = params.direction === "LONG"
-    ? params.entryPrice - 1.0 * params.atr
-    : params.entryPrice + 1.0 * params.atr;
+    ? params.entryPrice - slDist
+    : params.entryPrice + slDist;
 
   const beTrigger = params.direction === "LONG"
     ? params.entryPrice + ratchetR * params.atr
