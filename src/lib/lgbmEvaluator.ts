@@ -142,7 +142,7 @@ export async function getModelPrediction(
   let p4hL = 0.5;
   let p4hS = 0.5;
   const median4hL = 0.5547;
-  const median4hS = 0.5215;
+  const median4hS = 0.5258;
 
   if (candles4h && candles4h.length >= 20) {
     const { features: feat4h } = extractFeaturesFromCandles(candles4h, {

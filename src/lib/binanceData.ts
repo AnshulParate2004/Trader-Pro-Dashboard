@@ -77,8 +77,8 @@ export async function fetchAllTimeframes(require5m: boolean = false): Promise<{
   const [candles15m, candles1h, candles4h, candles1d, candles1w, candles5m] = await Promise.all([
     fetchBinanceKlines("15m", 150, 5000),
     fetchBinanceKlines("1h", 150, 60000),
-    fetchBinanceKlines("4h", 150, 120000),
-    fetchBinanceKlines("1d", 150, 300000),
+    fetchBinanceKlines("4h", 300, 120000),
+    fetchBinanceKlines("1d", 300, 300000),
     fetchBinanceKlines("1w", 150, 600000),
     require5m ? fetchBinanceKlines("5m", 150, 5000) : Promise.resolve(undefined),
   ]);
