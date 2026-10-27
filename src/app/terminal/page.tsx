@@ -477,7 +477,7 @@ export default function TerminalPage() {
             >
               {TOP_MODELS.map((m) => (
                 <option key={m.id} value={m.id}>
-                  #{m.rank}: {m.name} ({m.winRateFull5Yr}% WR)
+                  #{m.rank}: {m.name}
                 </option>
               ))}
             </select>
@@ -805,7 +805,7 @@ export default function TerminalPage() {
                 <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Selected Model #{activeModel.rank}
               </span>
               <span className="text-[10px] font-mono font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
-                {activeModel.winRateFull5Yr}% WIN RATE
+                ACTIVE MODEL
               </span>
             </div>
             <div className="font-mono text-xs font-black text-gray-900">

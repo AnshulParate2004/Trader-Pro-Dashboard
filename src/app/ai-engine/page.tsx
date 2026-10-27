@@ -480,7 +480,7 @@ export default function AiEnginePage() {
                   >
                     {TOP_MODELS.map((m) => (
                       <option key={m.id} value={m.id}>
-                        {m.rank === 1 ? "🥇" : m.rank === 2 ? "🥈" : m.rank === 3 ? "🥉" : "🎯"} #{m.rank}: {m.name} ({m.winRateFull5Yr}% WR)
+                        {m.rank === 1 ? "🥇" : m.rank === 2 ? "🥈" : m.rank === 3 ? "🥉" : "🎯"} #{m.rank}: {m.name}
                       </option>
                     ))}
                     <option value="all">🌐 All Models Combined (Aggregate Portfolio)</option>
