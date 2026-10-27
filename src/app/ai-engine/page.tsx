@@ -105,6 +105,20 @@ export default function AiEnginePage() {
     return () => clearInterval(interval);
   }, [selectedModelId]);
 
+  // Autonomous Background AI Market Evaluation Loop
+  useEffect(() => {
+    if (!config.autoTradingEnabled) return;
+    const aiInterval = setInterval(async () => {
+      try {
+        await fetch("/api/cron/scalp");
+        fetchData(selectedModelId);
+      } catch (err) {
+        // background market tick
+      }
+    }, 15000);
+    return () => clearInterval(aiInterval);
+  }, [config.autoTradingEnabled, selectedModelId]);
+
   // Handle Model Selection Change
   const handleModelChange = async (newModelId: string) => {
     setSelectedModelId(newModelId);
@@ -155,38 +169,47 @@ export default function AiEnginePage() {
     }
   };
 
-  // Trigger Simulated Live Scalp with ₹1,000 INR Artificial Capital & Shark Exchange Fees
-  const handleSimulateTrade = async () => {
+  // Trigger Autonomous AI Evaluation Cycle (Strictly evaluates LightGBM + Donchian-20 from notebooks)
+  const [aiStatusMsg, setAiStatusMsg] = useState<string | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
+
+  const handleRunAICycle = async () => {
     setIsSimulating(true);
+    setAiStatusMsg(null);
     try {
-      const tickerRes = await fetch("https://fapi.binance.com/fapi/v1/ticker/price?symbol=BTCUSDT");
-      const tickerData = await tickerRes.json();
-      const currentPrice = parseFloat(tickerData.price) || 79500;
-
-      const direction = Math.random() > 0.45 ? "LONG" : "SHORT";
-      const atr = currentPrice * 0.0055;
-      const modelToUse = selectedModelId !== "all" ? selectedModelId : "15m-sniper-030";
-      const modelInfo = TOP_MODELS.find((m) => m.id === modelToUse) || TOP_MODELS[0];
-
-      await fetch("/api/trades", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          symbol: "BTCUSDT",
-          direction,
-          entryPrice: currentPrice,
-          atr,
-          modelId: modelInfo.id,
-          customFeePercent: config.tradingFeePercent,
-          triggerReason: `AI Model Scalp [${modelInfo.shortName}]: Dynamic 50-Bar Pivot ${direction === "LONG" ? "Support Bounce" : "Resistance Defense"}`,
-        }),
-      });
-
-      fetchData();
-    } catch (err) {
-      console.error("Simulation error:", err);
+      const res = await fetch("/api/cron/scalp");
+      const data = await res.json();
+      if (data.success) {
+        if (data.actionsTaken && data.actionsTaken.length > 0) {
+          setAiStatusMsg(data.actionsTaken.join(" · "));
+        }
+        fetchData();
+      }
+    } catch (err: any) {
+      console.error("AI Cycle error:", err);
+      setAiStatusMsg(`Error: ${err.message}`);
     } finally {
       setIsSimulating(false);
+      setTimeout(() => setAiStatusMsg(null), 7000);
+    }
+  };
+
+  // Reset Capital to ₹1,000 and clear accidental/test trade logs
+  const handleResetCapital = async () => {
+    if (!confirm("Are you sure you want to reset capital back to ₹1,000 and clear test trade execution logs?")) return;
+    setIsResetting(true);
+    try {
+      const res = await fetch("/api/engine/reset", { method: "POST" });
+      const data = await res.json();
+      if (data.success) {
+        setAiStatusMsg("✔ Capital reset to ₹1,000.00 and trade logs cleared.");
+        fetchData(selectedModelId);
+      }
+    } catch (err) {
+      console.error("Reset error:", err);
+    } finally {
+      setIsResetting(false);
+      setTimeout(() => setAiStatusMsg(null), 5000);
     }
   };
 
@@ -522,27 +545,46 @@ export default function AiEnginePage() {
             {/* Toggle Automation */}
             <button
               onClick={handleToggleAuto}
-              className={`flex items-center gap-1.5 text-xs font-mono font-bold px-4 py-2 rounded-lg border transition-all ${
+              className={`flex items-center gap-1.5 text-xs font-mono font-bold px-4 py-2 rounded-lg border transition-all cursor-pointer ${
                 config.autoTradingEnabled
                   ? "bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700"
                   : "bg-gray-200 text-gray-700 border-gray-300 hover:bg-gray-300"
               }`}
             >
               {config.autoTradingEnabled ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-              <span>{config.autoTradingEnabled ? "AI Execution: Active" : "AI Execution: Paused"}</span>
+              <span>{config.autoTradingEnabled ? "Autonomous AI: Active" : "Autonomous AI: Paused"}</span>
             </button>
 
-            {/* Trigger Simulation */}
+            {/* Run AI Model Evaluation Cycle */}
             <button
-              onClick={handleSimulateTrade}
+              onClick={handleRunAICycle}
               disabled={isSimulating}
-              className="flex items-center gap-1.5 bg-gray-900 text-white text-xs font-mono font-bold px-4 py-2 rounded-lg hover:bg-black transition-all shadow-sm disabled:opacity-50"
+              className="flex items-center gap-1.5 bg-gray-900 text-white text-xs font-mono font-bold px-4 py-2 rounded-lg hover:bg-black transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+              title="Runs the exact LightGBM & Donchian-20 notebook evaluation cycle on live Binance candles"
             >
               <Zap className="w-3.5 h-3.5 text-emerald-400" />
-              <span>{isSimulating ? "Placing Order..." : "Simulate Scalp (₹1,000 Capital)"}</span>
+              <span>{isSimulating ? "AI Evaluating Live Market..." : "⚡ Run AI Model Cycle"}</span>
+            </button>
+
+            {/* Reset Capital to ₹1,000 */}
+            <button
+              onClick={handleResetCapital}
+              disabled={isResetting}
+              className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 text-xs font-mono font-bold px-3 py-2 rounded-lg transition-all cursor-pointer disabled:opacity-50"
+              title="Wipes test orders and resets capital back to clean ₹1,000.00"
+            >
+              <RotateCw className={`w-3.5 h-3.5 ${isResetting ? "animate-spin" : ""}`} />
+              <span>Reset Capital (₹1,000)</span>
             </button>
           </div>
         </section>
+
+        {/* AI Action/Standby Status Toast */}
+        {aiStatusMsg && (
+          <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-950 font-mono text-xs font-bold text-center animate-fade-in shadow-2xs">
+            {aiStatusMsg}
+          </div>
+        )}
 
         {/* Zero Lookahead Bias Proof & Causality Guarantee */}
         <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">

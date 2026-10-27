@@ -60,6 +60,11 @@ let memoryConfig: EngineConfig = {
 // Empty initial state: strictly no mock/fake trades when data is not available
 let memoryTrades: TradeOrder[] = [];
 
+export function resetMemoryState(): void {
+  memoryTrades = [];
+  memoryConfig.accountBalanceINR = INITIAL_BALANCE_INR;
+}
+
 // Get Engine Configuration
 export async function getEngineConfig(): Promise<EngineConfig> {
   const db = await getDb();

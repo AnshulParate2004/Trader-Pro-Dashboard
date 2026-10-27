@@ -7,6 +7,7 @@ import {
   computePerformanceMetrics,
 } from "@/lib/tradingEngine";
 import { getDb, isMongoConfigured } from "@/lib/mongodb";
+import { getModelPrediction, Candle } from "@/lib/lgbmEvaluator";
 
 export const dynamic = "force-dynamic";
 
@@ -34,51 +35,74 @@ export async function GET(req: Request) {
       throw new Error("Insufficient kline bars returned from Binance");
     }
 
-    const candles = rawKlines.map((d: any) => ({
+    const candles: Candle[] = rawKlines.map((d: any) => ({
       openTime: Number(d[0]),
       open: parseFloat(d[1]),
       high: parseFloat(d[2]),
       low: parseFloat(d[3]),
       close: parseFloat(d[4]),
       volume: parseFloat(d[5]),
+      takerBuyBase: parseFloat(d[9] || "0"),
     }));
 
     const lastCandle = candles[candles.length - 1];
     const currentPrice = lastCandle.close;
 
-    // Calculate ATR (14)
-    const trs: number[] = [];
-    for (let i = 1; i < candles.length; i++) {
-      const h = candles[i].high;
-      const l = candles[i].low;
-      const prevC = candles[i - 1].close;
-      trs.push(Math.max(h - l, Math.abs(h - prevC), Math.abs(l - prevC)));
-    }
-    const recentTRs = trs.slice(-14);
-    const atr = recentTRs.reduce((a, b) => a + b, 0) / recentTRs.length || currentPrice * 0.005;
+    // Optional 5m & 4h candles for multi-timeframe confluence models
+    let candles5m: Candle[] | undefined;
+    let candles4h: Candle[] | undefined;
 
-    // Calculate Dynamic 50-bar Swing Pivots
-    const lookback = candles.slice(-50);
-    const pivotHigh = Math.max(...lookback.map((c: any) => c.high));
-    const pivotLow = Math.min(...lookback.map((c: any) => c.low));
-
-    // EMA 20 & EMA 50
-    const closes = candles.map((c: any) => c.close);
-    const calcEMA = (period: number) => {
-      const k = 2 / (period + 1);
-      let ema = closes[0];
-      for (let i = 1; i < closes.length; i++) {
-        ema = closes[i] * k + ema * (1 - k);
+    if (config.activeModelId.includes("5m") || config.activeModelId.includes("master")) {
+      try {
+        const res5m = await fetch(
+          "https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=5m&limit=50",
+          { cache: "no-store" }
+        );
+        if (res5m.ok) {
+          const raw5m = await res5m.json();
+          candles5m = raw5m.map((d: any) => ({
+            openTime: Number(d[0]),
+            open: parseFloat(d[1]),
+            high: parseFloat(d[2]),
+            low: parseFloat(d[3]),
+            close: parseFloat(d[4]),
+            volume: parseFloat(d[5]),
+          }));
+        }
+      } catch (e) {
+        console.warn("Could not fetch 5m candles:", e);
       }
-      return ema;
-    };
-    const ema20 = calcEMA(20);
-    const ema50 = calcEMA(50);
-    const emaSpread = (ema20 - ema50) / ema50;
+    }
+
+    if (config.activeModelId.includes("master") || config.activeModelId.includes("4h")) {
+      try {
+        const res4h = await fetch(
+          "https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=4h&limit=50",
+          { cache: "no-store" }
+        );
+        if (res4h.ok) {
+          const raw4h = await res4h.json();
+          candles4h = raw4h.map((d: any) => ({
+            openTime: Number(d[0]),
+            open: parseFloat(d[1]),
+            high: parseFloat(d[2]),
+            low: parseFloat(d[3]),
+            close: parseFloat(d[4]),
+            volume: parseFloat(d[5]),
+          }));
+        }
+      } catch (e) {
+        console.warn("Could not fetch 4h candles:", e);
+      }
+    }
+
+    // 2. Evaluate Exact Machine Learning Model Prediction (from 01, 06, 07 notebooks)
+    const prediction = await getModelPrediction(config.activeModelId, candles, candles5m, candles4h);
+    const atr = prediction.atr || currentPrice * 0.0055;
 
     const actionsTaken: string[] = [];
 
-    // 2. Inspect Active Trades & Manage Exits / Breakeven Ratchets
+    // 3. Inspect Active Trades & Manage Exits / Breakeven Ratchets
     const allTrades = await getTradeLogs(50);
     const activeTrades = allTrades.filter(
       (t) => t.status === "ACTIVE" || t.status === "BE_ACTIVATED"
@@ -92,22 +116,16 @@ export async function GET(req: Request) {
           actionsTaken.push(`[LONG CLOSED] ${trade.id} hit Stop Loss at $${currentPrice.toFixed(1)}`);
           continue;
         }
-        // Take Profit 2 Check (+1.5R)
-        if (currentPrice >= trade.takeProfit2) {
-          await closeTrade(trade.id, currentPrice, "Take Profit 2 Hit (+1.50R)");
-          actionsTaken.push(`[LONG CLOSED] ${trade.id} hit Target TP2 (+1.5R) at $${currentPrice.toFixed(1)}`);
-          continue;
-        }
-        // Take Profit 1 Check (+1.0R)
-        if (currentPrice >= trade.takeProfit1 && !trade.breakevenActivated) {
+        // Take Profit Check (+1.0R)
+        if (currentPrice >= trade.takeProfit1) {
           await closeTrade(trade.id, currentPrice, "Take Profit 1 Hit (+1.00R)");
-          actionsTaken.push(`[LONG CLOSED] ${trade.id} hit TP1 (+1.0R) at $${currentPrice.toFixed(1)}`);
+          actionsTaken.push(`[LONG CLOSED] ${trade.id} hit Target TP (+1.0R) at $${currentPrice.toFixed(1)}`);
           continue;
         }
-        // Breakeven Ratchet Check (+0.30R)
+        // Breakeven Ratchet Check (+0.30R or +0.35R)
         if (config.ratchetEnabled && !trade.breakevenActivated && currentPrice >= trade.breakevenTrigger) {
           trade.breakevenActivated = true;
-          trade.stopLoss = trade.breakevenLocked; // Move SL to lock in profit covering fees
+          trade.stopLoss = trade.breakevenLocked; // Move SL to lock in profit covering round-trip exchange fees
           trade.status = "BE_ACTIVATED";
           const db = await getDb();
           if (db) {
@@ -116,7 +134,7 @@ export async function GET(req: Request) {
               { $set: { breakevenActivated: true, stopLoss: trade.stopLoss, status: "BE_ACTIVATED" } }
             );
           }
-          actionsTaken.push(`[LONG RATCHET] ${trade.id} moved SL to Breakeven (+0.05R lock)`);
+          actionsTaken.push(`[LONG RATCHET] ${trade.id} moved SL to Breakeven (+0.05R fee shield) at $${currentPrice.toFixed(1)}`);
         }
       } else if (trade.direction === "SHORT") {
         // Stop Loss Check
@@ -125,19 +143,13 @@ export async function GET(req: Request) {
           actionsTaken.push(`[SHORT CLOSED] ${trade.id} hit Stop Loss at $${currentPrice.toFixed(1)}`);
           continue;
         }
-        // Take Profit 2 Check (+1.5R)
-        if (currentPrice <= trade.takeProfit2) {
-          await closeTrade(trade.id, currentPrice, "Take Profit 2 Hit (+1.50R)");
-          actionsTaken.push(`[SHORT CLOSED] ${trade.id} hit Target TP2 (+1.5R) at $${currentPrice.toFixed(1)}`);
-          continue;
-        }
-        // Take Profit 1 Check (+1.0R)
-        if (currentPrice <= trade.takeProfit1 && !trade.breakevenActivated) {
+        // Take Profit Check (+1.0R)
+        if (currentPrice <= trade.takeProfit1) {
           await closeTrade(trade.id, currentPrice, "Take Profit 1 Hit (+1.00R)");
-          actionsTaken.push(`[SHORT CLOSED] ${trade.id} hit TP1 (+1.0R) at $${currentPrice.toFixed(1)}`);
+          actionsTaken.push(`[SHORT CLOSED] ${trade.id} hit Target TP (+1.0R) at $${currentPrice.toFixed(1)}`);
           continue;
         }
-        // Breakeven Ratchet Check (+0.30R)
+        // Breakeven Ratchet Check (+0.30R or +0.35R)
         if (config.ratchetEnabled && !trade.breakevenActivated && currentPrice <= trade.breakevenTrigger) {
           trade.breakevenActivated = true;
           trade.stopLoss = trade.breakevenLocked;
@@ -149,45 +161,41 @@ export async function GET(req: Request) {
               { $set: { breakevenActivated: true, stopLoss: trade.stopLoss, status: "BE_ACTIVATED" } }
             );
           }
-          actionsTaken.push(`[SHORT RATCHET] ${trade.id} moved SL to Breakeven (+0.05R lock)`);
+          actionsTaken.push(`[SHORT RATCHET] ${trade.id} moved SL to Breakeven (+0.05R fee shield) at $${currentPrice.toFixed(1)}`);
         }
       }
     }
 
-    // 3. Check If New Scalp Order Should Be Placed
+    // 4. Check If Autonomous AI Trade Should Be Executed (strictly on Model Signal)
     const remainingActive = allTrades.filter(
       (t) => t.status === "ACTIVE" || t.status === "BE_ACTIVATED"
     ).length;
 
     if (remainingActive < config.maxConcurrentTrades) {
-      const distToSupportATR = Math.abs(currentPrice - pivotLow) / atr;
-      const distToResistanceATR = Math.abs(pivotHigh - currentPrice) / atr;
-
-      // Bullish Confluence Setup: Bounce off Dynamic Support or Strong Upward Momentum
-      if (distToSupportATR <= 1.2 && emaSpread > 0.0003) {
+      if (prediction.signal === "BUY") {
         const newTrade = await executeNewTrade({
           symbol: "BTCUSDT",
           direction: "LONG",
           entryPrice: currentPrice,
           atr,
-          triggerReason: `Autonomous Cloud Scalp: Dynamic Support Rebound ($${pivotLow.toFixed(1)}) + Bullish EMA Momentum`,
+          triggerReason: `AI Model Instinct [${prediction.modelName}]: Donchian Breakout + LightGBM P_Long ${(prediction.pLong * 100).toFixed(1)}% (Conviction ${prediction.confidence}%)`,
           customFeePercent: config.tradingFeePercent,
           modelId: config.activeModelId,
         });
-        actionsTaken.push(`[NEW LONG EXECUTED] ${newTrade.id} entered at $${currentPrice.toFixed(1)} on ₹1,000 capital (${newTrade.modelName || "AI Model"})`);
-      }
-      // Bearish Confluence Setup: Rejection at Dynamic Resistance or Strong Downward Momentum
-      else if (distToResistanceATR <= 1.2 && emaSpread < -0.0003) {
+        actionsTaken.push(`[AI AUTONOMOUS LONG EXECUTED] ${newTrade.id} opened at $${currentPrice.toFixed(1)} on ₹${newTrade.positionSizeINR.toFixed(2)} capital (${newTrade.modelName})`);
+      } else if (prediction.signal === "SELL") {
         const newTrade = await executeNewTrade({
           symbol: "BTCUSDT",
           direction: "SHORT",
           entryPrice: currentPrice,
           atr,
-          triggerReason: `Autonomous Cloud Scalp: Dynamic Resistance Rejection ($${pivotHigh.toFixed(1)}) + Bearish EMA Momentum`,
+          triggerReason: `AI Model Instinct [${prediction.modelName}]: Donchian Breakdown + LightGBM P_Short ${(prediction.pShort * 100).toFixed(1)}% (Conviction ${prediction.confidence}%)`,
           customFeePercent: config.tradingFeePercent,
           modelId: config.activeModelId,
         });
-        actionsTaken.push(`[NEW SHORT EXECUTED] ${newTrade.id} entered at $${currentPrice.toFixed(1)} on ₹1,000 capital (${newTrade.modelName || "AI Model"})`);
+        actionsTaken.push(`[AI AUTONOMOUS SHORT EXECUTED] ${newTrade.id} opened at $${currentPrice.toFixed(1)} on ₹${newTrade.positionSizeINR.toFixed(2)} capital (${newTrade.modelName})`);
+      } else {
+        actionsTaken.push(`AI Standby: Waiting for Model Signal (P_Long: ${(prediction.pLong * 100).toFixed(1)}%, P_Short: ${(prediction.pShort * 100).toFixed(1)}%, Donchian: ${prediction.donchianBreakout})`);
       }
     }
 
@@ -197,9 +205,11 @@ export async function GET(req: Request) {
       success: true,
       timestamp: new Date().toISOString(),
       currentBTCPrice: currentPrice,
-      mongoConfigured: isMongoConfigured(),
+      activeModel: config.activeModelId,
+      predictionSignal: prediction.signal,
+      predictionConfidence: prediction.confidence,
       activeTradesCount: remainingActive,
-      actionsTaken: actionsTaken.length > 0 ? actionsTaken : ["Monitoring live ticks - No trigger threshold crossed"],
+      actionsTaken,
       metrics: updatedMetrics,
     });
   } catch (error: any) {
