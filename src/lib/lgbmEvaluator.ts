@@ -291,7 +291,7 @@ export async function getModelPrediction(
   }
 
   // Calculate strict stop loss and target levels
-  const is5MModel = modelId.includes("5m") || modelId.includes("master");
+  const is5MModel = (modelId.startsWith("5m") || modelId.includes("master")) && !modelId.startsWith("15m");
   const maxSlPct = is5MModel ? 0.03 : 0.05;
   const slDist = Math.min(1.0 * atr15, maxSlPct * currentPrice);
 

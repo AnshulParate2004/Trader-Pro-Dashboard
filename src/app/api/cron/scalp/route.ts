@@ -24,7 +24,7 @@ export async function GET(req: Request) {
       });
     }
 
-    const is5MActive = config.activeModelId.includes("5m") || config.activeModelId.includes("master");
+    const is5MActive = (config.activeModelId.startsWith("5m") || config.activeModelId.includes("master")) && !config.activeModelId.startsWith("15m");
 
     // 1. Fetch live multi-timeframe candles (15m, 1h, 4h, 1d, 1w, and optional 5m)
     const {

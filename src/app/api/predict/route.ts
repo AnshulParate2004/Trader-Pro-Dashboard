@@ -11,7 +11,7 @@ export async function GET(req: Request) {
     const config = await getEngineConfig();
     const modelId = searchParams.get("modelId") || config.activeModelId || "15m-sniper-030";
 
-    const is5MModel = modelId.includes("5m") || modelId.includes("master");
+    const is5MModel = (modelId.startsWith("5m") || modelId.includes("master")) && !modelId.startsWith("15m");
 
     // Fetch multi-timeframe candle data
     const {
