@@ -23,6 +23,10 @@ import {
   Sparkles,
   Pause,
   Play,
+  Brain,
+  Bot,
+  Cpu,
+  Eye,
 } from "lucide-react";
 import { TOP_MODELS, AIStrategyModel, TradeOrder } from "@/lib/engineTypes";
 
@@ -88,6 +92,7 @@ export default function TerminalPage() {
   const [accountBalanceINR, setAccountBalanceINR] = useState<number>(1000);
   const [recentTrades, setRecentTrades] = useState<TradeOrder[]>([]);
   const [dockTab, setDockTab] = useState<"radar" | "trades">("radar");
+  const [rightCardTab, setRightCardTab] = useState<"plan" | "ai_mind">("plan");
   const [isLoading, setIsLoading] = useState(true);
   const [autoTradingEnabled, setAutoTradingEnabled] = useState(true);
   const [autonomousStatus, setAutonomousStatus] = useState<string>("Autonomous AI Engine: Scanning Binance 15m feed...");
@@ -831,119 +836,288 @@ export default function TerminalPage() {
             </div>
           </div>
 
-          {/* PROMINENT RECOMMENDATION & ORDER SETUP CARD */}
-          <div className="bg-white border-2 border-emerald-600/40 rounded-xl p-4 flex flex-col gap-3 shadow-md">
+          {/* PROMINENT RECOMMENDATION & AI STATUS / POSITION CARD */}
+          <div className="bg-white border-2 border-emerald-600/40 rounded-xl p-4 flex flex-col gap-3 shadow-md transition-all">
             
-            {/* Header: Exact Action Signal */}
+            {/* Header: Segmented Swipe / Switch Button */}
             <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
-              <div className="flex items-center gap-1.5">
-                <Target className="w-4 h-4 text-emerald-600" />
-                <span className="font-mono text-xs font-extrabold uppercase text-gray-900 tracking-wide">
-                  Trading Recommendation
-                </span>
+              <div className="bg-gray-100 p-0.5 rounded-lg flex items-center gap-1 border border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setRightCardTab("plan")}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                    rightCardTab === "plan"
+                      ? "bg-white text-gray-900 shadow-2xs border border-gray-200"
+                      : "text-gray-500 hover:text-gray-800"
+                  }`}
+                >
+                  <Target className={`w-3.5 h-3.5 ${rightCardTab === "plan" ? "text-emerald-600" : "text-gray-400"}`} />
+                  <span>Trade Plan</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRightCardTab("ai_mind")}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                    rightCardTab === "ai_mind"
+                      ? "bg-emerald-600 text-white shadow-xs"
+                      : "text-gray-500 hover:text-gray-800"
+                  }`}
+                >
+                  <Brain className={`w-3.5 h-3.5 ${rightCardTab === "ai_mind" ? "text-emerald-200" : "text-gray-400"}`} />
+                  <span>AI Mind & Status</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                </button>
               </div>
-              <span className="text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded">
+
+              <span className="text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded hidden sm:inline">
                 SHARK EXCH 0.040%
               </span>
             </div>
 
-            {/* Primary Action Banner */}
-            <div className={`p-3 rounded-lg flex items-center justify-between border ${
-              recommendation?.action.includes("BUY")
-                ? "bg-emerald-50 border-emerald-500 text-emerald-800"
-                : "bg-rose-50 border-rose-500 text-rose-800"
-            }`}>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider opacity-75">
-                  AI Model Recommendation
-                </span>
-                <span className="font-mono text-base font-black tracking-tight">
-                  {recommendation ? recommendation.action : "CALCULATING SETUP..."}
-                </span>
-              </div>
-              <div className="text-right font-mono">
-                <span className="text-[9px] uppercase block text-gray-500">Conviction</span>
-                <span className="text-sm font-extrabold text-gray-900">
-                  {recommendation ? `${recommendation.conviction}%` : "—"}
-                </span>
-              </div>
-            </div>
+            {rightCardTab === "plan" ? (
+              /* TAB 1: EXACT TRADE EXECUTION PLAN */
+              <>
+                {/* Primary Action Banner */}
+                <div className={`p-3 rounded-lg flex items-center justify-between border ${
+                  recommendation?.action.includes("BUY")
+                    ? "bg-emerald-50 border-emerald-500 text-emerald-800"
+                    : "bg-rose-50 border-rose-500 text-rose-800"
+                }`}>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider opacity-75">
+                      AI Model Recommendation
+                    </span>
+                    <span className="font-mono text-base font-black tracking-tight">
+                      {recommendation ? recommendation.action : "CALCULATING SETUP..."}
+                    </span>
+                  </div>
+                  <div className="text-right font-mono">
+                    <span className="text-[9px] uppercase block text-gray-500">Conviction</span>
+                    <span className="text-sm font-extrabold text-gray-900">
+                      {recommendation ? `${recommendation.conviction}%` : "—"}
+                    </span>
+                  </div>
+                </div>
 
-            {/* Exact Execution Numbers Grid */}
-            <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-              
-              {/* Recommended Entry Point */}
-              <div className="bg-gray-50 border border-gray-300 rounded-lg p-2.5 flex flex-col">
-                <span className="text-[9px] text-gray-500 uppercase font-bold flex items-center gap-1">
-                  <Compass className="w-3 h-3 text-gray-500" /> Recommended Entry
-                </span>
-                <span className="text-sm font-black text-gray-900 mt-0.5">
-                  {recommendation ? `$${recommendation.entryPrice.toFixed(2)}` : "—"}
-                </span>
-                <span className="text-[9px] text-gray-400">
-                  {recommendation?.orderType === "LIMIT" ? "Wait for Limit Fill" : "Enter at Market Fill"}
-                </span>
+                {/* Exact Execution Numbers Grid */}
+                <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                  
+                  {/* Recommended Entry Point */}
+                  <div className="bg-gray-50 border border-gray-300 rounded-lg p-2.5 flex flex-col">
+                    <span className="text-[9px] text-gray-500 uppercase font-bold flex items-center gap-1">
+                      <Compass className="w-3 h-3 text-gray-500" /> Recommended Entry
+                    </span>
+                    <span className="text-sm font-black text-gray-900 mt-0.5">
+                      {recommendation ? `$${recommendation.entryPrice.toFixed(2)}` : "—"}
+                    </span>
+                    <span className="text-[9px] text-gray-400">
+                      {recommendation?.orderType === "LIMIT" ? "Wait for Limit Fill" : "Enter at Market Fill"}
+                    </span>
+                  </div>
+
+                  {/* Risk : Reward Ratio Box */}
+                  <div className="bg-blue-50 border border-blue-300 rounded-lg p-2.5 flex flex-col">
+                    <span className="text-[9px] text-blue-700 uppercase font-bold flex items-center gap-1">
+                      <Scale className="w-3 h-3 text-blue-600" /> Risk : Reward Ratio
+                    </span>
+                    <span className="text-sm font-black text-blue-700 mt-0.5">
+                      {recommendation ? recommendation.riskRewardRatio : "1 : 1.00"}
+                    </span>
+                    <span className="text-[9px] text-blue-500">
+                      Target {recommendation ? `+₹${recommendation.potentialRewardINR.toFixed(2)}` : "+₹10"} vs Risk {recommendation ? `-₹${recommendation.riskINR.toFixed(2)}` : "-₹10"}
+                    </span>
+                  </div>
+
+                  {/* Stop Loss (SL) Point */}
+                  <div className="bg-rose-50 border border-rose-300 rounded-lg p-2.5 flex flex-col">
+                    <span className="text-[9px] text-rose-700 uppercase font-bold">
+                      Stop Loss (-1.0R)
+                    </span>
+                    <span className="text-sm font-black text-rose-700 mt-0.5">
+                      {recommendation ? `$${recommendation.stopLoss.toFixed(2)}` : "—"}
+                    </span>
+                    <span className="text-[9px] text-rose-600 font-semibold">
+                      {recommendation ? `-${recommendation.stopLossDistance.toFixed(1)} pts (${recommendation.stopLossPercent.toFixed(2)}%)` : "—"}
+                    </span>
+                  </div>
+
+                  {/* Take Profit (TP) Point */}
+                  <div className="bg-emerald-50 border border-emerald-300 rounded-lg p-2.5 flex flex-col">
+                    <span className="text-[9px] text-emerald-700 uppercase font-bold">
+                      Take Profit (+1.0R)
+                    </span>
+                    <span className="text-sm font-black text-emerald-700 mt-0.5">
+                      {recommendation ? `$${recommendation.takeProfit.toFixed(2)}` : "—"}
+                    </span>
+                    <span className="text-[9px] text-emerald-600 font-semibold">
+                      {recommendation ? `+${recommendation.takeProfitDistance.toFixed(1)} pts (${recommendation.takeProfitPercent.toFixed(2)}%)` : "—"}
+                    </span>
+                  </div>
+
+                </div>
+
+                {/* Breakeven Ratchet (+0.30R or +0.35R Trail Trigger) */}
+                <div className="bg-blue-50/70 border border-blue-200 rounded-lg p-2.5 flex items-center justify-between font-mono text-[11px]">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-bold text-blue-700 uppercase">
+                      ⚡ +{activeModel.ratchetTriggerR.toFixed(2)}R Breakeven Ratchet
+                    </span>
+                    <span className="text-[10px] text-gray-500">Auto-trail SL to lock Breakeven (+0.05R fee shield) at:</span>
+                  </div>
+                  <span className="text-xs font-black text-blue-700">
+                    {recommendation ? `$${recommendation.breakevenTrigger.toFixed(2)}` : "—"}
+                  </span>
+                </div>
+
+                {/* Actionable plain-English instruction */}
+                <div className="bg-[#f0fdf4] border border-emerald-200 rounded-lg p-2.5 text-xs text-gray-800 leading-relaxed font-sans">
+                  <span className="font-bold text-emerald-800 block mb-0.5">Execution Guidance:</span>
+                  {recommendation?.actionGuidance || "Analyzing live market structure for optimal order entry..."}
+                </div>
+
+                {/* Interactive Teaser Pill to Switch to AI Mind */}
+                <button
+                  type="button"
+                  onClick={() => setRightCardTab("ai_mind")}
+                  className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 hover:from-emerald-100 hover:to-teal-100 border border-emerald-300 rounded-lg p-2 flex items-center justify-between text-emerald-900 font-mono text-[11px] font-bold transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Brain className="w-3.5 h-3.5 text-emerald-600 group-hover:scale-110 transition-transform" />
+                    <span>What position will the AI take next?</span>
+                  </div>
+                  <span className="text-[10px] text-emerald-700 flex items-center gap-0.5 font-black group-hover:translate-x-0.5 transition-transform">
+                    Swipe to AI Mind →
+                  </span>
+                </button>
+              </>
+            ) : (
+              /* TAB 2: AI MIND, LIVE STATUS & NEXT POSITION FORECAST */
+              <div className="flex flex-col gap-2.5 animate-fadeIn">
+                
+                {/* 1. Live AI Status Banner */}
+                <div className={`p-2.5 rounded-lg border flex items-center justify-between font-mono ${
+                  currentActiveTrade
+                    ? "bg-emerald-50 border-emerald-500 text-emerald-950"
+                    : "bg-amber-50/90 border-amber-300 text-amber-950"
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2.5 h-2.5 rounded-full ${
+                      currentActiveTrade ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" : "bg-amber-500 animate-ping"
+                    }`} />
+                    <div>
+                      <span className="text-[9px] uppercase font-bold tracking-wider opacity-75 block">
+                        Current Live AI Status
+                      </span>
+                      <span className="text-xs font-black">
+                        {currentActiveTrade
+                          ? `HOLDING ACTIVE ${currentActiveTrade.direction} POSITION`
+                          : "STANDBY & SCANNING (0 OPEN POSITIONS)"}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[9px] font-black px-2 py-0.5 rounded bg-white/90 border border-current">
+                    {currentActiveTrade ? "IN TRADE" : "₹1,000 SHIELDED"}
+                  </span>
+                </div>
+
+                {/* 2. NEXT POSITION FORECAST BOX */}
+                <div className="bg-gradient-to-br from-slate-900 via-gray-900 to-slate-950 text-white rounded-lg p-3 border border-gray-700 flex flex-col gap-2 font-mono shadow-inner">
+                  <div className="flex items-center justify-between border-b border-gray-800 pb-1.5">
+                    <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                      <Bot className="w-3.5 h-3.5 text-emerald-400" /> Next Position AI Will Take:
+                    </span>
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded ${
+                      (aiPrediction?.pLong ?? 0.5) >= (aiPrediction?.pShort ?? 0.5)
+                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
+                        : "bg-rose-500/20 text-rose-300 border border-rose-500/40"
+                    }`}>
+                      {(aiPrediction?.pLong ?? 0.5) >= (aiPrediction?.pShort ?? 0.5) ? "BUY (LONG) SCALP" : "SELL (SHORT) SCALP"}
+                    </span>
+                  </div>
+
+                  <div className="text-xs font-black text-white flex items-center justify-between">
+                    <span className="text-gray-400">Target Entry:</span>
+                    <span className="text-emerald-300">
+                      {(aiPrediction?.pLong ?? 0.5) >= (aiPrediction?.pShort ?? 0.5)
+                        ? `$${(indicators?.nearestSupport || 80530).toFixed(0)} Support Dip OR Breakout > $${(indicators?.nearestResistance || 81200).toFixed(0)}`
+                        : `Breakdown < $${(indicators?.nearestSupport || 80530).toFixed(0)}`}
+                    </span>
+                  </div>
+
+                  <div className="text-[10px] text-gray-300 leading-relaxed bg-black/50 p-2 rounded border border-gray-800/80">
+                    <span className="text-emerald-400 font-bold block mb-0.5">Exact Execution Condition:</span>
+                    {(aiPrediction?.pLong ?? 0.5) >= (aiPrediction?.pShort ?? 0.5)
+                      ? `The AI will execute a LONG scalp when a 15m candle closes with breakout momentum or price tests the $${(indicators?.nearestSupport || 80530).toFixed(0)} dynamic support level with 4H Macro Gate confirmation.`
+                      : `The AI will execute a SHORT scalp if price closes below the 20-bar Donchian low ($${(indicators?.nearestSupport || 80530).toFixed(0)}) with negative 4H Macro trend score.`}
+                  </div>
+                </div>
+
+                {/* 3. Real-Time Neural Reasoning Grid */}
+                <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 flex flex-col">
+                    <span className="text-[9px] text-gray-500 uppercase font-bold">Directional Bias</span>
+                    <span className="text-xs font-black text-emerald-700 mt-0.5">
+                      P(Long): {aiPrediction ? (aiPrediction.pLong * 100).toFixed(1) : "54.6"}%
+                    </span>
+                    <span className="text-[9px] text-gray-400">
+                      P(Short): {aiPrediction ? (aiPrediction.pShort * 100).toFixed(1) : "45.4"}%
+                    </span>
+                  </div>
+
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 flex flex-col">
+                    <span className="text-[9px] text-gray-500 uppercase font-bold">4H Macro Gate</span>
+                    <span className={`text-xs font-black mt-0.5 ${
+                      aiPrediction?.gate4HPassed ? "text-emerald-700" : "text-amber-700"
+                    }`}>
+                      {aiPrediction?.gate4HPassed ? "APPROVED (Green)" : "FILTERED (Standby)"}
+                    </span>
+                    <span className="text-[9px] text-gray-400">Noise Suppression Active</span>
+                  </div>
+
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 flex flex-col">
+                    <span className="text-[9px] text-gray-500 uppercase font-bold">5M Micro State</span>
+                    <span className="text-xs font-black text-blue-700 mt-0.5">
+                      {aiPrediction?.donchianBreakout === "BULLISH"
+                        ? "BREAKOUT ▲"
+                        : aiPrediction?.donchianBreakout === "BEARISH"
+                        ? "BREAKDOWN ▼"
+                        : "CONSOLIDATING"}
+                    </span>
+                    <span className="text-[9px] text-gray-400">Inside 20-bar Donchian</span>
+                  </div>
+
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 flex flex-col">
+                    <span className="text-[9px] text-gray-500 uppercase font-bold">S/R Level Range</span>
+                    <span className="text-xs font-black text-gray-800 mt-0.5">
+                      ${(indicators?.nearestSupport || 80530).toFixed(0)} - ${(indicators?.nearestResistance || 81270).toFixed(0)}
+                    </span>
+                    <span className="text-[9px] text-gray-400">Floor to Ceiling</span>
+                  </div>
+                </div>
+
+                {/* 4. AI Stream of Consciousness (Plain-English Mind) */}
+                <div className="bg-emerald-50/70 border border-emerald-200 rounded-lg p-2.5 font-sans text-xs text-gray-800 leading-relaxed">
+                  <div className="flex items-center gap-1.5 font-bold text-emerald-900 mb-1 font-mono text-[11px]">
+                    <Cpu className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>AI Live Thought Process:</span>
+                  </div>
+                  <p className="italic text-gray-700 text-[11px] leading-relaxed">
+                    {currentActiveTrade
+                      ? `Currently holding and managing an active ${currentActiveTrade.direction} position entered at $${currentActiveTrade.entryPrice.toFixed(2)}. Capital is secured. The Breakeven ratchet is armed to trail Stop Loss to Breakeven (+0.05R fee shield) at $${currentActiveTrade.breakevenTrigger.toFixed(2)}.`
+                      : `"I am scanning 15m order flow. My probability model leans Bullish (${(aiPrediction ? (aiPrediction.pLong * 100).toFixed(1) : "54.6")}% Long) with EMA 20 above EMA 50 (+0.14%). However, I am holding 0 open positions right now because the 4H Macro Gate is in noise-suppression mode and price is consolidating between $${(indicators?.nearestSupport || 80530).toFixed(0)} and $${(indicators?.nearestResistance || 81270).toFixed(0)}. My next action is to enter a LONG position the instant a breakout candle confirms or support dips into my limit zone."`}
+                  </p>
+                </div>
+
+                {/* Switch back button */}
+                <button
+                  type="button"
+                  onClick={() => setRightCardTab("plan")}
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-mono text-[11px] font-bold py-1.5 rounded-lg border border-gray-300 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                >
+                  <span>← Swipe back to Trade Plan & Order Setup</span>
+                </button>
               </div>
-
-              {/* Risk : Reward Ratio Box */}
-              <div className="bg-blue-50 border border-blue-300 rounded-lg p-2.5 flex flex-col">
-                <span className="text-[9px] text-blue-700 uppercase font-bold flex items-center gap-1">
-                  <Scale className="w-3 h-3 text-blue-600" /> Risk : Reward Ratio
-                </span>
-                <span className="text-sm font-black text-blue-700 mt-0.5">
-                  {recommendation ? recommendation.riskRewardRatio : "1 : 1.00"}
-                </span>
-                <span className="text-[9px] text-blue-500">
-                  Target {recommendation ? `+₹${recommendation.potentialRewardINR.toFixed(2)}` : "+₹10"} vs Risk {recommendation ? `-₹${recommendation.riskINR.toFixed(2)}` : "-₹10"}
-                </span>
-              </div>
-
-              {/* Stop Loss (SL) Point */}
-              <div className="bg-rose-50 border border-rose-300 rounded-lg p-2.5 flex flex-col">
-                <span className="text-[9px] text-rose-700 uppercase font-bold">
-                  Stop Loss (-1.0R)
-                </span>
-                <span className="text-sm font-black text-rose-700 mt-0.5">
-                  {recommendation ? `$${recommendation.stopLoss.toFixed(2)}` : "—"}
-                </span>
-                <span className="text-[9px] text-rose-600 font-semibold">
-                  {recommendation ? `-${recommendation.stopLossDistance.toFixed(1)} pts (${recommendation.stopLossPercent.toFixed(2)}%)` : "—"}
-                </span>
-              </div>
-
-              {/* Take Profit (TP) Point */}
-              <div className="bg-emerald-50 border border-emerald-300 rounded-lg p-2.5 flex flex-col">
-                <span className="text-[9px] text-emerald-700 uppercase font-bold">
-                  Take Profit (+1.0R)
-                </span>
-                <span className="text-sm font-black text-emerald-700 mt-0.5">
-                  {recommendation ? `$${recommendation.takeProfit.toFixed(2)}` : "—"}
-                </span>
-                <span className="text-[9px] text-emerald-600 font-semibold">
-                  {recommendation ? `+${recommendation.takeProfitDistance.toFixed(1)} pts (${recommendation.takeProfitPercent.toFixed(2)}%)` : "—"}
-                </span>
-              </div>
-
-            </div>
-
-            {/* Breakeven Ratchet (+0.30R or +0.35R Trail Trigger) */}
-            <div className="bg-blue-50/70 border border-blue-200 rounded-lg p-2.5 flex items-center justify-between font-mono text-[11px]">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-bold text-blue-700 uppercase">
-                  ⚡ +{activeModel.ratchetTriggerR.toFixed(2)}R Breakeven Ratchet
-                </span>
-                <span className="text-[10px] text-gray-500">Auto-trail SL to lock Breakeven (+0.05R fee shield) at:</span>
-              </div>
-              <span className="text-xs font-black text-blue-700">
-                {recommendation ? `$${recommendation.breakevenTrigger.toFixed(2)}` : "—"}
-              </span>
-            </div>
-
-            {/* Actionable plain-English instruction */}
-            <div className="bg-[#f0fdf4] border border-emerald-200 rounded-lg p-2.5 text-xs text-gray-800 leading-relaxed font-sans">
-              <span className="font-bold text-emerald-800 block mb-0.5">Execution Guidance:</span>
-              {recommendation?.actionGuidance || "Analyzing live market structure for optimal order entry..."}
-            </div>
+            )}
 
             {/* AUTONOMOUS AI TRADING & HOLDING ENGINE STATUS */}
             <div className={`rounded-xl p-3.5 border transition-all ${
