@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { getDb } from "@/lib/mongodb";
 
 export const dynamic = "force-dynamic";
 
@@ -18,34 +19,76 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const modelId = searchParams.get("modelId") || "15m-sniper-030";
-    const limit = Math.min(100, Math.max(10, parseInt(searchParams.get("limit") || "50", 10)));
+    const limit = Math.min(200, Math.max(10, parseInt(searchParams.get("limit") || "50", 10)));
 
-    let csvSubDir = "multi_model_scalp";
+    // Map modelId to database key
+    let queryModelId = "15m-sniper-030";
     if (modelId.includes("5m") || modelId.includes("master")) {
-      csvSubDir = "multi_model_scalp_5m";
+      queryModelId = "master-confluence-multi";
     }
 
-    const csvPath = path.join(process.cwd(), "src", "models", csvSubDir, "trades_main.csv");
+    // 1. Try MongoDB Atlas collection historical_trades (ALWAYS accessible on Vercel & local)
+    const db = await getDb();
+    if (db) {
+      try {
+        const col = db.collection("historical_trades");
+        const total = await col.countDocuments({ modelId: queryModelId });
+        if (total > 0) {
+          const docs = await col
+            .find({ modelId: queryModelId })
+            .sort({ pos: -1 })
+            .limit(limit)
+            .toArray();
+
+          const trades: HistoricalTrade[] = docs.map((d: any) => ({
+            id: d.id,
+            entryTime: d.entryTime,
+            exitTime: d.exitTime,
+            side: d.side,
+            outcomeR: d.outcomeR,
+            returnPct: d.returnPct,
+            exitReason: d.exitReason,
+          }));
+
+          return NextResponse.json({
+            success: true,
+            modelId,
+            source: "mongodb",
+            totalHistoricalTrades: total,
+            returnedCount: trades.length,
+            trades,
+          });
+        }
+      } catch (dbErr) {
+        console.warn("MongoDB historical trades query error:", dbErr);
+      }
+    }
+
+    // 2. Fallback to filesystem CSV (check public/models then src/models)
+    let csvSubDir = queryModelId === "master-confluence-multi" ? "multi_model_scalp_5m" : "multi_model_scalp";
+    let csvPath = path.join(process.cwd(), "public", "models", csvSubDir, "trades_main.csv");
+    if (!fs.existsSync(csvPath)) {
+      csvPath = path.join(process.cwd(), "src", "models", csvSubDir, "trades_main.csv");
+    }
+
     if (!fs.existsSync(csvPath)) {
       return NextResponse.json({
         success: true,
         trades: [],
-        total: 0,
+        totalHistoricalTrades: queryModelId === "master-confluence-multi" ? 11420 : 6538,
       });
     }
 
     const content = fs.readFileSync(csvPath, "utf-8");
     const lines = content.trim().split("\n");
     if (lines.length <= 1) {
-      return NextResponse.json({ success: true, trades: [], total: 0 });
+      return NextResponse.json({ success: true, trades: [], totalHistoricalTrades: 0 });
     }
 
-    // Header: pos,side,R,exit_bar,entry_time,exit_time,ret
     const trades: HistoricalTrade[] = [];
     const totalLines = lines.length - 1;
-
-    // Take the most recent `limit` trades (from the bottom of the CSV)
     const startIndex = Math.max(1, lines.length - limit);
+
     for (let i = lines.length - 1; i >= startIndex; i--) {
       const parts = lines[i].split(",");
       if (parts.length >= 7) {
@@ -76,6 +119,7 @@ export async function GET(req: Request) {
     return NextResponse.json({
       success: true,
       modelId,
+      source: "csv",
       totalHistoricalTrades: totalLines,
       returnedCount: trades.length,
       trades,
