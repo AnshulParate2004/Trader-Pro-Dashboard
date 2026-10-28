@@ -188,8 +188,9 @@ export async function getModelPrediction(
       modelName = "15M Sniper Scalp (+0.30R Ratchet)";
       ratchetR = 0.30;
       {
-        const condL = donLong15 && p15L >= median15L && htfScore >= 0;
-        const condS = donShort15 && p15S >= median15S && htfScore <= 0;
+        // Pure 77.7% Sniper Scalp: 15m Donchian Breakout + LightGBM OOS Median Probability
+        const condL = donLong15 && p15L >= median15L;
+        const condS = donShort15 && p15S >= median15S;
         if (condL && condS) {
           // Relative margin arbitration
           if (p15L - median15L >= p15S - median15S) {
@@ -213,8 +214,8 @@ export async function getModelPrediction(
       modelName = "15M Precision Scalp (+0.35R Ratchet)";
       ratchetR = 0.35;
       {
-        const condL = donLong15 && p15L >= median15L && htfScore >= 0;
-        const condS = donShort15 && p15S >= median15S && htfScore <= 0;
+        const condL = donLong15 && p15L >= median15L;
+        const condS = donShort15 && p15S >= median15S;
         if (condL && condS) {
           if (p15L - median15L >= p15S - median15S) {
             signal = "BUY";

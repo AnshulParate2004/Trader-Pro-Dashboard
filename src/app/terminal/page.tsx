@@ -349,12 +349,13 @@ export default function TerminalPage() {
         let conviction = 85;
         let actionGuidance = "";
 
-        const gate4HApproved = aiPrediction?.gate4HPassed ?? false;
-        const rsiOverbought = realRsi >= 70;
-        const rsiOversold = realRsi <= 30;
+        const requires4H = activeModel.requires4HMacro;
+        const gate4HApproved = !requires4H || (aiPrediction?.gate4HPassed ?? false);
+        const rsiOverbought = realRsi >= 75;
+        const rsiOversold = realRsi <= 25;
 
         if (isBreakoutLong) {
-          if (!gate4HApproved || rsiOverbought) {
+          if (!gate4HApproved) {
             action = "STANDBY (BREAKOUT BLOCKED BY 4H GATE)";
             orderType = "STANDBY";
             entryPrice = realResistance;
@@ -363,7 +364,7 @@ export default function TerminalPage() {
             beTrigger = currentClose + ratchetTriggerR * realAtr;
             beLocked = currentClose + 0.05 * realAtr;
             conviction = 94;
-            actionGuidance = `[4H Safety Filter] Breakout above $${realResistance.toFixed(1)} reached $${currentClose.toFixed(1)}. However, the AI strictly BLOCKED long execution because 4H Macro Gate is FILTERED and RSI is ${realRsi.toFixed(1)} (Overbought). Entering here carries high risk of a bull-trap dump. AI is shielding 100% of ₹1,000 capital in cash.`;
+            actionGuidance = `[4H Safety Filter] Breakout above $${realResistance.toFixed(1)} reached $${currentClose.toFixed(1)}. However, the AI strictly BLOCKED long execution because this model requires 4H Macro Gate approval and 4H is FILTERED.`;
           } else {
             action = "BUY (LONG) BREAKOUT";
             orderType = "MARKET";
@@ -373,10 +374,10 @@ export default function TerminalPage() {
             beTrigger = currentClose + ratchetTriggerR * realAtr;
             beLocked = currentClose + 0.05 * realAtr;
             conviction = 92;
-            actionGuidance = `[${activeModel.shortName}] Confirmed 15m breakout above $${realResistance.toFixed(1)} with 4H Macro Gate green. Enter Market Long at $${entryPrice.toFixed(2)}. Target TP (+1.0R) at $${takeProfit.toFixed(2)}.`;
+            actionGuidance = `[${activeModel.shortName}] Confirmed 15m breakout above $${realResistance.toFixed(1)}. Enter Market Long at $${entryPrice.toFixed(2)}. Target TP (+1.0R) at $${takeProfit.toFixed(2)} with +${ratchetTriggerR}R Breakeven Ratchet.`;
           }
         } else if (isBreakdownShort) {
-          if (!gate4HApproved || rsiOversold) {
+          if (!gate4HApproved) {
             action = "STANDBY (BREAKDOWN BLOCKED BY 4H GATE)";
             orderType = "STANDBY";
             entryPrice = realSupport;
@@ -385,7 +386,7 @@ export default function TerminalPage() {
             beTrigger = currentClose - ratchetTriggerR * realAtr;
             beLocked = currentClose - 0.05 * realAtr;
             conviction = 94;
-            actionGuidance = `[4H Safety Filter] Breakdown below $${realSupport.toFixed(1)} detected, but 4H Macro Gate is FILTERED. Short execution blocked to prevent selling the bottom.`;
+            actionGuidance = `[4H Safety Filter] Breakdown below $${realSupport.toFixed(1)} detected, but 4H Macro Gate is FILTERED.`;
           } else {
             action = "SELL (SHORT) BREAKDOWN";
             orderType = "MARKET";
@@ -395,7 +396,7 @@ export default function TerminalPage() {
             beTrigger = currentClose - ratchetTriggerR * realAtr;
             beLocked = currentClose - 0.05 * realAtr;
             conviction = 92;
-            actionGuidance = `[${activeModel.shortName}] Confirmed 15m breakdown below $${realSupport.toFixed(1)} with 4H Macro Gate red. Enter Market Short at $${entryPrice.toFixed(2)}. Target TP (+1.0R) at $${takeProfit.toFixed(2)}.`;
+            actionGuidance = `[${activeModel.shortName}] Confirmed 15m breakdown below $${realSupport.toFixed(1)}. Enter Market Short at $${entryPrice.toFixed(2)}. Target TP (+1.0R) at $${takeProfit.toFixed(2)} with +${ratchetTriggerR}R Breakeven Ratchet.`;
           }
         } else if (atResistance) {
           action = "LIMIT SELL AT RESISTANCE";
