@@ -80,6 +80,7 @@ interface AIPredictionState {
   donchianBreakout: "BULLISH" | "BEARISH" | "NONE";
   gate4HPassed?: boolean;
   gate15MPassed?: boolean;
+  htfScore?: number;
   ratchetR: number;
   recommendation: string;
 }
