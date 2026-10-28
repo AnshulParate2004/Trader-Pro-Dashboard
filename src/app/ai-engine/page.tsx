@@ -23,6 +23,11 @@ import {
   ShieldCheck,
   History,
   Coins,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Filter,
 } from "lucide-react";
 import {
   TradeOrder,
@@ -53,22 +58,44 @@ export default function AiEnginePage() {
   const [isSimulating, setIsSimulating] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string>("Connecting...");
 
-  // Table View Tabs: Live Session Trades (MongoDB) vs Historical Backtest Trades (trades_main.csv)
+  // Table View Tabs & Interactive Filtering / Pagination
   const [tableTab, setTableTab] = useState<"live" | "historical">("live");
+  const [liveSideFilter, setLiveSideFilter] = useState<"ALL" | "LONG" | "SHORT">("ALL");
+
   const [historicalTrades, setHistoricalTrades] = useState<any[]>([]);
   const [totalHistoricalCount, setTotalHistoricalCount] = useState<number>(0);
   const [isLoadingHistorical, setIsLoadingHistorical] = useState(false);
+  const [histPage, setHistPage] = useState<number>(1);
+  const [histLimit, setHistLimit] = useState<number>(50);
+  const [histSideFilter, setHistSideFilter] = useState<"ALL" | "LONG" | "SHORT">("ALL");
+  const [histOutcomeFilter, setHistOutcomeFilter] = useState<string>("ALL");
+  const [histTotalPages, setHistTotalPages] = useState<number>(1);
 
-  const fetchHistoricalTrades = async (modelIdToFetch?: string) => {
+  const fetchHistoricalTrades = async (
+    modelIdToFetch?: string,
+    page: number = histPage,
+    limit: number = histLimit,
+    side: "ALL" | "LONG" | "SHORT" = histSideFilter,
+    outcome: string = histOutcomeFilter
+  ) => {
     setIsLoadingHistorical(true);
     try {
       const activeM = modelIdToFetch || selectedModelId;
-      const res = await fetch(`/api/history?modelId=${activeM}&limit=50`);
+      const params = new URLSearchParams({
+        modelId: activeM,
+        page: page.toString(),
+        limit: limit.toString(),
+        side: side,
+        outcome: outcome,
+      });
+      const res = await fetch(`/api/history?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         if (data.success) {
           setHistoricalTrades(data.trades || []);
           setTotalHistoricalCount(data.totalHistoricalTrades || 0);
+          setHistTotalPages(data.totalPages || 1);
+          setHistPage(data.page || page);
         }
       }
     } catch (err) {
@@ -77,6 +104,35 @@ export default function AiEnginePage() {
       setIsLoadingHistorical(false);
     }
   };
+
+  const handleHistPageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > histTotalPages) return;
+    setHistPage(newPage);
+    fetchHistoricalTrades(selectedModelId, newPage, histLimit, histSideFilter, histOutcomeFilter);
+  };
+
+  const handleHistLimitChange = (newLimit: number) => {
+    setHistLimit(newLimit);
+    setHistPage(1);
+    fetchHistoricalTrades(selectedModelId, 1, newLimit, histSideFilter, histOutcomeFilter);
+  };
+
+  const handleHistSideChange = (newSide: "ALL" | "LONG" | "SHORT") => {
+    setHistSideFilter(newSide);
+    setHistPage(1);
+    fetchHistoricalTrades(selectedModelId, 1, histLimit, newSide, histOutcomeFilter);
+  };
+
+  const handleHistOutcomeChange = (newOutcome: string) => {
+    setHistOutcomeFilter(newOutcome);
+    setHistPage(1);
+    fetchHistoricalTrades(selectedModelId, 1, histLimit, histSideFilter, newOutcome);
+  };
+
+  const filteredLiveTrades = trades.filter((t) => {
+    if (liveSideFilter === "ALL") return true;
+    return t.direction === liveSideFilter;
+  });
 
   // Fetch engine data and trade logs for selected model
   const fetchData = async (modelIdToFetch?: string) => {
@@ -133,8 +189,9 @@ export default function AiEnginePage() {
         console.error("Error switching active model in engine:", err);
       }
     }
+    setHistPage(1);
     fetchData(newModelId);
-    fetchHistoricalTrades(newModelId);
+    fetchHistoricalTrades(newModelId, 1, histLimit, histSideFilter, histOutcomeFilter);
   };
 
   // Update Fee Percentage (Shark Exchange presets)
@@ -626,7 +683,7 @@ export default function AiEnginePage() {
                 <button
                   onClick={() => {
                     setTableTab("historical");
-                    fetchHistoricalTrades(selectedModelId);
+                    fetchHistoricalTrades(selectedModelId, histPage, histLimit, histSideFilter, histOutcomeFilter);
                   }}
                   className={`px-3 py-1.5 rounded-md font-bold transition-all cursor-pointer ${
                     tableTab === "historical"
@@ -644,6 +701,141 @@ export default function AiEnginePage() {
                 ? "Live Shark Exchange trades (0.040% Taker + 18% GST)"
                 : "Verified out-of-sample backtest logs (Point-in-Time execution)"}
             </div>
+          </div>
+
+          {/* Controls, Filters & Pagination Toolbar */}
+          <div className="px-4 py-3 bg-[#ffffff] border-b border-gray-200 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+            {tableTab === "historical" ? (
+              <>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <span className="text-gray-500 font-bold flex items-center gap-1">
+                    <Filter className="w-3.5 h-3.5 text-gray-500" /> Filters:
+                  </span>
+
+                  {/* Direction Filter Dropdown */}
+                  <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-300 rounded-lg px-2.5 py-1">
+                    <span className="text-[11px] text-gray-500 font-medium">Direction:</span>
+                    <select
+                      value={histSideFilter}
+                      onChange={(e) => handleHistSideChange(e.target.value as any)}
+                      aria-label="Filter historical trades by direction"
+                      className="bg-transparent font-bold text-gray-900 outline-none cursor-pointer text-xs"
+                    >
+                      <option value="ALL">All Directions</option>
+                      <option value="LONG">🟢 LONG Only</option>
+                      <option value="SHORT">🔴 SHORT Only</option>
+                    </select>
+                  </div>
+
+                  {/* Outcome Trigger Filter Dropdown */}
+                  <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-300 rounded-lg px-2.5 py-1">
+                    <span className="text-[11px] text-gray-500 font-medium">Outcome:</span>
+                    <select
+                      value={histOutcomeFilter}
+                      onChange={(e) => handleHistOutcomeChange(e.target.value)}
+                      aria-label="Filter historical trades by outcome"
+                      className="bg-transparent font-bold text-gray-900 outline-none cursor-pointer text-xs"
+                    >
+                      <option value="ALL">All Outcomes</option>
+                      <option value="TAKE_PROFIT">🎯 Take Profit (+1.0R)</option>
+                      <option value="BREAKEVEN_RATCHET">⚡ Breakeven Ratchet (+0.05R Lock)</option>
+                      <option value="STOP_LOSS">🛑 Stop Loss (-1.0R)</option>
+                    </select>
+                  </div>
+
+                  {/* Rows Per Page Dropdown */}
+                  <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-300 rounded-lg px-2.5 py-1">
+                    <span className="text-[11px] text-gray-500 font-medium">Rows:</span>
+                    <select
+                      value={histLimit}
+                      onChange={(e) => handleHistLimitChange(parseInt(e.target.value, 10))}
+                      aria-label="Select rows per page for historical trades"
+                      className="bg-transparent font-bold text-gray-900 outline-none cursor-pointer text-xs"
+                    >
+                      <option value={25}>25 per page</option>
+                      <option value={50}>50 per page</option>
+                      <option value={100}>100 per page</option>
+                      <option value={250}>250 per page</option>
+                      <option value={500}>500 per page</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Top Pagination Controls */}
+                <div className="flex items-center gap-2 ml-auto">
+                  <span className="text-[11px] text-gray-500 whitespace-nowrap">
+                    Page <strong className="text-gray-900">{histPage}</strong> of{" "}
+                    <strong className="text-gray-900">{histTotalPages}</strong> ({totalHistoricalCount.toLocaleString()} total)
+                  </span>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleHistPageChange(1)}
+                      disabled={histPage <= 1 || isLoadingHistorical}
+                      aria-label="Jump to first page"
+                      className="p-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs"
+                      title="First Page"
+                    >
+                      <ChevronsLeft className="w-3.5 h-3.5 text-gray-700" />
+                    </button>
+                    <button
+                      onClick={() => handleHistPageChange(histPage - 1)}
+                      disabled={histPage <= 1 || isLoadingHistorical}
+                      aria-label="Previous page"
+                      className="p-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs"
+                      title="Previous Page"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5 text-gray-700" />
+                    </button>
+                    <span className="px-2.5 py-1 text-[11px] font-bold text-gray-800 bg-gray-100 rounded border border-gray-200">
+                      {histPage}
+                    </span>
+                    <button
+                      onClick={() => handleHistPageChange(histPage + 1)}
+                      disabled={histPage >= histTotalPages || isLoadingHistorical}
+                      aria-label="Next page"
+                      className="p-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs"
+                      title="Next Page"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5 text-gray-700" />
+                    </button>
+                    <button
+                      onClick={() => handleHistPageChange(histTotalPages)}
+                      disabled={histPage >= histTotalPages || isLoadingHistorical}
+                      aria-label="Jump to last page"
+                      className="p-1.5 rounded-md border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs"
+                      title="Last Page"
+                    >
+                      <ChevronsRight className="w-3.5 h-3.5 text-gray-700" />
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500 font-bold flex items-center gap-1">
+                    <Filter className="w-3.5 h-3.5 text-gray-500" /> Filter:
+                  </span>
+                  <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-300 rounded-lg px-2.5 py-1">
+                    <span className="text-[11px] text-gray-500 font-medium">Direction:</span>
+                    <select
+                      value={liveSideFilter}
+                      onChange={(e) => setLiveSideFilter(e.target.value as any)}
+                      aria-label="Filter live session trades by direction"
+                      className="bg-transparent font-bold text-gray-900 outline-none cursor-pointer text-xs"
+                    >
+                      <option value="ALL">All Live Trades ({trades.length})</option>
+                      <option value="LONG">🟢 LONG ({trades.filter((t) => t.direction === "LONG").length})</option>
+                      <option value="SHORT">🔴 SHORT ({trades.filter((t) => t.direction === "SHORT").length})</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="text-[11px] text-gray-500">
+                  Showing <strong>{filteredLiveTrades.length}</strong> of <strong>{trades.length}</strong> live executions today
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="overflow-x-auto">
@@ -666,8 +858,8 @@ export default function AiEnginePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {trades.length > 0 ? (
-                    trades.map((trade) => {
+                  {filteredLiveTrades.length > 0 ? (
+                    filteredLiveTrades.map((trade) => {
                       const isClosed = trade.status === "CLOSED";
                       const isPositive = (trade.netPnLINR || 0) >= 0;
 
@@ -867,6 +1059,51 @@ export default function AiEnginePage() {
               </table>
             )}
           </div>
+
+          {/* Bottom Pagination Toolbar for Historical Trades */}
+          {tableTab === "historical" && totalHistoricalCount > 0 && (
+            <div className="p-3 border-t border-gray-200 bg-[#f8f9fa] flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono">
+              <span className="text-gray-600 text-[11px]">
+                Showing <strong className="text-gray-900">{Math.min(totalHistoricalCount, (histPage - 1) * histLimit + 1)}</strong> to{" "}
+                <strong className="text-gray-900">{Math.min(totalHistoricalCount, histPage * histLimit)}</strong> of{" "}
+                <strong className="text-gray-900">{totalHistoricalCount.toLocaleString()}</strong> verified historical trades
+              </span>
+
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => handleHistPageChange(1)}
+                  disabled={histPage <= 1 || isLoadingHistorical}
+                  className="px-2.5 py-1 rounded-md border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors font-bold text-[11px] shadow-2xs"
+                >
+                  ⏮ First
+                </button>
+                <button
+                  onClick={() => handleHistPageChange(histPage - 1)}
+                  disabled={histPage <= 1 || isLoadingHistorical}
+                  className="px-2.5 py-1 rounded-md border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors font-bold text-[11px] shadow-2xs"
+                >
+                  ◀ Prev
+                </button>
+                <span className="px-3 py-1 font-bold text-gray-800 bg-gray-100 rounded-md border border-gray-200 text-[11px]">
+                  Page {histPage} of {histTotalPages}
+                </span>
+                <button
+                  onClick={() => handleHistPageChange(histPage + 1)}
+                  disabled={histPage >= histTotalPages || isLoadingHistorical}
+                  className="px-2.5 py-1 rounded-md border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors font-bold text-[11px] shadow-2xs"
+                >
+                  Next ▶
+                </button>
+                <button
+                  onClick={() => handleHistPageChange(histTotalPages)}
+                  disabled={histPage >= histTotalPages || isLoadingHistorical}
+                  className="px-2.5 py-1 rounded-md border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors font-bold text-[11px] shadow-2xs"
+                >
+                  Last ⏭
+                </button>
+              </div>
+            </div>
+          )}
         </section>
 
       </main>
