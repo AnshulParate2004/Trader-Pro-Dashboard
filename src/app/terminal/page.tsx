@@ -93,6 +93,7 @@ export default function TerminalPage() {
   const [recentTrades, setRecentTrades] = useState<TradeOrder[]>([]);
   const [dockTab, setDockTab] = useState<"radar" | "trades">("radar");
   const [rightCardTab, setRightCardTab] = useState<"plan" | "ai_mind">("plan");
+  const [scenarioLevelTab, setScenarioLevelTab] = useState<"both" | "resistance" | "support">("both");
   const [isLoading, setIsLoading] = useState(true);
   const [autoTradingEnabled, setAutoTradingEnabled] = useState(true);
   const [autonomousStatus, setAutonomousStatus] = useState<string>("Autonomous AI Engine: Scanning Binance 15m feed...");
@@ -432,6 +433,22 @@ export default function TerminalPage() {
       clearInterval(intervalId);
     };
   }, [symbol, timeframe, activeModelId, accountBalanceINR]);
+
+  // Dynamic Level Decision Calculations (Resistance vs Support vs Mid-Zone)
+  const resPrice = indicators?.nearestResistance || 81270;
+  const supPrice = indicators?.nearestSupport || 80577;
+  const currentAtr = indicators?.atr || 350;
+  const ratchetR = activeModel.ratchetTriggerR || 0.30;
+
+  const resShortTp = Number((resPrice - 1.0 * currentAtr).toFixed(1));
+  const resShortSl = Number((resPrice + 1.0 * currentAtr).toFixed(1));
+  const resLongTp = Number((resPrice + 1.0 * currentAtr).toFixed(1));
+  const resLongSl = Number((resPrice - 0.7 * currentAtr).toFixed(1));
+
+  const supLongTp = Number((supPrice + 1.0 * currentAtr).toFixed(1));
+  const supLongSl = Number((supPrice - 1.0 * currentAtr).toFixed(1));
+  const supShortTp = Number((supPrice - 1.0 * currentAtr).toFixed(1));
+  const supShortSl = Number((supPrice + 0.7 * currentAtr).toFixed(1));
 
   return (
     <div className="h-screen w-screen flex flex-col bg-[#fafafc] overflow-hidden font-sans text-gray-900 select-none">
@@ -988,11 +1005,11 @@ export default function TerminalPage() {
                   className="clay-white-btn p-2.5 flex items-center justify-between text-emerald-950 font-mono text-[11px] font-bold cursor-pointer group"
                 >
                   <div className="flex items-center gap-1.5">
-                    <Brain className="w-3.5 h-3.5 text-emerald-600 group-hover:scale-110 transition-transform" />
-                    <span>What position will the AI take next?</span>
+                    <Compass className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
+                    <span>What will AI do at $81,270 vs $80,500?</span>
                   </div>
-                  <span className="text-[10px] text-emerald-700 flex items-center gap-0.5 font-black group-hover:translate-x-0.5 transition-transform">
-                    View AI Thoughts →
+                  <span className="text-[10px] text-blue-700 flex items-center gap-0.5 font-black group-hover:translate-x-0.5 transition-transform">
+                    View Level Matrix →
                   </span>
                 </button>
               </>
@@ -1026,36 +1043,178 @@ export default function TerminalPage() {
                   </span>
                 </div>
 
-                {/* 2. NEXT POSITION FORECAST BOX (Pure White Tactile Style) */}
-                <div className="clay-white-card p-3 border border-emerald-300/80 bg-gradient-to-br from-white via-white to-emerald-50/40 flex flex-col gap-2 font-mono shadow-xs">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                    <span className="text-[10px] text-emerald-900 font-black uppercase tracking-wider flex items-center gap-1.5">
-                      <Bot className="w-3.5 h-3.5 text-emerald-600" /> Next Position AI Will Take:
+                {/* 2. DYNAMIC LEVEL-BY-LEVEL DECISION MATRIX: WHAT WILL AI DO AT $81,270 & $80,577? */}
+                <div className="clay-white-card p-3 border border-slate-200/90 flex flex-col gap-2.5 font-mono shadow-xs bg-white">
+                  
+                  {/* Header & Interactive Level Selector */}
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <span className="text-[10px] text-gray-950 font-black uppercase tracking-wider flex items-center gap-1.5">
+                      <Compass className="w-3.5 h-3.5 text-blue-600" /> If Price Goes To Level...
                     </span>
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border shadow-2xs ${
-                      (aiPrediction?.pLong ?? 0.5) >= (aiPrediction?.pShort ?? 0.5)
-                        ? "bg-emerald-100 text-emerald-900 border-emerald-300"
-                        : "bg-rose-100 text-rose-900 border-rose-300"
-                    }`}>
-                      {(aiPrediction?.pLong ?? 0.5) >= (aiPrediction?.pShort ?? 0.5) ? "BUY (LONG) SCALP" : "SELL (SHORT) SCALP"}
+                    <div className="clay-white-inset p-0.5 flex items-center gap-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setScenarioLevelTab("both")}
+                        className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold transition-all cursor-pointer ${
+                          scenarioLevelTab === "both"
+                            ? "bg-white text-gray-950 shadow-2xs border border-slate-200 font-black"
+                            : "text-slate-400 hover:text-slate-700"
+                        }`}
+                      >
+                        Both
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setScenarioLevelTab("resistance")}
+                        className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold transition-all cursor-pointer ${
+                          scenarioLevelTab === "resistance"
+                            ? "bg-rose-50 text-rose-800 border border-rose-200 font-black"
+                            : "text-slate-400 hover:text-slate-700"
+                        }`}
+                      >
+                        ${resPrice.toFixed(0)}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setScenarioLevelTab("support")}
+                        className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold transition-all cursor-pointer ${
+                          scenarioLevelTab === "support"
+                            ? "bg-emerald-50 text-emerald-800 border border-emerald-200 font-black"
+                            : "text-slate-400 hover:text-slate-700"
+                        }`}
+                      >
+                        ${supPrice.toFixed(0)}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Spot Current Price Mid-Zone Note */}
+                  <div className="clay-white-inset p-2 flex items-center justify-between text-[10px] bg-slate-50/70">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                      <span className="text-slate-500">LIVE SPOT: <strong className="text-gray-950 font-black tabular-nums">${livePrice ? livePrice.toFixed(1) : "—"}</strong></span>
+                    </div>
+                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200">
+                      CHOP MID-ZONE (STANDBY)
                     </span>
                   </div>
 
-                  <div className="text-xs font-black text-gray-900 flex items-center justify-between pt-0.5">
-                    <span className="text-slate-500">Target Entry:</span>
-                    <span className="text-emerald-700 tabular-nums">
-                      {(aiPrediction?.pLong ?? 0.5) >= (aiPrediction?.pShort ?? 0.5)
-                        ? `$${(indicators?.nearestSupport || 80530).toFixed(0)} Support Dip OR Breakout > $${(indicators?.nearestResistance || 81200).toFixed(0)}`
-                        : `Breakdown < $${(indicators?.nearestSupport || 80530).toFixed(0)}`}
-                    </span>
-                  </div>
+                  {/* SCENARIO 1: AT RESISTANCE ($81,270) */}
+                  {(scenarioLevelTab === "both" || scenarioLevelTab === "resistance") && (
+                    <div className="clay-white-inset p-2.5 flex flex-col gap-2 border border-rose-200/90 bg-rose-50/20">
+                      <div className="flex items-center justify-between border-b border-rose-100 pb-1">
+                        <span className="text-[10px] font-black text-rose-950 uppercase tracking-tight flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-rose-500" />
+                          AT RESISTANCE: ${resPrice.toFixed(0)}
+                        </span>
+                        <span className="text-[9px] font-bold text-rose-700 bg-rose-100 px-1.5 py-0.2 rounded border border-rose-200">
+                          CEILING
+                        </span>
+                      </div>
 
-                  <div className="text-[10px] text-slate-700 leading-relaxed clay-white-inset p-2 bg-white/80">
-                    <span className="text-emerald-800 font-bold block mb-0.5">Exact Execution Condition:</span>
-                    {(aiPrediction?.pLong ?? 0.5) >= (aiPrediction?.pShort ?? 0.5)
-                      ? `The AI will execute a LONG scalp when a 15m candle closes with breakout momentum or price tests the $${(indicators?.nearestSupport || 80530).toFixed(0)} dynamic support level with 4H Macro Gate confirmation.`
-                      : `The AI will execute a SHORT scalp if price closes below the 20-bar Donchian low ($${(indicators?.nearestSupport || 80530).toFixed(0)}) with negative 4H Macro trend score.`}
-                  </div>
+                      {/* Primary Rejection Action */}
+                      <div className="bg-white p-2 rounded-lg border border-rose-200 shadow-2xs flex flex-col gap-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black text-rose-900 flex items-center gap-1">
+                            <span>🔻</span> REJECTION: AI WILL SHORT (SELL)
+                          </span>
+                          <span className="text-[9px] font-bold text-slate-500">Limit Fill</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1 text-[9px] pt-1 border-t border-slate-100 text-center">
+                          <div className="clay-white-inset py-0.5">
+                            <span className="text-slate-400 block text-[8px]">ENTRY</span>
+                            <span className="font-black text-gray-950 tabular-nums">${resPrice.toFixed(0)}</span>
+                          </div>
+                          <div className="clay-white-inset py-0.5">
+                            <span className="text-slate-400 block text-[8px]">TP (+1.0R)</span>
+                            <span className="font-black text-emerald-700 tabular-nums">${resShortTp.toFixed(0)}</span>
+                          </div>
+                          <div className="clay-white-inset py-0.5">
+                            <span className="text-slate-400 block text-[8px]">SL (-1.0R)</span>
+                            <span className="font-black text-rose-700 tabular-nums">${resShortSl.toFixed(0)}</span>
+                          </div>
+                        </div>
+                        <span className="text-[8.5px] text-slate-500 italic font-sans leading-tight">
+                          If price tests ${resPrice.toFixed(0)} and prints rejection wicks $\rightarrow$ AI shorts mean-reversion back to mid-band.
+                        </span>
+                      </div>
+
+                      {/* Alternative Breakout Action */}
+                      <div className="bg-white/90 p-1.5 rounded-lg border border-slate-200 flex items-center justify-between text-[9px]">
+                        <div>
+                          <span className="font-black text-emerald-800 flex items-center gap-1">
+                            <span>🔺</span> BREAKOUT: AI WILL BUY (LONG)
+                          </span>
+                          <span className="text-[8.5px] text-slate-500 font-sans block">
+                            Only if 15m candle closes firmly ABOVE ${resPrice.toFixed(0)}.
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[8px] text-slate-400 block">TARGET</span>
+                          <span className="font-black text-emerald-700 tabular-nums">${resLongTp.toFixed(0)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SCENARIO 2: AT SUPPORT ($80,577 / $80,500) */}
+                  {(scenarioLevelTab === "both" || scenarioLevelTab === "support") && (
+                    <div className="clay-white-inset p-2.5 flex flex-col gap-2 border border-emerald-200/90 bg-emerald-50/20">
+                      <div className="flex items-center justify-between border-b border-emerald-100 pb-1">
+                        <span className="text-[10px] font-black text-emerald-950 uppercase tracking-tight flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                          AT SUPPORT: ${supPrice.toFixed(0)}
+                        </span>
+                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded border border-emerald-200">
+                          FLOOR
+                        </span>
+                      </div>
+
+                      {/* Primary Dip Bounce Action */}
+                      <div className="bg-white p-2 rounded-lg border border-emerald-200 shadow-2xs flex flex-col gap-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-black text-emerald-900 flex items-center gap-1">
+                            <span>🟢</span> DIP BOUNCE: AI WILL BUY (LONG)
+                          </span>
+                          <span className="text-[9px] font-bold text-slate-500">Limit Fill</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-1 text-[9px] pt-1 border-t border-slate-100 text-center">
+                          <div className="clay-white-inset py-0.5">
+                            <span className="text-slate-400 block text-[8px]">ENTRY</span>
+                            <span className="font-black text-gray-950 tabular-nums">${supPrice.toFixed(0)}</span>
+                          </div>
+                          <div className="clay-white-inset py-0.5">
+                            <span className="text-slate-400 block text-[8px]">TP (+1.0R)</span>
+                            <span className="font-black text-emerald-700 tabular-nums">${supLongTp.toFixed(0)}</span>
+                          </div>
+                          <div className="clay-white-inset py-0.5">
+                            <span className="text-slate-400 block text-[8px]">SL (-1.0R)</span>
+                            <span className="font-black text-rose-700 tabular-nums">${supLongSl.toFixed(0)}</span>
+                          </div>
+                        </div>
+                        <span className="text-[8.5px] text-slate-500 italic font-sans leading-tight">
+                          If price dips to ${supPrice.toFixed(0)} and absorbs $\rightarrow$ AI buys bounce back to range midpoint with +{ratchetR.toFixed(2)}R ratchet.
+                        </span>
+                      </div>
+
+                      {/* Alternative Breakdown Action */}
+                      <div className="bg-white/90 p-1.5 rounded-lg border border-slate-200 flex items-center justify-between text-[9px]">
+                        <div>
+                          <span className="font-black text-rose-800 flex items-center gap-1">
+                            <span>🔻</span> BREAKDOWN: AI WILL SELL (SHORT)
+                          </span>
+                          <span className="text-[8.5px] text-slate-500 font-sans block">
+                            Only if 15m candle closes firmly BELOW ${supPrice.toFixed(0)}.
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[8px] text-slate-400 block">TARGET</span>
+                          <span className="font-black text-rose-700 tabular-nums">${supShortTp.toFixed(0)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                 </div>
 
                 {/* 3. Real-Time Neural Reasoning Grid */}
@@ -1110,7 +1269,7 @@ export default function TerminalPage() {
                   <p className="italic text-slate-700 text-[11px] leading-relaxed">
                     {currentActiveTrade
                       ? `Currently holding and managing an active ${currentActiveTrade.direction} position entered at $${currentActiveTrade.entryPrice.toFixed(2)}. Capital is secured. The Breakeven ratchet is armed to trail Stop Loss to Breakeven (+0.05R fee shield) at $${currentActiveTrade.breakevenTrigger.toFixed(2)}.`
-                      : `"I am scanning 15m order flow. My probability model leans Bullish (${(aiPrediction ? (aiPrediction.pLong * 100).toFixed(1) : "54.6")}% Long) with EMA 20 above EMA 50 (+0.14%). However, I am holding 0 open positions right now because the 4H Macro Gate is in noise-suppression mode and price is consolidating between $${(indicators?.nearestSupport || 80530).toFixed(0)} and $${(indicators?.nearestResistance || 81270).toFixed(0)}. My next action is to enter a LONG position the instant a breakout candle confirms or support dips into my limit zone."`}
+                      : `"I am tracking two primary boundary levels: If price tests $${resPrice.toFixed(0)} and rejects, I will SHORT the ceiling back down to $${resShortTp.toFixed(0)} (or BUY if a 15m candle closes firmly above). If price drops to $${supPrice.toFixed(0)} and absorbs, I will BUY the dip bounce back up to $${supLongTp.toFixed(0)} (or SHORT on breakdown). Currently at $${livePrice ? livePrice.toFixed(0) : "81070"}, price is hovering in the neutral mid-corridor, so I am safely keeping ₹1,000 capital shielded in cash until either boundary is tested."`}
                   </p>
                 </div>
 
