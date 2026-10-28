@@ -434,25 +434,32 @@ export default function TerminalPage() {
   }, [symbol, timeframe, activeModelId, accountBalanceINR]);
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-white overflow-hidden font-sans text-gray-900 select-none">
+    <div className="h-screen w-screen flex flex-col bg-[#fafafc] overflow-hidden font-sans text-gray-900 select-none">
       
-      {/* 1. Full-Screen Edge-to-Edge Header Bar */}
-      <header className="h-12 w-full bg-[#f8f9fa] border-b border-[#e5e7eb] px-4 flex items-center justify-between shrink-0 z-30">
+      {/* 1. Full-Screen Edge-to-Edge Pure White Tactile Header Bar */}
+      <header className="h-12 w-full bg-white border-b border-slate-200/80 px-4 flex items-center justify-between shrink-0 z-30 shadow-2xs">
         
-        {/* Left Section: Brand + Pair Selector + Live Ticker + ATR */}
+        {/* Left Section: macOS Chrome Lights + Brand + Pair Selector + Live Ticker + ATR */}
         <div className="flex items-center gap-3">
+          {/* macOS Chrome Dots (Stagehand clean hardware style) */}
+          <div className="hidden sm:flex items-center gap-1.5 pr-1">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f57] border border-black/10 inline-block shadow-2xs cursor-pointer hover:opacity-80 transition-opacity" title="Window active" />
+            <span className="w-2.5 h-2.5 rounded-full bg-[#febc2e] border border-black/10 inline-block shadow-2xs cursor-pointer hover:opacity-80 transition-opacity" title="Live stream active" />
+            <span className="w-2.5 h-2.5 rounded-full bg-[#28c840] border border-black/10 inline-block shadow-2xs cursor-pointer hover:opacity-80 transition-opacity" title="AI engine connected" />
+          </div>
+
           <Link href="/" className="flex items-center gap-2 group mr-1" title="Back to Home">
-            <div className="w-6 h-6 rounded bg-gray-900 flex items-center justify-center text-white font-mono text-xs font-bold shadow-sm">
+            <div className="w-6 h-6 rounded-lg bg-gray-900 flex items-center justify-center text-white font-mono text-xs font-black shadow-xs group-hover:scale-105 transition-transform">
               TP
             </div>
-            <span className="font-mono text-xs font-bold tracking-tight text-gray-900 group-hover:text-emerald-600 transition-colors hidden sm:inline">
+            <span className="font-mono text-xs font-black tracking-tight text-gray-900 group-hover:text-emerald-600 transition-colors hidden sm:inline">
               TRADER-PRO
             </span>
           </Link>
 
-          <div className="h-4 w-px bg-gray-300"></div>
+          <div className="h-4 w-px bg-slate-200"></div>
 
-          {/* Pair Selector Dropdown */}
+          {/* Pair Selector Dropdown with Clay White styling */}
           <div className="flex items-center gap-1.5">
             <select
               value={symbol}
@@ -460,7 +467,7 @@ export default function TerminalPage() {
                 setSymbol(e.target.value);
                 setIsLoading(true);
               }}
-              className="bg-white border border-gray-300 rounded px-2.5 py-1 text-xs font-mono font-bold text-gray-900 hover:border-gray-400 focus:outline-none focus:border-emerald-500 cursor-pointer shadow-sm transition-all"
+              className="clay-white-btn px-2.5 py-1 text-xs font-mono font-bold text-gray-900 hover:border-slate-400 focus:outline-none focus:border-emerald-500 cursor-pointer transition-all"
             >
               <option value="BTCUSDT">BTCUSDT (Bitcoin)</option>
               <option value="ETHUSDT">ETHUSDT (Ethereum)</option>
@@ -470,15 +477,15 @@ export default function TerminalPage() {
             </select>
           </div>
 
-          <div className="h-4 w-px bg-gray-300 hidden md:block"></div>
+          <div className="h-4 w-px bg-slate-200 hidden md:block"></div>
 
           {/* AI Strategy Model Selector Dropdown in Terminal Header */}
           <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-mono font-bold text-gray-400 hidden lg:inline">AI MODEL:</span>
+            <span className="text-[10px] font-mono font-bold text-slate-400 hidden lg:inline uppercase tracking-wider">AI Model:</span>
             <select
               value={activeModelId}
               onChange={(e) => handleSelectModel(e.target.value)}
-              className="bg-emerald-50 border border-emerald-300 rounded px-2.5 py-1 text-xs font-mono font-bold text-emerald-900 hover:border-emerald-400 focus:outline-none focus:border-emerald-600 cursor-pointer shadow-xs transition-all"
+              className="clay-white-btn bg-emerald-50/60 border-emerald-300 text-emerald-950 px-2.5 py-1 text-xs font-mono font-bold hover:border-emerald-400 focus:outline-none focus:border-emerald-600 cursor-pointer transition-all"
             >
               {TOP_MODELS.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -488,29 +495,29 @@ export default function TerminalPage() {
             </select>
           </div>
 
-          <div className="h-4 w-px bg-gray-300 hidden sm:block"></div>
+          <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>
 
           {/* Real Live Price Ticker */}
           <div className="flex items-center gap-2 font-mono">
-            <span className="text-gray-400 text-[11px] font-semibold hidden md:inline">PRICE:</span>
-            <span className="text-sm font-extrabold text-gray-900 tracking-tight">
+            <span className="text-slate-400 text-[10px] font-bold tracking-wider hidden md:inline uppercase">Price:</span>
+            <span className="text-sm font-black text-gray-950 tracking-tight tabular-nums">
               {livePrice ? `$${livePrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
             </span>
           </div>
 
-          <div className="h-4 w-px bg-gray-300 hidden xl:block"></div>
+          <div className="h-4 w-px bg-slate-200 hidden xl:block"></div>
 
           {/* ATR 14 Dynamic */}
           <div className="hidden xl:flex items-center gap-1.5 font-mono">
-            <span className="text-gray-400 text-[11px] font-semibold">ATR (14):</span>
-            <span className="text-xs font-bold text-blue-600">
+            <span className="text-slate-400 text-[10px] font-bold tracking-wider uppercase">ATR (14):</span>
+            <span className="text-xs font-bold text-blue-600 tabular-nums">
               {indicators ? indicators.atr.toFixed(1) : "—"}
             </span>
           </div>
         </div>
 
-        {/* Center: Timeframe Selector */}
-        <div className="flex bg-[#eef0f3] border border-gray-300 rounded p-0.5 gap-0.5 font-mono text-xs">
+        {/* Center: Tactile Pure White Segmented Timeframe Selector */}
+        <div className="flex clay-white-inset p-0.5 gap-0.5 font-mono text-xs">
           {["5m", "15m", "1h", "4h"].map((tf) => (
             <button
               key={tf}
@@ -518,10 +525,10 @@ export default function TerminalPage() {
                 setTimeframe(tf);
                 setIsLoading(true);
               }}
-              className={`px-3 py-1 rounded text-xs font-bold transition-all ${
+              className={`px-3 py-0.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 timeframe === tf
-                  ? "bg-white text-gray-900 shadow-sm border border-gray-200"
-                  : "text-gray-500 hover:text-gray-900"
+                  ? "bg-white text-gray-900 shadow-2xs border border-slate-200/90 font-black"
+                  : "text-slate-500 hover:text-slate-900"
               }`}
             >
               {tf.toUpperCase()}
@@ -530,29 +537,28 @@ export default function TerminalPage() {
         </div>
 
         {/* Right Section: Capital Badge + AI Engine Link + Live Status */}
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 bg-gray-100 border border-gray-200 rounded font-mono text-xs">
-            <span className="text-gray-500 text-[10px]">CAPITAL:</span>
-            <span className="font-bold text-gray-900">₹{accountBalanceINR.toFixed(2)}</span>
+        <div className="flex items-center gap-2.5">
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 clay-white-pill font-mono text-xs">
+            <span className="text-slate-400 text-[10px] font-bold tracking-wider uppercase">Capital:</span>
+            <span className="font-black text-gray-950 tabular-nums">₹{accountBalanceINR.toFixed(2)}</span>
           </div>
 
           <Link
             href="/ai-engine"
-            className="flex items-center gap-1.5 font-mono text-[11px] font-bold text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 px-2.5 py-1 rounded-md shadow-xs transition-colors"
-            title="Open Automated AI Engine & Performance Logs"
+            className="hidden md:flex items-center gap-1 px-2.5 py-1 text-xs font-mono font-bold text-slate-700 clay-white-btn hover:text-gray-900 transition-all cursor-pointer"
           >
             <Zap className="w-3.5 h-3.5 text-emerald-600" />
             <span className="hidden sm:inline">AI Engine</span>
           </Link>
 
-          <div className="flex items-center gap-1.5 font-mono text-[11px] text-gray-600 bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 rounded-full">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="font-bold hidden sm:inline">LIVE</span>
+          <div className="flex items-center gap-1.5 font-mono text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded-full shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_#10b981]"></span>
+            <span className="font-black hidden sm:inline">LIVE</span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-[11px] font-mono text-gray-400">
-            <RotateCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-emerald-600" : "text-gray-400"}`} />
-            <span className="hidden lg:inline">{lastUpdated}</span>
+          <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-400">
+            <RotateCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-emerald-600" : "text-slate-400"}`} />
+            <span className="hidden lg:inline tabular-nums">{lastUpdated}</span>
           </div>
 
           <UserAuthPill />
@@ -563,7 +569,7 @@ export default function TerminalPage() {
       <div className="flex-1 w-full grid grid-cols-1 lg:grid-cols-[1fr_430px] overflow-hidden bg-white">
         
         {/* Left Column: Full-Height Interactive TradingView Candlestick Chart + Bottom Dock */}
-        <div className="flex flex-col h-full overflow-hidden border-r border-[#e5e7eb] bg-white">
+        <div className="flex flex-col h-full overflow-hidden border-r border-slate-200/80 bg-white">
           
           {/* Edge-to-Edge Live TradingView Chart */}
           <div className="flex-1 w-full h-full relative bg-white overflow-hidden">
@@ -571,86 +577,86 @@ export default function TerminalPage() {
           </div>
 
           {/* Bottom Dock Header with Tabs */}
-          <div className="bg-[#f0f2f5] border-t border-[#e5e7eb] px-3 py-1.5 flex items-center justify-between shrink-0 font-mono text-xs">
-            <div className="flex bg-[#e2e5e9] p-0.5 rounded-md gap-0.5">
+          <div className="bg-white border-t border-slate-200/80 px-3.5 py-1.5 flex items-center justify-between shrink-0 font-mono text-xs">
+            <div className="flex clay-white-inset p-0.5 gap-0.5">
               <button
                 onClick={() => setDockTab("radar")}
-                className={`px-2.5 py-1 rounded font-bold text-[11px] transition-all cursor-pointer ${
+                className={`px-3 py-1 rounded-md font-bold text-[11px] transition-all cursor-pointer ${
                   dockTab === "radar"
-                    ? "bg-white text-gray-900 shadow-2xs"
-                    : "text-gray-500 hover:text-gray-900"
+                    ? "bg-white text-gray-950 shadow-2xs border border-slate-200/90 font-black"
+                    : "text-slate-500 hover:text-slate-900"
                 }`}
               >
                 📊 Alignment & Radar
               </button>
               <button
                 onClick={() => setDockTab("trades")}
-                className={`px-2.5 py-1 rounded font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`px-3 py-1 rounded-md font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
                   dockTab === "trades"
-                    ? "bg-white text-gray-900 shadow-2xs"
-                    : "text-gray-500 hover:text-gray-900"
+                    ? "bg-white text-gray-950 shadow-2xs border border-slate-200/90 font-black"
+                    : "text-slate-500 hover:text-slate-900"
                 }`}
               >
                 <span>⚡ Live Scalp Orders</span>
-                <span className="bg-emerald-100 text-emerald-800 text-[9px] px-1.5 py-0.2 rounded-full font-extrabold">
+                <span className="bg-emerald-100 text-emerald-800 text-[9px] px-1.5 py-0.2 rounded-full font-black">
                   {recentTrades.length}
                 </span>
               </button>
             </div>
 
-            <div className="text-[10px] text-gray-500 hidden sm:inline">
-              Available Capital: <strong className="text-gray-900">₹{accountBalanceINR.toFixed(2)}</strong> · Post-Tax Net PnL (0.040% Taker + 18% GST)
+            <div className="text-[10px] text-slate-500 hidden sm:inline font-mono">
+              Available Capital: <strong className="text-gray-900 tabular-nums">₹{accountBalanceINR.toFixed(2)}</strong> · Post-Tax Net PnL (0.040% Taker + 18% GST)
             </div>
           </div>
 
           {/* Bottom Dock Content: Alignment Radar OR Live Trade Execution Log */}
-          <div className="h-44 bg-[#f8f9fa] p-3 overflow-y-auto shrink-0">
+          <div className="h-44 bg-[#fafafc] p-3 overflow-y-auto shrink-0 border-t border-slate-100">
             {dockTab === "radar" ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Multi-Timeframe Alignment */}
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-[11px] font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="font-mono text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                       <Layers className="w-3.5 h-3.5 text-emerald-600" /> Cross-Timeframe Alignment & Invariants
                     </span>
-                    <span className="text-[10px] font-mono text-gray-400 font-semibold">Active: {activeModel.shortName}</span>
+                    <span className="text-[10px] font-mono text-slate-400 font-semibold">Active: {activeModel.shortName}</span>
                   </div>
 
                   <div className="grid grid-cols-4 gap-2 text-center">
-                    <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col items-center justify-center shadow-2xs">
-                      <span className="text-[10px] font-mono text-gray-500 font-bold">5M MICRO</span>
-                      <span className="text-xs font-bold font-mono text-emerald-600 mt-0.5">
+                    <div className="clay-white-card p-2 flex flex-col items-center justify-center">
+                      <span className="text-[9px] font-mono text-slate-400 font-bold uppercase">5M MICRO</span>
+                      <span className="text-xs font-black font-mono text-emerald-600 mt-0.5">
                         {aiPrediction?.donchianBreakout === "BULLISH" ? "BREAKOUT ▲" : aiPrediction?.donchianBreakout === "BEARISH" ? "BREAKDOWN ▼" : "CONSOLIDATE"}
                       </span>
-                      <span className="text-[9px] font-mono text-gray-400">Donchian-20</span>
+                      <span className="text-[9px] font-mono text-slate-400">Donchian-20</span>
                     </div>
 
-                    <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col items-center justify-center shadow-2xs">
-                      <span className="text-[10px] font-mono text-gray-500 font-bold">15M MODEL</span>
-                      <span className={`text-xs font-bold font-mono mt-0.5 ${
-                        (aiPrediction?.pLong || 0) >= 0.5457 ? "text-emerald-600" : "text-gray-600"
+                    <div className="clay-white-card p-2 flex flex-col items-center justify-center">
+                      <span className="text-[9px] font-mono text-slate-400 font-bold uppercase">15M MODEL</span>
+                      <span className={`text-xs font-black font-mono mt-0.5 ${
+                        (aiPrediction?.pLong || 0) >= 0.5457 ? "text-emerald-600" : "text-slate-700"
                       }`}>
                         {aiPrediction ? `${(aiPrediction.pLong * 100).toFixed(1)}% L` : "54.6% L"}
                       </span>
-                      <span className="text-[9px] font-mono text-gray-400">Purged LGBM</span>
+                      <span className="text-[9px] font-mono text-slate-400">Purged LGBM</span>
                     </div>
 
-                    <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col items-center justify-center shadow-2xs">
-                      <span className="text-[10px] font-mono text-gray-500 font-bold">4H MASTER</span>
-                      <span className={`text-xs font-bold font-mono mt-0.5 ${
+                    <div className="clay-white-card p-2 flex flex-col items-center justify-center">
+                      <span className="text-[9px] font-mono text-slate-400 font-bold uppercase">4H MASTER</span>
+                      <span className={`text-xs font-black font-mono mt-0.5 ${
                         aiPrediction?.gate4HPassed ? "text-emerald-600" : "text-amber-600"
                       }`}>
                         {aiPrediction?.gate4HPassed ? "ALIGNED ✔" : "FILTERED"}
                       </span>
-                      <span className="text-[9px] font-mono text-gray-400">Macro Trend Gate</span>
+                      <span className="text-[9px] font-mono text-slate-400">Macro Trend Gate</span>
                     </div>
 
-                    <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col items-center justify-center shadow-2xs">
-                      <span className="text-[10px] font-mono text-gray-500 font-bold">RATCHET</span>
-                      <span className="text-xs font-bold font-mono text-blue-600 mt-0.5">
+                    <div className="clay-white-card p-2 flex flex-col items-center justify-center">
+                      <span className="text-[9px] font-mono text-slate-400 font-bold uppercase">RATCHET</span>
+                      <span className="text-xs font-black font-mono text-blue-600 mt-0.5">
                         +{activeModel.ratchetTriggerR.toFixed(2)}R
                       </span>
-                      <span className="text-[9px] font-mono text-gray-400">+0.05R Shield</span>
+                      <span className="text-[9px] font-mono text-slate-400">+0.05R Shield</span>
                     </div>
                   </div>
                 </div>
@@ -658,40 +664,40 @@ export default function TerminalPage() {
                 {/* Volatility & Regime Microstructure */}
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono text-[11px] font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="font-mono text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                       <Activity className="w-3.5 h-3.5 text-blue-600" /> Volatility & Microstructure Radar
                     </span>
-                    <span className="text-[10px] font-mono text-gray-400">50-Bar Rolling</span>
+                    <span className="text-[10px] font-mono text-slate-400">50-Bar Rolling</span>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col gap-0.5 shadow-2xs">
-                      <span className="text-[9px] font-mono text-gray-500 uppercase">EMA 20/50 SPREAD</span>
-                      <span className={`text-xs font-bold font-mono ${indicators && indicators.emaSpreadPct >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                    <div className="clay-white-card p-2 flex flex-col gap-0.5">
+                      <span className="text-[9px] font-mono text-slate-400 uppercase font-bold">EMA 20/50 Spread</span>
+                      <span className={`text-xs font-black font-mono tabular-nums ${indicators && indicators.emaSpreadPct >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
                         {indicators ? `${indicators.emaSpreadPct >= 0 ? "+" : ""}${indicators.emaSpreadPct.toFixed(3)}%` : "—"}
                       </span>
-                      <div className="w-full h-1 bg-gray-100 border border-gray-200 rounded overflow-hidden mt-1">
-                        <div className="h-full bg-blue-500" style={{ width: indicators ? `${Math.min(100, Math.abs(indicators.emaSpreadPct) * 400)}%` : "30%" }}></div>
+                      <div className="w-full h-1 bg-slate-100 border border-slate-200 rounded-full overflow-hidden mt-1">
+                        <div className="h-full bg-blue-500 rounded-full transition-all" style={{ width: indicators ? `${Math.min(100, Math.abs(indicators.emaSpreadPct) * 400)}%` : "30%" }}></div>
                       </div>
                     </div>
 
-                    <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col gap-0.5 shadow-2xs">
-                      <span className="text-[9px] font-mono text-gray-500 uppercase">RSI (14)</span>
-                      <span className="text-xs font-bold font-mono text-emerald-600">
+                    <div className="clay-white-card p-2 flex flex-col gap-0.5">
+                      <span className="text-[9px] font-mono text-slate-400 uppercase font-bold">RSI (14)</span>
+                      <span className="text-xs font-black font-mono text-emerald-600 tabular-nums">
                         {indicators ? indicators.rsi.toFixed(1) : "—"}
                       </span>
-                      <div className="w-full h-1 bg-gray-100 border border-gray-200 rounded overflow-hidden mt-1">
-                        <div className="h-full bg-emerald-500" style={{ width: indicators ? `${indicators.rsi}%` : "50%" }}></div>
+                      <div className="w-full h-1 bg-slate-100 border border-slate-200 rounded-full overflow-hidden mt-1">
+                        <div className="h-full bg-emerald-500 rounded-full transition-all" style={{ width: indicators ? `${indicators.rsi}%` : "50%" }}></div>
                       </div>
                     </div>
 
-                    <div className="bg-white border border-[#e5e7eb] rounded p-2 flex flex-col gap-0.5 shadow-2xs">
-                      <span className="text-[9px] font-mono text-gray-500 uppercase">Garman-Klass Vol</span>
-                      <span className="text-xs font-bold font-mono text-amber-600">
+                    <div className="clay-white-card p-2 flex flex-col gap-0.5">
+                      <span className="text-[9px] font-mono text-slate-400 uppercase font-bold">Garman-Klass Vol</span>
+                      <span className="text-xs font-black font-mono text-amber-600 tabular-nums">
                         {indicators ? (indicators.garmanKlass * 1000).toFixed(4) : "—"}
                       </span>
-                      <div className="w-full h-1 bg-gray-100 border border-gray-200 rounded overflow-hidden mt-1">
-                        <div className="h-full bg-amber-500" style={{ width: indicators ? `${Math.max(10, Math.min(100, indicators.garmanKlass * 100000))}%` : "40%" }}></div>
+                      <div className="w-full h-1 bg-slate-100 border border-slate-200 rounded-full overflow-hidden mt-1">
+                        <div className="h-full bg-amber-500 rounded-full transition-all" style={{ width: indicators ? `${Math.max(10, Math.min(100, indicators.garmanKlass * 100000))}%` : "40%" }}></div>
                       </div>
                     </div>
                   </div>
@@ -800,76 +806,76 @@ export default function TerminalPage() {
           </div>
         </div>
 
-        {/* Right Column: Prominent Actionable Trading Recommendation Card & Execution */}
-        <aside className="bg-[#f8f9fa] p-3.5 flex flex-col gap-3 overflow-y-auto border-l border-[#e5e7eb] h-full">
+        {/* Right Column: Prominent Actionable Trading Recommendation Card & Execution (Beautiful Pure White Claymorphic Theme) */}
+        <aside className="bg-[#fafafc] p-3.5 flex flex-col gap-3 overflow-y-auto border-l border-slate-200/80 h-full">
           
           {/* Active Model Quantitative Specs Badge */}
-          <div className="bg-white border border-emerald-300 rounded-xl p-3 shadow-xs flex flex-col gap-2">
+          <div className="clay-white-card p-3.5 flex flex-col gap-2 border border-emerald-400/40 shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Selected Model #{activeModel.rank}
               </span>
-              <span className="text-[10px] font-mono font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
+              <span className="text-[9px] font-mono font-black bg-emerald-100/90 text-emerald-900 border border-emerald-300 px-2 py-0.5 rounded-full shadow-2xs">
                 ACTIVE MODEL
               </span>
             </div>
-            <div className="font-mono text-xs font-black text-gray-900">
+            <div className="font-mono text-xs font-black text-gray-950">
               {activeModel.name}
             </div>
-            <div className="grid grid-cols-4 gap-1.5 text-center font-mono text-[10px] pt-1 border-t border-gray-100">
-              <div>
-                <span className="text-gray-400 block">SHARPE</span>
-                <span className="font-bold text-gray-800">{activeModel.sharpeRatio}</span>
+            <div className="grid grid-cols-4 gap-1.5 text-center font-mono text-[10px] pt-1.5 border-t border-slate-100">
+              <div className="clay-white-inset py-1">
+                <span className="text-slate-400 text-[9px] block font-bold">SHARPE</span>
+                <span className="font-black text-slate-900 tabular-nums">{activeModel.sharpeRatio}</span>
               </div>
-              <div>
-                <span className="text-gray-400 block">P. FACTOR</span>
-                <span className="font-bold text-gray-800">{activeModel.profitFactor}</span>
+              <div className="clay-white-inset py-1">
+                <span className="text-slate-400 text-[9px] block font-bold">P. FACTOR</span>
+                <span className="font-black text-slate-900 tabular-nums">{activeModel.profitFactor}</span>
               </div>
-              <div>
-                <span className="text-gray-400 block">MAX DD</span>
-                <span className="font-bold text-rose-600">{activeModel.maxDrawdown}%</span>
+              <div className="clay-white-inset py-1">
+                <span className="text-slate-400 text-[9px] block font-bold">MAX DD</span>
+                <span className="font-black text-rose-600 tabular-nums">{activeModel.maxDrawdown}%</span>
               </div>
-              <div>
-                <span className="text-gray-400 block">OOS TRADES</span>
-                <span className="font-bold text-blue-600">{activeModel.totalTrades.toLocaleString()}</span>
+              <div className="clay-white-inset py-1">
+                <span className="text-slate-400 text-[9px] block font-bold">OOS TRADES</span>
+                <span className="font-black text-blue-600 tabular-nums">{activeModel.totalTrades.toLocaleString()}</span>
               </div>
             </div>
           </div>
 
           {/* PROMINENT RECOMMENDATION & AI STATUS / POSITION CARD */}
-          <div className="bg-white border-2 border-emerald-600/40 rounded-xl p-4 flex flex-col gap-3 shadow-md transition-all">
+          <div className="clay-white-card p-4 flex flex-col gap-3 shadow-sm border border-emerald-500/25 transition-all">
             
-            {/* Header: Segmented Swipe / Switch Button */}
-            <div className="flex items-center justify-between border-b border-gray-100 pb-2.5">
-              <div className="bg-gray-100 p-0.5 rounded-lg flex items-center gap-1 border border-gray-200">
+            {/* Header: Segmented Swipe / Switch Button (Pure White Tactile Style) */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <div className="clay-white-inset p-0.5 flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => setRightCardTab("plan")}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-3 py-1 rounded-lg text-[11px] font-mono font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                     rightCardTab === "plan"
-                      ? "bg-white text-gray-900 shadow-2xs border border-gray-200"
-                      : "text-gray-500 hover:text-gray-800"
+                      ? "bg-white text-gray-950 shadow-2xs border border-slate-200/90 font-black"
+                      : "text-slate-500 hover:text-slate-800 font-bold"
                   }`}
                 >
-                  <Target className={`w-3.5 h-3.5 ${rightCardTab === "plan" ? "text-emerald-600" : "text-gray-400"}`} />
+                  <Target className={`w-3.5 h-3.5 ${rightCardTab === "plan" ? "text-emerald-600" : "text-slate-400"}`} />
                   <span>Trade Plan</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setRightCardTab("ai_mind")}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-mono font-black transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-3 py-1 rounded-lg text-[11px] font-mono font-black transition-all cursor-pointer flex items-center gap-1.5 ${
                     rightCardTab === "ai_mind"
-                      ? "bg-emerald-600 text-white shadow-xs"
-                      : "text-gray-500 hover:text-gray-800"
+                      ? "bg-white text-emerald-800 shadow-2xs border border-emerald-300 font-black"
+                      : "text-slate-500 hover:text-slate-800 font-bold"
                   }`}
                 >
-                  <Brain className={`w-3.5 h-3.5 ${rightCardTab === "ai_mind" ? "text-emerald-200" : "text-gray-400"}`} />
+                  <Brain className={`w-3.5 h-3.5 ${rightCardTab === "ai_mind" ? "text-emerald-600" : "text-slate-400"}`} />
                   <span>AI Mind & Status</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_#10b981]" />
                 </button>
               </div>
 
-              <span className="text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded hidden sm:inline">
+              <span className="text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md hidden sm:inline">
                 SHARK EXCH 0.040%
               </span>
             </div>
@@ -878,13 +884,13 @@ export default function TerminalPage() {
               /* TAB 1: EXACT TRADE EXECUTION PLAN */
               <>
                 {/* Primary Action Banner */}
-                <div className={`p-3 rounded-lg flex items-center justify-between border ${
+                <div className={`p-3 rounded-xl flex items-center justify-between border shadow-2xs ${
                   recommendation?.action.includes("BUY")
-                    ? "bg-emerald-50 border-emerald-500 text-emerald-800"
-                    : "bg-rose-50 border-rose-500 text-rose-800"
+                    ? "bg-emerald-50/50 border-emerald-400 text-emerald-950"
+                    : "bg-rose-50/50 border-rose-400 text-rose-950"
                 }`}>
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider opacity-75">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500">
                       AI Model Recommendation
                     </span>
                     <span className="font-mono text-base font-black tracking-tight">
@@ -892,8 +898,8 @@ export default function TerminalPage() {
                     </span>
                   </div>
                   <div className="text-right font-mono">
-                    <span className="text-[9px] uppercase block text-gray-500">Conviction</span>
-                    <span className="text-sm font-extrabold text-gray-900">
+                    <span className="text-[9px] uppercase block text-slate-500 font-bold">Conviction</span>
+                    <span className="text-sm font-black text-gray-950 tabular-nums">
                       {recommendation ? `${recommendation.conviction}%` : "—"}
                     </span>
                   </div>
@@ -903,24 +909,24 @@ export default function TerminalPage() {
                 <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                   
                   {/* Recommended Entry Point */}
-                  <div className="bg-gray-50 border border-gray-300 rounded-lg p-2.5 flex flex-col">
-                    <span className="text-[9px] text-gray-500 uppercase font-bold flex items-center gap-1">
-                      <Compass className="w-3 h-3 text-gray-500" /> Recommended Entry
+                  <div className="clay-white-inset p-2.5 flex flex-col">
+                    <span className="text-[9px] text-slate-500 uppercase font-bold flex items-center gap-1">
+                      <Compass className="w-3 h-3 text-slate-400" /> Recommended Entry
                     </span>
-                    <span className="text-sm font-black text-gray-900 mt-0.5">
+                    <span className="text-sm font-black text-gray-950 mt-0.5 tabular-nums">
                       {recommendation ? `$${recommendation.entryPrice.toFixed(2)}` : "—"}
                     </span>
-                    <span className="text-[9px] text-gray-400">
+                    <span className="text-[9px] text-slate-400">
                       {recommendation?.orderType === "LIMIT" ? "Wait for Limit Fill" : "Enter at Market Fill"}
                     </span>
                   </div>
 
                   {/* Risk : Reward Ratio Box */}
-                  <div className="bg-blue-50 border border-blue-300 rounded-lg p-2.5 flex flex-col">
+                  <div className="clay-white-inset p-2.5 flex flex-col border-blue-200/80 bg-blue-50/20">
                     <span className="text-[9px] text-blue-700 uppercase font-bold flex items-center gap-1">
                       <Scale className="w-3 h-3 text-blue-600" /> Risk : Reward Ratio
                     </span>
-                    <span className="text-sm font-black text-blue-700 mt-0.5">
+                    <span className="text-sm font-black text-blue-700 mt-0.5 tabular-nums">
                       {recommendation ? recommendation.riskRewardRatio : "1 : 1.00"}
                     </span>
                     <span className="text-[9px] text-blue-500">
@@ -929,27 +935,27 @@ export default function TerminalPage() {
                   </div>
 
                   {/* Stop Loss (SL) Point */}
-                  <div className="bg-rose-50 border border-rose-300 rounded-lg p-2.5 flex flex-col">
+                  <div className="clay-white-inset p-2.5 flex flex-col border-rose-200/80 bg-rose-50/20">
                     <span className="text-[9px] text-rose-700 uppercase font-bold">
                       Stop Loss (-1.0R)
                     </span>
-                    <span className="text-sm font-black text-rose-700 mt-0.5">
+                    <span className="text-sm font-black text-rose-700 mt-0.5 tabular-nums">
                       {recommendation ? `$${recommendation.stopLoss.toFixed(2)}` : "—"}
                     </span>
-                    <span className="text-[9px] text-rose-600 font-semibold">
+                    <span className="text-[9px] text-rose-600 font-semibold tabular-nums">
                       {recommendation ? `-${recommendation.stopLossDistance.toFixed(1)} pts (${recommendation.stopLossPercent.toFixed(2)}%)` : "—"}
                     </span>
                   </div>
 
                   {/* Take Profit (TP) Point */}
-                  <div className="bg-emerald-50 border border-emerald-300 rounded-lg p-2.5 flex flex-col">
+                  <div className="clay-white-inset p-2.5 flex flex-col border-emerald-200/80 bg-emerald-50/20">
                     <span className="text-[9px] text-emerald-700 uppercase font-bold">
                       Take Profit (+1.0R)
                     </span>
-                    <span className="text-sm font-black text-emerald-700 mt-0.5">
+                    <span className="text-sm font-black text-emerald-700 mt-0.5 tabular-nums">
                       {recommendation ? `$${recommendation.takeProfit.toFixed(2)}` : "—"}
                     </span>
-                    <span className="text-[9px] text-emerald-600 font-semibold">
+                    <span className="text-[9px] text-emerald-600 font-semibold tabular-nums">
                       {recommendation ? `+${recommendation.takeProfitDistance.toFixed(1)} pts (${recommendation.takeProfitPercent.toFixed(2)}%)` : "—"}
                     </span>
                   </div>
@@ -957,20 +963,20 @@ export default function TerminalPage() {
                 </div>
 
                 {/* Breakeven Ratchet (+0.30R or +0.35R Trail Trigger) */}
-                <div className="bg-blue-50/70 border border-blue-200 rounded-lg p-2.5 flex items-center justify-between font-mono text-[11px]">
+                <div className="clay-white-inset p-2.5 flex items-center justify-between font-mono text-[11px] bg-blue-50/30 border-blue-200/70">
                   <div className="flex flex-col">
                     <span className="text-[10px] font-bold text-blue-700 uppercase">
                       ⚡ +{activeModel.ratchetTriggerR.toFixed(2)}R Breakeven Ratchet
                     </span>
-                    <span className="text-[10px] text-gray-500">Auto-trail SL to lock Breakeven (+0.05R fee shield) at:</span>
+                    <span className="text-[10px] text-slate-500">Auto-trail SL to lock Breakeven (+0.05R fee shield) at:</span>
                   </div>
-                  <span className="text-xs font-black text-blue-700">
+                  <span className="text-xs font-black text-blue-700 tabular-nums">
                     {recommendation ? `$${recommendation.breakevenTrigger.toFixed(2)}` : "—"}
                   </span>
                 </div>
 
                 {/* Actionable plain-English instruction */}
-                <div className="bg-[#f0fdf4] border border-emerald-200 rounded-lg p-2.5 text-xs text-gray-800 leading-relaxed font-sans">
+                <div className="bg-[#f0fdf4] border border-emerald-200/80 rounded-xl p-2.5 text-xs text-slate-800 leading-relaxed font-sans shadow-2xs">
                   <span className="font-bold text-emerald-800 block mb-0.5">Execution Guidance:</span>
                   {recommendation?.actionGuidance || "Analyzing live market structure for optimal order entry..."}
                 </div>
@@ -979,33 +985,33 @@ export default function TerminalPage() {
                 <button
                   type="button"
                   onClick={() => setRightCardTab("ai_mind")}
-                  className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 hover:from-emerald-100 hover:to-teal-100 border border-emerald-300 rounded-lg p-2 flex items-center justify-between text-emerald-900 font-mono text-[11px] font-bold transition-all cursor-pointer group"
+                  className="clay-white-btn p-2.5 flex items-center justify-between text-emerald-950 font-mono text-[11px] font-bold cursor-pointer group"
                 >
                   <div className="flex items-center gap-1.5">
                     <Brain className="w-3.5 h-3.5 text-emerald-600 group-hover:scale-110 transition-transform" />
                     <span>What position will the AI take next?</span>
                   </div>
                   <span className="text-[10px] text-emerald-700 flex items-center gap-0.5 font-black group-hover:translate-x-0.5 transition-transform">
-                    Swipe to AI Mind →
+                    View AI Thoughts →
                   </span>
                 </button>
               </>
             ) : (
-              /* TAB 2: AI MIND, LIVE STATUS & NEXT POSITION FORECAST */
-              <div className="flex flex-col gap-2.5 animate-fadeIn">
+              /* TAB 2: AI MIND, LIVE STATUS & NEXT POSITION FORECAST (Beautiful Pure White Theme) */
+              <div className="flex flex-col gap-2.5">
                 
                 {/* 1. Live AI Status Banner */}
-                <div className={`p-2.5 rounded-lg border flex items-center justify-between font-mono ${
+                <div className={`p-2.5 rounded-xl border flex items-center justify-between font-mono shadow-2xs ${
                   currentActiveTrade
-                    ? "bg-emerald-50 border-emerald-500 text-emerald-950"
-                    : "bg-amber-50/90 border-amber-300 text-amber-950"
+                    ? "bg-emerald-50/80 border-emerald-400 text-emerald-950"
+                    : "bg-amber-50/70 border-amber-300 text-amber-950"
                 }`}>
                   <div className="flex items-center gap-2">
                     <span className={`w-2.5 h-2.5 rounded-full ${
                       currentActiveTrade ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" : "bg-amber-500 animate-ping"
                     }`} />
                     <div>
-                      <span className="text-[9px] uppercase font-bold tracking-wider opacity-75 block">
+                      <span className="text-[9px] uppercase font-bold tracking-wider opacity-75 block text-slate-500">
                         Current Live AI Status
                       </span>
                       <span className="text-xs font-black">
@@ -1015,37 +1021,37 @@ export default function TerminalPage() {
                       </span>
                     </div>
                   </div>
-                  <span className="text-[9px] font-black px-2 py-0.5 rounded bg-white/90 border border-current">
-                    {currentActiveTrade ? "IN TRADE" : "₹1,000 SHIELDED"}
+                  <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-white border border-slate-200 shadow-2xs">
+                    {currentActiveTrade ? "IN TRADE" : "₹1,000 PROTECTED"}
                   </span>
                 </div>
 
-                {/* 2. NEXT POSITION FORECAST BOX */}
-                <div className="bg-gradient-to-br from-slate-900 via-gray-900 to-slate-950 text-white rounded-lg p-3 border border-gray-700 flex flex-col gap-2 font-mono shadow-inner">
-                  <div className="flex items-center justify-between border-b border-gray-800 pb-1.5">
-                    <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                      <Bot className="w-3.5 h-3.5 text-emerald-400" /> Next Position AI Will Take:
+                {/* 2. NEXT POSITION FORECAST BOX (Pure White Tactile Style) */}
+                <div className="clay-white-card p-3 border border-emerald-300/80 bg-gradient-to-br from-white via-white to-emerald-50/40 flex flex-col gap-2 font-mono shadow-xs">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-[10px] text-emerald-900 font-black uppercase tracking-wider flex items-center gap-1.5">
+                      <Bot className="w-3.5 h-3.5 text-emerald-600" /> Next Position AI Will Take:
                     </span>
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded ${
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border shadow-2xs ${
                       (aiPrediction?.pLong ?? 0.5) >= (aiPrediction?.pShort ?? 0.5)
-                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                        : "bg-rose-500/20 text-rose-300 border border-rose-500/40"
+                        ? "bg-emerald-100 text-emerald-900 border-emerald-300"
+                        : "bg-rose-100 text-rose-900 border-rose-300"
                     }`}>
                       {(aiPrediction?.pLong ?? 0.5) >= (aiPrediction?.pShort ?? 0.5) ? "BUY (LONG) SCALP" : "SELL (SHORT) SCALP"}
                     </span>
                   </div>
 
-                  <div className="text-xs font-black text-white flex items-center justify-between">
-                    <span className="text-gray-400">Target Entry:</span>
-                    <span className="text-emerald-300">
+                  <div className="text-xs font-black text-gray-900 flex items-center justify-between pt-0.5">
+                    <span className="text-slate-500">Target Entry:</span>
+                    <span className="text-emerald-700 tabular-nums">
                       {(aiPrediction?.pLong ?? 0.5) >= (aiPrediction?.pShort ?? 0.5)
                         ? `$${(indicators?.nearestSupport || 80530).toFixed(0)} Support Dip OR Breakout > $${(indicators?.nearestResistance || 81200).toFixed(0)}`
                         : `Breakdown < $${(indicators?.nearestSupport || 80530).toFixed(0)}`}
                     </span>
                   </div>
 
-                  <div className="text-[10px] text-gray-300 leading-relaxed bg-black/50 p-2 rounded border border-gray-800/80">
-                    <span className="text-emerald-400 font-bold block mb-0.5">Exact Execution Condition:</span>
+                  <div className="text-[10px] text-slate-700 leading-relaxed clay-white-inset p-2 bg-white/80">
+                    <span className="text-emerald-800 font-bold block mb-0.5">Exact Execution Condition:</span>
                     {(aiPrediction?.pLong ?? 0.5) >= (aiPrediction?.pShort ?? 0.5)
                       ? `The AI will execute a LONG scalp when a 15m candle closes with breakout momentum or price tests the $${(indicators?.nearestSupport || 80530).toFixed(0)} dynamic support level with 4H Macro Gate confirmation.`
                       : `The AI will execute a SHORT scalp if price closes below the 20-bar Donchian low ($${(indicators?.nearestSupport || 80530).toFixed(0)}) with negative 4H Macro trend score.`}
@@ -1054,28 +1060,28 @@ export default function TerminalPage() {
 
                 {/* 3. Real-Time Neural Reasoning Grid */}
                 <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 flex flex-col">
-                    <span className="text-[9px] text-gray-500 uppercase font-bold">Directional Bias</span>
-                    <span className="text-xs font-black text-emerald-700 mt-0.5">
+                  <div className="clay-white-inset p-2 flex flex-col">
+                    <span className="text-[9px] text-slate-400 uppercase font-bold">Directional Bias</span>
+                    <span className="text-xs font-black text-emerald-700 mt-0.5 tabular-nums">
                       P(Long): {aiPrediction ? (aiPrediction.pLong * 100).toFixed(1) : "54.6"}%
                     </span>
-                    <span className="text-[9px] text-gray-400">
+                    <span className="text-[9px] text-slate-400 tabular-nums">
                       P(Short): {aiPrediction ? (aiPrediction.pShort * 100).toFixed(1) : "45.4"}%
                     </span>
                   </div>
 
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 flex flex-col">
-                    <span className="text-[9px] text-gray-500 uppercase font-bold">4H Macro Gate</span>
+                  <div className="clay-white-inset p-2 flex flex-col">
+                    <span className="text-[9px] text-slate-400 uppercase font-bold">4H Macro Gate</span>
                     <span className={`text-xs font-black mt-0.5 ${
                       aiPrediction?.gate4HPassed ? "text-emerald-700" : "text-amber-700"
                     }`}>
                       {aiPrediction?.gate4HPassed ? "APPROVED (Green)" : "FILTERED (Standby)"}
                     </span>
-                    <span className="text-[9px] text-gray-400">Noise Suppression Active</span>
+                    <span className="text-[9px] text-slate-400">Noise Suppression Active</span>
                   </div>
 
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 flex flex-col">
-                    <span className="text-[9px] text-gray-500 uppercase font-bold">5M Micro State</span>
+                  <div className="clay-white-inset p-2 flex flex-col">
+                    <span className="text-[9px] text-slate-400 uppercase font-bold">5M Micro State</span>
                     <span className="text-xs font-black text-blue-700 mt-0.5">
                       {aiPrediction?.donchianBreakout === "BULLISH"
                         ? "BREAKOUT ▲"
@@ -1083,25 +1089,25 @@ export default function TerminalPage() {
                         ? "BREAKDOWN ▼"
                         : "CONSOLIDATING"}
                     </span>
-                    <span className="text-[9px] text-gray-400">Inside 20-bar Donchian</span>
+                    <span className="text-[9px] text-slate-400">Inside 20-bar Donchian</span>
                   </div>
 
-                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 flex flex-col">
-                    <span className="text-[9px] text-gray-500 uppercase font-bold">S/R Level Range</span>
-                    <span className="text-xs font-black text-gray-800 mt-0.5">
+                  <div className="clay-white-inset p-2 flex flex-col">
+                    <span className="text-[9px] text-slate-400 uppercase font-bold">S/R Level Range</span>
+                    <span className="text-xs font-black text-slate-800 mt-0.5 tabular-nums">
                       ${(indicators?.nearestSupport || 80530).toFixed(0)} - ${(indicators?.nearestResistance || 81270).toFixed(0)}
                     </span>
-                    <span className="text-[9px] text-gray-400">Floor to Ceiling</span>
+                    <span className="text-[9px] text-slate-400">Floor to Ceiling</span>
                   </div>
                 </div>
 
                 {/* 4. AI Stream of Consciousness (Plain-English Mind) */}
-                <div className="bg-emerald-50/70 border border-emerald-200 rounded-lg p-2.5 font-sans text-xs text-gray-800 leading-relaxed">
+                <div className="clay-white-inset p-2.5 font-sans text-xs text-slate-800 leading-relaxed bg-white border border-emerald-200">
                   <div className="flex items-center gap-1.5 font-bold text-emerald-900 mb-1 font-mono text-[11px]">
                     <Cpu className="w-3.5 h-3.5 text-emerald-600" />
                     <span>AI Live Thought Process:</span>
                   </div>
-                  <p className="italic text-gray-700 text-[11px] leading-relaxed">
+                  <p className="italic text-slate-700 text-[11px] leading-relaxed">
                     {currentActiveTrade
                       ? `Currently holding and managing an active ${currentActiveTrade.direction} position entered at $${currentActiveTrade.entryPrice.toFixed(2)}. Capital is secured. The Breakeven ratchet is armed to trail Stop Loss to Breakeven (+0.05R fee shield) at $${currentActiveTrade.breakevenTrigger.toFixed(2)}.`
                       : `"I am scanning 15m order flow. My probability model leans Bullish (${(aiPrediction ? (aiPrediction.pLong * 100).toFixed(1) : "54.6")}% Long) with EMA 20 above EMA 50 (+0.14%). However, I am holding 0 open positions right now because the 4H Macro Gate is in noise-suppression mode and price is consolidating between $${(indicators?.nearestSupport || 80530).toFixed(0)} and $${(indicators?.nearestResistance || 81270).toFixed(0)}. My next action is to enter a LONG position the instant a breakout candle confirms or support dips into my limit zone."`}
@@ -1112,18 +1118,18 @@ export default function TerminalPage() {
                 <button
                   type="button"
                   onClick={() => setRightCardTab("plan")}
-                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-mono text-[11px] font-bold py-1.5 rounded-lg border border-gray-300 transition-colors cursor-pointer flex items-center justify-center gap-1"
+                  className="clay-white-btn w-full py-1.5 text-slate-700 font-mono text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"
                 >
                   <span>← Swipe back to Trade Plan & Order Setup</span>
                 </button>
               </div>
             )}
 
-            {/* AUTONOMOUS AI TRADING & HOLDING ENGINE STATUS */}
-            <div className={`rounded-xl p-3.5 border transition-all ${
+            {/* AUTONOMOUS AI TRADING & HOLDING ENGINE STATUS (Pure White Tactile Style) */}
+            <div className={`clay-white-card p-3.5 border transition-all ${
               currentActiveTrade
-                ? "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-300 shadow-sm"
-                : "bg-gradient-to-br from-gray-900 via-gray-900 to-slate-900 border-gray-800 text-white shadow-md"
+                ? "bg-gradient-to-br from-white to-emerald-50/50 border-emerald-400 shadow-xs"
+                : "bg-white border-slate-200/90 shadow-2xs"
             }`}>
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
@@ -1131,12 +1137,10 @@ export default function TerminalPage() {
                     autoTradingEnabled
                       ? currentActiveTrade
                         ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]"
-                        : "bg-emerald-400 animate-ping"
-                      : "bg-gray-400"
+                        : "bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]"
+                      : "bg-slate-400"
                   }`} />
-                  <span className={`font-mono text-xs font-black tracking-wide uppercase ${
-                    currentActiveTrade ? "text-emerald-950" : "text-white"
-                  }`}>
+                  <span className="font-mono text-xs font-black tracking-wide uppercase text-gray-950">
                     {autoTradingEnabled
                       ? currentActiveTrade
                         ? `AI HOLDING ${currentActiveTrade.direction} POSITION`
@@ -1148,21 +1152,21 @@ export default function TerminalPage() {
                 {/* Auto-Trading Active Toggle */}
                 <button
                   onClick={handleToggleAutoTrading}
-                  className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-md transition-colors cursor-pointer flex items-center gap-1 ${
+                  className={`clay-white-btn text-[10px] font-mono font-bold px-2.5 py-1 transition-all cursor-pointer flex items-center gap-1 ${
                     autoTradingEnabled
-                      ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                      : "bg-gray-700 hover:bg-gray-600 text-gray-200"
+                      ? "text-emerald-700 hover:text-emerald-800 border-emerald-300"
+                      : "text-slate-600 hover:text-slate-800"
                   }`}
                   title="Toggle Autonomous Trading"
                 >
                   {autoTradingEnabled ? (
                     <>
-                      <Pause className="w-3 h-3" />
+                      <Pause className="w-3 h-3 text-emerald-600" />
                       <span>PAUSE AI</span>
                     </>
                   ) : (
                     <>
-                      <Play className="w-3 h-3" />
+                      <Play className="w-3 h-3 text-slate-500" />
                       <span>START AI</span>
                     </>
                   )}
@@ -1171,25 +1175,25 @@ export default function TerminalPage() {
 
               {currentActiveTrade ? (
                 /* LIVE ACTIVE POSITION DETAILS BEING HELD BY AI */
-                <div className="flex flex-col gap-2 font-mono text-xs pt-2 border-t border-emerald-200">
+                <div className="flex flex-col gap-2 font-mono text-xs pt-2 border-t border-slate-100">
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600 text-[11px]">Active Position:</span>
-                    <span className={`font-black px-2 py-0.5 rounded text-[11px] ${
+                    <span className="text-slate-500 text-[11px]">Active Position:</span>
+                    <span className={`font-black px-2 py-0.5 rounded-md text-[11px] shadow-2xs ${
                       currentActiveTrade.direction === "LONG"
-                        ? "bg-emerald-100 text-emerald-800"
-                        : "bg-rose-100 text-rose-800"
+                        ? "bg-emerald-100 text-emerald-900 border border-emerald-300"
+                        : "bg-rose-100 text-rose-900 border border-rose-300"
                     }`}>
                       {currentActiveTrade.direction} @ ${currentActiveTrade.entryPrice.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600 text-[11px]">Compounding Capital:</span>
-                    <span className="font-bold text-gray-900">₹{currentActiveTrade.positionSizeINR.toFixed(2)}</span>
+                    <span className="text-slate-500 text-[11px]">Compounding Capital:</span>
+                    <span className="font-black text-gray-950 tabular-nums">₹{currentActiveTrade.positionSizeINR.toFixed(2)}</span>
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-600 text-[11px]">Net Post-Tax PnL:</span>
+                    <span className="text-slate-500 text-[11px]">Net Post-Tax PnL:</span>
                     {livePrice ? (() => {
                       const pts = currentActiveTrade.direction === "LONG"
                         ? livePrice - currentActiveTrade.entryPrice
@@ -1200,17 +1204,17 @@ export default function TerminalPage() {
                       const netINR = grossINR - feeINR;
                       const isProfit = netINR >= 0;
                       return (
-                        <span className={`font-black ${isProfit ? "text-emerald-700" : "text-rose-700"}`}>
+                        <span className={`font-black tabular-nums ${isProfit ? "text-emerald-700" : "text-rose-700"}`}>
                           {isProfit ? "+" : ""}₹{netINR.toFixed(2)} ({isProfit ? "+" : ""}{(returnPct * 100).toFixed(2)}%)
                         </span>
                       );
                     })() : (
-                      <span className="text-gray-400">—</span>
+                      <span className="text-slate-400">—</span>
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] pt-1 border-t border-emerald-100">
-                    <span className="text-gray-500">Breakeven Ratchet:</span>
+                  <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100">
+                    <span className="text-slate-500">Breakeven Ratchet:</span>
                     <span className={`font-bold ${currentActiveTrade.breakevenActivated ? "text-emerald-700" : "text-blue-700"}`}>
                       {currentActiveTrade.breakevenActivated
                         ? "✔ LOCKED (+0.05R FEE SHIELD)"
@@ -1218,32 +1222,32 @@ export default function TerminalPage() {
                     </span>
                   </div>
 
-                  <div className="text-[10px] text-gray-600 italic bg-white/70 p-1.5 rounded border border-emerald-200 mt-0.5">
+                  <div className="text-[10px] text-slate-600 italic bg-slate-50 p-1.5 rounded-lg border border-slate-200/80 mt-0.5">
                     🤖 <strong>Autonomous Hold</strong>: AI is holding and tracking this scalp. It will automatically trail SL to Breakeven at +{activeModel.ratchetTriggerR.toFixed(2)}R and close at target TP (+1.0R).
                   </div>
                 </div>
               ) : (
-                /* STANDBY SCANNING STATUS */
-                <div className="flex flex-col gap-1.5 font-mono text-[11px] text-gray-300 pt-1">
-                  <div className="flex items-center justify-between text-gray-400">
+                /* STANDBY SCANNING STATUS (Pure White Tactile Style) */
+                <div className="flex flex-col gap-1.5 font-mono text-[11px] pt-1">
+                  <div className="flex items-center justify-between text-slate-500">
                     <span>Live Autonomous Cycle:</span>
-                    <span className="text-emerald-400 font-bold">12s Tick Active</span>
+                    <span className="text-emerald-700 font-bold">12s Tick Active</span>
                   </div>
-                  <div className="flex items-center justify-between text-gray-400">
+                  <div className="flex items-center justify-between text-slate-500">
                     <span>Capital Allocation:</span>
-                    <span className="text-white font-bold">₹{accountBalanceINR.toFixed(2)} INR</span>
+                    <span className="text-gray-950 font-black tabular-nums">₹{accountBalanceINR.toFixed(2)} INR</span>
                   </div>
-                  <div className="flex items-center justify-between text-gray-400">
+                  <div className="flex items-center justify-between text-slate-500">
                     <span>Strategy Model:</span>
-                    <span className="text-emerald-300 font-semibold">{activeModel.shortName}</span>
+                    <span className="text-emerald-700 font-bold">{activeModel.shortName}</span>
                   </div>
-                  <div className="p-2 rounded bg-black/40 border border-white/10 text-[10px] text-gray-300 leading-normal mt-1">
+                  <div className="p-2 rounded-xl clay-white-inset text-[10px] text-slate-600 leading-normal mt-1 bg-[#f9fafc]">
                     🤖 <strong>Autonomous Trade & Hold</strong>: The AI monitors 15M Donchian-20 breakouts & LightGBM probabilities. When triggered, the AI automatically opens the position, protects capital, holds, and ratchets to breakeven without manual clicks.
                   </div>
                   {lastActionTick && (
-                    <div className="text-[9px] text-gray-400 flex items-center justify-between pt-1 border-t border-white/10">
+                    <div className="text-[9px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-100">
                       <span>Last Evaluation Tick:</span>
-                      <span className="font-bold text-emerald-400">{lastActionTick}</span>
+                      <span className="font-bold text-emerald-700">{lastActionTick}</span>
                     </div>
                   )}
                 </div>
@@ -1253,27 +1257,27 @@ export default function TerminalPage() {
           </div>
 
           {/* Dynamic S/R Ladder */}
-          <div className="bg-white border border-[#e5e7eb] rounded-lg p-3 flex flex-col gap-2 shadow-sm">
-            <span className="font-mono text-xs font-bold uppercase text-gray-900 flex items-center gap-1.5">
+          <div className="clay-white-card p-3 flex flex-col gap-2 shadow-2xs border border-slate-200/80">
+            <span className="font-mono text-xs font-black uppercase text-gray-950 flex items-center gap-1.5">
               <Shield className="w-3.5 h-3.5 text-emerald-600" /> Dynamic S/R Radar (50-Bar Pivots)
             </span>
 
             <div className="flex flex-col gap-1.5 font-mono">
-              <div className="flex items-center justify-between p-2 rounded bg-rose-50 border border-rose-200">
+              <div className="flex items-center justify-between p-2 rounded-xl bg-rose-50/60 border border-rose-200">
                 <span className="text-[10px] font-bold text-rose-700">RESISTANCE (CEILING)</span>
-                <span className="text-xs font-bold text-rose-700">
+                <span className="text-xs font-black text-rose-700 tabular-nums">
                   {indicators ? `$${indicators.nearestResistance.toFixed(1)} (+${indicators.distToResistanceATR.toFixed(1)}R)` : "—"}
                 </span>
               </div>
-              <div className="flex items-center justify-between p-2 rounded bg-gray-50 border border-gray-200">
-                <span className="text-[10px] font-bold text-gray-600">LIVE TICKER</span>
-                <span className="text-xs font-bold text-gray-900">
+              <div className="flex items-center justify-between p-2 rounded-xl clay-white-inset">
+                <span className="text-[10px] font-bold text-slate-500">LIVE TICKER</span>
+                <span className="text-xs font-black text-gray-950 tabular-nums">
                   {livePrice ? `$${livePrice.toFixed(1)}` : "—"}
                 </span>
               </div>
-              <div className="flex items-center justify-between p-2 rounded bg-emerald-50 border border-emerald-200">
+              <div className="flex items-center justify-between p-2 rounded-xl bg-emerald-50/60 border border-emerald-200">
                 <span className="text-[10px] font-bold text-emerald-700">SUPPORT (FLOOR)</span>
-                <span className="text-xs font-bold text-emerald-700">
+                <span className="text-xs font-black text-emerald-700 tabular-nums">
                   {indicators ? `$${indicators.nearestSupport.toFixed(1)} (-${indicators.distToSupportATR.toFixed(1)}R)` : "—"}
                 </span>
               </div>

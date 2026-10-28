@@ -24,6 +24,75 @@
   --accent-short: #f23645;
   --accent-cyan: #0070f3;
   --accent-warning: #f59e0b;
+
+  /* Editorial Warm Paper & Clay Tokens (inspired by october.dev & intervues.club) */
+  --hub-paper: #f8f7f4;
+  --hub-card: #ffffff;
+  --hub-hair: #e5e4df;
+  --hub-hair-subtle: #f0eee9;
+}
+
+/* PURE WHITE CLAYMORPHISM & ELEVATED TACTILE STYLING (User specified: Beautiful in White) */
+.clay-white-card {
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  border-radius: 16px;
+  box-shadow: 
+    0 12px 32px -4px rgba(0, 0, 0, 0.035),
+    0 4px 12px -2px rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 #ffffff,
+    inset 0 -1px 0 rgba(0, 0, 0, 0.02);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.clay-white-card:hover {
+  box-shadow: 
+    0 18px 36px -4px rgba(0, 0, 0, 0.05),
+    0 6px 16px -2px rgba(0, 0, 0, 0.03),
+    inset 0 1px 0 #ffffff;
+}
+
+.clay-white-inset {
+  background: #f8fafc;
+  border: 1px solid rgba(226, 232, 240, 0.75);
+  border-radius: 12px;
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.02),
+    inset 0 1px 1px rgba(0, 0, 0, 0.01);
+}
+
+.clay-white-pill {
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 9999px;
+  box-shadow: 
+    0 2px 6px -1px rgba(0, 0, 0, 0.03),
+    inset 0 1px 0 #ffffff;
+}
+
+.clay-white-btn {
+  background: #ffffff;
+  border: 1px solid rgba(203, 213, 225, 0.8);
+  border-radius: 10px;
+  box-shadow: 
+    0 2px 6px -1px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 #ffffff;
+  transition: all 0.15s ease;
+}
+
+.clay-white-btn:hover {
+  background: #f8fafc;
+  border-color: rgba(148, 163, 184, 0.8);
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.06);
+}
+
+.clay-white-btn:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 body {
