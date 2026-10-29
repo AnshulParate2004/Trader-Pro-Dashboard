@@ -39,7 +39,10 @@ const modelCache: Record<string, any> = {};
 function loadModelJSON(tf: string): any {
   if (modelCache[tf]) return modelCache[tf];
   try {
-    const filePath = path.join(process.cwd(), "src", "models", `lgbm_${tf}.json`);
+    let filePath = path.join(process.cwd(), "src", "models", `lgbm_${tf}.json`);
+    if (!fs.existsSync(filePath)) {
+      filePath = path.join(process.cwd(), "public", "models", `lgbm_${tf}.json`);
+    }
     if (fs.existsSync(filePath)) {
       const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
       modelCache[tf] = data;

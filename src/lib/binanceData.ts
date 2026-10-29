@@ -8,8 +8,19 @@ interface CachedCandles {
 const candleCache: Record<string, CachedCandles> = {};
 
 /**
- * Robust fetch for Binance Futures klines with smart memory caching
+ * Resilient multi-endpoint Binance public klines fetcher.
+ * Uses global unblocked data networks (data-api.binance.vision & spot APIs)
+ * to prevent AWS/Vercel (US region iad1) 451/403 geo-blocking.
  */
+const BINANCE_BASE_URLS = [
+  "https://data-api.binance.vision/api/v3/klines",
+  "https://api.binance.com/api/v3/klines",
+  "https://api1.binance.com/api/v3/klines",
+  "https://api2.binance.com/api/v3/klines",
+  "https://api3.binance.com/api/v3/klines",
+  "https://fapi.binance.com/fapi/v1/klines",
+];
+
 export async function fetchBinanceKlines(
   interval: string,
   limit: number = 150,
@@ -23,44 +34,59 @@ export async function fetchBinanceKlines(
     return cached.candles;
   }
 
-  try {
-    const res = await fetch(
-      `https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=${interval}&limit=${limit}`,
-      { cache: "no-store" }
-    );
+  let lastError: any = null;
 
-    if (!res.ok) {
-      if (cached) return cached.candles;
-      throw new Error(`Binance API error for ${interval}: ${res.statusText}`);
+  for (const base of BINANCE_BASE_URLS) {
+    try {
+      const url = `${base}?symbol=BTCUSDT&interval=${interval}&limit=${limit}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+      const res = await fetch(url, {
+        cache: "no-store",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Trader-Pro/1.0",
+          Accept: "application/json",
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!res.ok) {
+        lastError = new Error(`HTTP ${res.status} from ${base}`);
+        continue;
+      }
+
+      const raw = await res.json();
+      if (!Array.isArray(raw) || raw.length === 0) {
+        lastError = new Error(`Invalid response format from ${base}`);
+        continue;
+      }
+
+      const candles: Candle[] = raw.map((d: any) => ({
+        openTime: Number(d[0]),
+        open: parseFloat(d[1]),
+        high: parseFloat(d[2]),
+        low: parseFloat(d[3]),
+        close: parseFloat(d[4]),
+        volume: parseFloat(d[5]),
+        closeTime: Number(d[6]),
+        takerBuyBase: parseFloat(d[9] || "0"),
+      }));
+
+      candleCache[cacheKey] = {
+        timestamp: now,
+        candles,
+      };
+
+      return candles;
+    } catch (err: any) {
+      lastError = err;
     }
-
-    const raw = await res.json();
-    if (!Array.isArray(raw) || raw.length === 0) {
-      if (cached) return cached.candles;
-      throw new Error(`Invalid Binance response format for ${interval}`);
-    }
-
-    const candles: Candle[] = raw.map((d: any) => ({
-      openTime: Number(d[0]),
-      open: parseFloat(d[1]),
-      high: parseFloat(d[2]),
-      low: parseFloat(d[3]),
-      close: parseFloat(d[4]),
-      volume: parseFloat(d[5]),
-      closeTime: Number(d[6]),
-      takerBuyBase: parseFloat(d[9] || "0"),
-    }));
-
-    candleCache[cacheKey] = {
-      timestamp: now,
-      candles,
-    };
-
-    return candles;
-  } catch (err) {
-    if (cached) return cached.candles;
-    throw err;
   }
+
+  if (cached) return cached.candles;
+  throw new Error(`All Binance endpoints failed for ${interval}: ${lastError?.message || "Unknown error"}`);
 }
 
 /**
