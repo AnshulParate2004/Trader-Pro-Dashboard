@@ -107,6 +107,7 @@ export default function TerminalPage() {
   const [lastUpdated, setLastUpdated] = useState<string>("Connecting...");
 
   const activeModel = TOP_MODELS.find((m) => m.id === activeModelId) || TOP_MODELS[0];
+  const requires4H = activeModel.requires4HMacro;
   const riskPercent = 1.0; // 1% risk = ₹10.00 on ₹1,000
   const activeTrades = recentTrades.filter((t) => t.status === "ACTIVE" || t.status === "BE_ACTIVATED");
   const currentActiveTrade = activeTrades[0] || null;
@@ -1052,23 +1053,25 @@ export default function TerminalPage() {
                       Live AI Safety & Gate Audit:
                     </span>
                     <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border shadow-2xs ${
-                      aiPrediction?.gate4HPassed ? "bg-emerald-100 text-emerald-900 border-emerald-300" : "bg-amber-100 text-amber-900 border-amber-300"
+                      (!requires4H || aiPrediction?.gate4HPassed) ? "bg-emerald-100 text-emerald-900 border-emerald-300" : "bg-amber-100 text-amber-900 border-amber-300"
                     }`}>
-                      {aiPrediction?.gate4HPassed ? "GATES CLEAR" : "PROTECTIVE GATES ACTIVE"}
+                      {(!requires4H || aiPrediction?.gate4HPassed) ? "GATES CLEAR" : "PROTECTIVE GATES ACTIVE"}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-1.5 text-[10px]">
                     <div className="clay-white-inset p-1.5 flex items-start gap-1.5 bg-white">
-                      <span className={aiPrediction?.gate4HPassed ? "text-emerald-600 font-black" : "text-rose-600 font-black"}>
-                        {aiPrediction?.gate4HPassed ? "✔" : "❌"}
+                      <span className={(!requires4H || aiPrediction?.gate4HPassed) ? "text-emerald-600 font-black" : "text-rose-600 font-black"}>
+                        {(!requires4H || aiPrediction?.gate4HPassed) ? "✔" : "❌"}
                       </span>
                       <div>
                         <span className="font-bold text-gray-900 block text-[9.5px]">4H Macro Gate:</span>
-                        <span className={`font-black ${aiPrediction?.gate4HPassed ? "text-emerald-700" : "text-rose-700"}`}>
-                          {aiPrediction?.gate4HPassed ? "APPROVED (Green)" : "FILTERED (Standby)"}
+                        <span className={`font-black ${(!requires4H || aiPrediction?.gate4HPassed) ? "text-emerald-700" : "text-rose-700"}`}>
+                          {requires4H ? (aiPrediction?.gate4HPassed ? "APPROVED (Green)" : "FILTERED (Standby)") : "BYPASSED (Pure 15M)"}
                         </span>
-                        <span className="text-[8.5px] text-slate-400 block leading-tight">Macro trend confirmation</span>
+                        <span className="text-[8.5px] text-slate-400 block leading-tight">
+                          {requires4H ? "Macro trend confirmation" : "Not required for 77.7% Sniper"}
+                        </span>
                       </div>
                     </div>
 
@@ -1110,9 +1113,11 @@ export default function TerminalPage() {
 
                   <div className="clay-white-inset p-2 text-[10px] text-slate-700 leading-relaxed bg-amber-50/40 border border-amber-200/70 font-sans">
                     <strong className="text-amber-950 font-bold block mb-0.5">Why AI Did Not Open Position:</strong>
-                    {aiPrediction?.gate4HPassed
-                      ? "All multi-timeframe safety gates are clear. AI is awaiting limit fill or candle close confirmation."
-                      : `Price is moving, but the AI intentionally held in cash because the 4H Macro Gate is in noise-suppression mode (${aiPrediction ? `Macro Score: ${aiPrediction.htfScore?.toFixed(2) || "-0.14"}` : "Standby"}). Entering during a filtered macro regime carries a 42% bull-trap risk. Your ₹1,000 capital is 100% shielded.`}
+                    {requires4H && !aiPrediction?.gate4HPassed
+                      ? `Price is moving, but the AI intentionally held in cash because Model #${activeModel.rank} requires 4H Macro Gate approval (${aiPrediction ? `Macro Score: ${aiPrediction.htfScore?.toFixed(2) || "-0.14"}` : "Standby"}).`
+                      : aiPrediction?.donchianBreakout === "NONE"
+                      ? `Price ($${livePrice ? livePrice.toFixed(1) : "—"}) is oscillating inside the 20-bar Donchian corridor (${indicators?.nearestResistance ? `$${indicators.nearestResistance.toFixed(1)}` : "Resistance"} / ${indicators?.nearestSupport ? `$${indicators.nearestSupport.toFixed(1)}` : "Support"}). The 77.7% Sniper engine is standing by for a true breakout with LightGBM conviction.`
+                      : `Candle close in progress. Scalp executions are evaluated strictly on candle completion to ensure zero lookahead bias.`}
                   </div>
                 </div>
 
@@ -1169,23 +1174,25 @@ export default function TerminalPage() {
                       Live AI Safety & Gate Audit:
                     </span>
                     <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border shadow-2xs ${
-                      aiPrediction?.gate4HPassed ? "bg-emerald-100 text-emerald-900 border-emerald-300" : "bg-amber-100 text-amber-900 border-amber-300"
+                      (!requires4H || aiPrediction?.gate4HPassed) ? "bg-emerald-100 text-emerald-900 border-emerald-300" : "bg-amber-100 text-amber-900 border-amber-300"
                     }`}>
-                      {aiPrediction?.gate4HPassed ? "GATES CLEAR" : "PROTECTIVE GATES ACTIVE"}
+                      {(!requires4H || aiPrediction?.gate4HPassed) ? "GATES CLEAR" : "PROTECTIVE GATES ACTIVE"}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-1.5 text-[10px]">
                     <div className="clay-white-inset p-1.5 flex items-start gap-1.5 bg-white">
-                      <span className={aiPrediction?.gate4HPassed ? "text-emerald-600 font-black" : "text-rose-600 font-black"}>
-                        {aiPrediction?.gate4HPassed ? "✔" : "❌"}
+                      <span className={(!requires4H || aiPrediction?.gate4HPassed) ? "text-emerald-600 font-black" : "text-rose-600 font-black"}>
+                        {(!requires4H || aiPrediction?.gate4HPassed) ? "✔" : "❌"}
                       </span>
                       <div>
                         <span className="font-bold text-gray-900 block text-[9.5px]">4H Macro Gate:</span>
-                        <span className={`font-black ${aiPrediction?.gate4HPassed ? "text-emerald-700" : "text-rose-700"}`}>
-                          {aiPrediction?.gate4HPassed ? "APPROVED (Green)" : "FILTERED (Standby)"}
+                        <span className={`font-black ${(!requires4H || aiPrediction?.gate4HPassed) ? "text-emerald-700" : "text-rose-700"}`}>
+                          {requires4H ? (aiPrediction?.gate4HPassed ? "APPROVED (Green)" : "FILTERED (Standby)") : "BYPASSED (Pure 15M)"}
                         </span>
-                        <span className="text-[8.5px] text-slate-400 block leading-tight">Macro trend confirmation</span>
+                        <span className="text-[8.5px] text-slate-400 block leading-tight">
+                          {requires4H ? "Macro trend confirmation" : "Not required for 77.7% Sniper"}
+                        </span>
                       </div>
                     </div>
 
@@ -1227,9 +1234,11 @@ export default function TerminalPage() {
 
                   <div className="clay-white-inset p-2 text-[10px] text-slate-700 leading-relaxed bg-amber-50/40 border border-amber-200/70 font-sans">
                     <strong className="text-amber-950 font-bold block mb-0.5">Why AI Did Not Open Position:</strong>
-                    {aiPrediction?.gate4HPassed
-                      ? "All multi-timeframe safety gates are clear. AI is awaiting limit fill or candle close confirmation."
-                      : `Price surged, but the AI intentionally held in cash because the 4H Macro Gate is in noise-suppression mode (${aiPrediction ? `Macro Score: ${aiPrediction.htfScore?.toFixed(2) || "-0.14"}` : "Standby"}). Entering during a filtered macro regime carries a 42% bull-trap risk. Your ₹1,000 capital is 100% shielded.`}
+                    {requires4H && !aiPrediction?.gate4HPassed
+                      ? `Price surged, but the AI intentionally held in cash because Model #${activeModel.rank} requires 4H Macro Gate approval (${aiPrediction ? `Macro Score: ${aiPrediction.htfScore?.toFixed(2) || "-0.14"}` : "Standby"}).`
+                      : aiPrediction?.donchianBreakout === "NONE"
+                      ? `Price ($${livePrice ? livePrice.toFixed(1) : "—"}) is oscillating inside the 20-bar Donchian corridor (${indicators?.nearestResistance ? `$${indicators.nearestResistance.toFixed(1)}` : "Resistance"} / ${indicators?.nearestSupport ? `$${indicators.nearestSupport.toFixed(1)}` : "Support"}). The 77.7% Sniper engine is standing by for a true breakout with LightGBM conviction.`
+                      : `Candle close in progress. Scalp executions are evaluated strictly on candle completion to ensure zero lookahead bias.`}
                   </div>
                 </div>
 
@@ -1422,11 +1431,13 @@ export default function TerminalPage() {
                   <div className="clay-white-inset p-2 flex flex-col">
                     <span className="text-[9px] text-slate-400 uppercase font-bold">4H Macro Gate</span>
                     <span className={`text-xs font-black mt-0.5 ${
-                      aiPrediction?.gate4HPassed ? "text-emerald-700" : "text-amber-700"
+                      (!requires4H || aiPrediction?.gate4HPassed) ? "text-emerald-700" : "text-amber-700"
                     }`}>
-                      {aiPrediction?.gate4HPassed ? "APPROVED (Green)" : "FILTERED (Standby)"}
+                      {requires4H ? (aiPrediction?.gate4HPassed ? "APPROVED (Green)" : "FILTERED (Standby)") : "BYPASSED (Pure 15M)"}
                     </span>
-                    <span className="text-[9px] text-slate-400">Noise Suppression Active</span>
+                    <span className="text-[9px] text-slate-400">
+                      {requires4H ? "Noise Suppression Active" : "77.7% Sniper Spec"}
+                    </span>
                   </div>
 
                   <div className="clay-white-inset p-2 flex flex-col">
