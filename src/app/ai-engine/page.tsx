@@ -135,10 +135,11 @@ export default function AiEnginePage() {
   });
 
   // Fetch engine data and trade logs for selected model
-  const fetchData = async (modelIdToFetch?: string) => {
+  const fetchData = async (modelIdToFetch?: string, feeOverride?: number) => {
     try {
       const activeM = modelIdToFetch !== undefined ? modelIdToFetch : selectedModelId;
-      const res = await fetch(`/api/trades?modelId=${activeM}`);
+      const activeFee = feeOverride !== undefined ? feeOverride : (config.tradingFeePercent || 0.016);
+      const res = await fetch(`/api/trades?modelId=${activeM}&fee=${activeFee}`);
       if (!res.ok) throw new Error("Failed to fetch engine data");
       const data = await res.json();
       if (data.success) {
@@ -198,13 +199,13 @@ export default function AiEnginePage() {
   const handleFeeChange = async (newFee: number) => {
     const updated = { ...config, tradingFeePercent: newFee };
     setConfig(updated);
+    fetchData(selectedModelId, newFee);
     try {
       await fetch("/api/engine", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tradingFeePercent: newFee }),
       });
-      fetchData();
     } catch (err) {
       console.error("Failed to update fee percentage:", err);
     }
@@ -431,7 +432,7 @@ export default function AiEnginePage() {
             <div className="flex items-center justify-between">
               <span className="text-xs font-mono text-gray-500 uppercase font-semibold">Shark Exchange Fees</span>
               <span className="text-[10px] font-mono bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 font-bold">
-                0.040% + 18% GST
+                {(config.tradingFeePercent || 0.016).toFixed(3)}% + 18% GST
               </span>
             </div>
             <div className={`text-2xl sm:text-3xl font-extrabold font-mono tracking-tight ${
@@ -440,8 +441,8 @@ export default function AiEnginePage() {
               {trades.length > 0 ? `₹${totalFees.toFixed(2)}` : "—"}
             </div>
             <div className="text-[11px] text-gray-500 font-mono flex items-center justify-between pt-1 border-t border-gray-100">
-              <span>Effective Taker Fee:</span>
-              <span className="font-bold text-gray-700">0.0472% (w/ GST)</span>
+              <span>Effective {(config.tradingFeePercent || 0.016) <= 0.020 ? "Maker" : "Taker"} Fee:</span>
+              <span className="font-bold text-gray-700">{((config.tradingFeePercent || 0.016) * 1.18).toFixed(4)}% (w/ GST)</span>
             </div>
           </div>
 
@@ -456,27 +457,16 @@ export default function AiEnginePage() {
             <div className="flex items-center gap-2">
               <input
                 type="number"
-                step="0.004"
-                min="0.01"
+                step="0.002"
+                min="0.005"
                 max="0.2"
                 value={config.tradingFeePercent}
-                onChange={(e) => handleFeeChange(parseFloat(e.target.value) || 0.040)}
+                onChange={(e) => handleFeeChange(parseFloat(e.target.value) || 0.016)}
                 className="w-24 bg-gray-50 border border-gray-300 rounded px-2.5 py-1 text-sm font-mono font-bold text-gray-900 focus:outline-none focus:border-emerald-500 shadow-inner"
               />
               <span className="text-xs font-mono font-bold text-gray-500">% + 18% GST</span>
             </div>
-            <div className="flex gap-1.5">
-              <button
-                onClick={() => handleFeeChange(0.040)}
-                className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-colors ${
-                  config.tradingFeePercent === 0.040
-                    ? "bg-blue-600 text-white border-blue-700 font-bold"
-                    : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
-                }`}
-                title="Shark Exchange Taker Fee: 0.040%"
-              >
-                Shark Taker (0.040%)
-              </button>
+            <div className="flex flex-wrap gap-1">
               <button
                 onClick={() => handleFeeChange(0.016)}
                 className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-colors ${
@@ -486,7 +476,40 @@ export default function AiEnginePage() {
                 }`}
                 title="Shark Exchange Maker Fee: 0.016%"
               >
-                Shark Maker (0.016%)
+                Maker (0.016%)
+              </button>
+              <button
+                onClick={() => handleFeeChange(0.018)}
+                className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-colors ${
+                  config.tradingFeePercent === 0.018
+                    ? "bg-blue-600 text-white border-blue-700 font-bold"
+                    : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                }`}
+                title="VIP Maker Fee: 0.018%"
+              >
+                Maker (0.018%)
+              </button>
+              <button
+                onClick={() => handleFeeChange(0.030)}
+                className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-colors ${
+                  config.tradingFeePercent === 0.030
+                    ? "bg-blue-600 text-white border-blue-700 font-bold"
+                    : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                }`}
+                title="Discount Taker Fee: 0.030%"
+              >
+                Mid (0.030%)
+              </button>
+              <button
+                onClick={() => handleFeeChange(0.040)}
+                className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-colors ${
+                  config.tradingFeePercent === 0.040
+                    ? "bg-blue-600 text-white border-blue-700 font-bold"
+                    : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                }`}
+                title="Shark Exchange Standard Taker Fee: 0.040%"
+              >
+                Taker (0.040%)
               </button>
             </div>
           </div>
@@ -594,7 +617,7 @@ export default function AiEnginePage() {
               </h3>
             </div>
             <p className="text-xs text-gray-500 max-w-xl">
-              Trading with artificial capital of <span className="font-bold text-gray-900">₹1,000 INR</span>. Applies Shark Exchange futures taker fee of <span className="font-mono font-semibold text-blue-600">0.040% + 18% GST</span>. Automatically trails Stop Loss to Breakeven at <span className="font-mono font-semibold text-gray-900">+0.30R</span>.
+              Trading with artificial capital of <span className="font-bold text-gray-900">₹1,000 INR</span>. Applies Shark Exchange futures {(config.tradingFeePercent || 0.016) <= 0.020 ? "maker" : "taker"} fee of <span className="font-mono font-semibold text-blue-600">{(config.tradingFeePercent || 0.016).toFixed(3)}% + 18% GST</span>. Automatically trails Stop Loss to Breakeven at <span className="font-mono font-semibold text-gray-900">+0.30R</span>.
             </p>
           </div>
 

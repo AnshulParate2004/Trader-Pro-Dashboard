@@ -10,9 +10,11 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const modelId = searchParams.get("modelId") || undefined;
+    const feeParam = searchParams.get("fee");
+    const feeOverride = feeParam ? parseFloat(feeParam) : undefined;
 
-    const trades = await getTradeLogs(50, modelId);
-    const metrics = await computePerformanceMetrics(modelId);
+    const trades = await getTradeLogs(50, modelId, feeOverride);
+    const metrics = await computePerformanceMetrics(modelId, feeOverride);
     const mongoStatus = isMongoConfigured();
 
     return NextResponse.json({

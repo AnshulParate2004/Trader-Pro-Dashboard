@@ -119,8 +119,13 @@ export async function updateEngineConfig(updates: Partial<EngineConfig>): Promis
   return memoryConfig;
 }
 
-// Get Trade Logs (optionally filtered by specific AI model)
-export async function getTradeLogs(limit: number = 50, modelId?: string): Promise<TradeOrder[]> {
+// Get Trade Logs (optionally filtered by specific AI model and dynamic fee override)
+export async function getTradeLogs(limit: number = 50, modelId?: string, feeOverride?: number): Promise<TradeOrder[]> {
+  const config = await getEngineConfig();
+  const feeRate = feeOverride !== undefined && !isNaN(feeOverride) ? feeOverride : (config.tradingFeePercent || 0.040);
+  const gstRate = (config.gstPercent || 18.0) / 100;
+  const effectiveFeeRate = (feeRate / 100) * (1 + gstRate);
+
   const db = await getDb();
   if (db) {
     try {
@@ -136,36 +141,46 @@ export async function getTradeLogs(limit: number = 50, modelId?: string): Promis
         .toArray();
 
       if (Array.isArray(trades)) {
-        return trades.map((t: any) => ({
-          id: t.id || t._id.toString(),
-          symbol: t.symbol,
-          direction: t.direction,
-          orderType: t.orderType || "TAKER",
-          modelId: t.modelId || "15m-sniper-030",
-          modelName: t.modelName || "15M Sniper (+0.30R)",
-          entryPrice: t.entryPrice,
-          exitPrice: t.exitPrice,
-          positionSizeINR: t.positionSizeINR,
-          coins: t.coins,
-          feePercentage: t.feePercentage || 0.040,
-          gstPercentage: t.gstPercentage || 18.0,
-          entryFeeINR: t.entryFeeINR,
-          exitFeeINR: t.exitFeeINR,
-          totalFeeINR: t.totalFeeINR,
-          grossPnLINR: t.grossPnLINR,
-          netPnLINR: t.netPnLINR,
-          stopLoss: t.stopLoss,
-          breakevenTrigger: t.breakevenTrigger,
-          breakevenLocked: t.breakevenLocked,
-          breakevenActivated: t.breakevenActivated,
-          takeProfit1: t.takeProfit1,
-          takeProfit2: t.takeProfit2,
-          status: t.status,
-          exitReason: t.exitReason,
-          triggerReason: t.triggerReason,
-          openedAt: t.openedAt,
-          closedAt: t.closedAt,
-        }));
+        return trades.map((t: any) => {
+          const pos = t.positionSizeINR || 1000;
+          const gross = t.grossPnLINR !== undefined ? t.grossPnLINR : 0;
+          const exitPos = pos + gross;
+          const entryFee = Number((pos * (feeRate / 100) * (1 + gstRate)).toFixed(4));
+          const exitFee = Number((exitPos * (feeRate / 100) * (1 + gstRate)).toFixed(4));
+          const totalFee = Number((entryFee + exitFee).toFixed(4));
+          const net = Number((gross - totalFee).toFixed(2));
+
+          return {
+            id: t.id || t._id.toString(),
+            symbol: t.symbol,
+            direction: t.direction,
+            orderType: t.orderType || (feeRate <= 0.020 ? "MAKER" : "TAKER"),
+            modelId: t.modelId || "15m-sniper-030",
+            modelName: t.modelName || "15M Sniper (+0.30R)",
+            entryPrice: t.entryPrice,
+            exitPrice: t.exitPrice,
+            positionSizeINR: pos,
+            coins: t.coins,
+            feePercentage: feeRate,
+            gstPercentage: config.gstPercent || 18.0,
+            entryFeeINR: entryFee,
+            exitFeeINR: exitFee,
+            totalFeeINR: totalFee,
+            grossPnLINR: gross,
+            netPnLINR: net,
+            stopLoss: t.stopLoss,
+            breakevenTrigger: t.breakevenTrigger,
+            breakevenLocked: t.breakevenLocked,
+            breakevenActivated: t.breakevenActivated,
+            takeProfit1: t.takeProfit1,
+            takeProfit2: t.takeProfit2,
+            status: t.status,
+            exitReason: t.exitReason,
+            triggerReason: t.triggerReason,
+            openedAt: t.openedAt,
+            closedAt: t.closedAt,
+          };
+        });
       }
     } catch (err) {
       console.warn("MongoDB trade logs fetch error, returning memory trades:", err);
@@ -332,9 +347,9 @@ export async function closeTrade(tradeId: string, exitPrice: number, reason: str
   return trade;
 }
 
-// Compute Engine Performance in INR (all models or filtered by modelId)
-export async function computePerformanceMetrics(modelId?: string): Promise<EnginePerformanceMetrics> {
-  const trades = await getTradeLogs(500, modelId);
+// Compute Engine Performance in INR (all models or filtered by modelId, with dynamic fee calculation)
+export async function computePerformanceMetrics(modelId?: string, feeOverride?: number): Promise<EnginePerformanceMetrics> {
+  const trades = await getTradeLogs(500, modelId, feeOverride);
 
   if (!trades || trades.length === 0) {
     return {
