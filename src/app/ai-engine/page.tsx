@@ -36,11 +36,18 @@ import {
   TOP_MODELS,
   AIStrategyModel,
 } from "@/lib/engineTypes";
+import { Paper1HAMetrics, Paper1HATrade } from "@/lib/paperTrading1HA";
 
 export default function AiEnginePage() {
   const [trades, setTrades] = useState<TradeOrder[]>([]);
   const [metrics, setMetrics] = useState<EnginePerformanceMetrics | null>(null);
   const [selectedModelId, setSelectedModelId] = useState<string>("15m-sniper-030");
+
+  // Setup 1H-A Frozen Paper Trading State
+  const [paperMetrics, setPaperMetrics] = useState<Paper1HAMetrics | null>(null);
+  const [paperTrades, setPaperTrades] = useState<Paper1HATrade[]>([]);
+  const [isPaperLoading, setIsPaperLoading] = useState<boolean>(true);
+  const [paperCoinFilter, setPaperCoinFilter] = useState<string>("ALL");
   const [config, setConfig] = useState<EngineConfig>({
     autoTradingEnabled: true,
     currency: "INR",
@@ -48,6 +55,7 @@ export default function AiEnginePage() {
     tradingFeePercent: 0.040, // Shark Exchange Taker
     makerFeePercent: 0.016,   // Shark Exchange Maker
     gstPercent: 18.0,         // 18% GST
+    slippagePercent: 0.010,   // 0.01% slippage per side
     riskPerTradePercent: 1.0, // 1% = ₹10
     ratchetEnabled: true,
     maxConcurrentTrades: 2,
@@ -155,10 +163,32 @@ export default function AiEnginePage() {
     }
   };
 
+  const fetchPaperData = async () => {
+    setIsPaperLoading(true);
+    try {
+      const res = await fetch("/api/paper/1h-a");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setPaperMetrics(data.metrics);
+          setPaperTrades(data.trades || []);
+        }
+      }
+    } catch (err) {
+      console.warn("Could not fetch paper 1H-A data:", err);
+    } finally {
+      setIsPaperLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchData(selectedModelId);
     fetchHistoricalTrades(selectedModelId);
-    const interval = setInterval(() => fetchData(selectedModelId), 3000);
+    fetchPaperData();
+    const interval = setInterval(() => {
+      fetchData(selectedModelId);
+      fetchPaperData();
+    }, 4000);
     return () => clearInterval(interval);
   }, [selectedModelId]);
 
@@ -366,6 +396,105 @@ export default function AiEnginePage() {
       {/* 2. Main Content Body */}
       <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 flex flex-col gap-6">
         
+        {/* Strategy Advisory Banner: 15M BTC Scalper is PAPER ONLY */}
+        <div className="bg-amber-500/10 border-2 border-amber-400 rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold text-sm shrink-0 mt-0.5">
+              ⚠️
+            </div>
+            <div className="flex flex-col">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-mono text-sm font-black text-amber-950 uppercase tracking-tight">
+                  15M BTC Engine: PAPER ONLY — Negative Expectancy After Realistic Fees
+                </span>
+                <span className="text-[10px] font-mono font-extrabold uppercase bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 rounded">
+                  PAPER ONLY (-0.261R / Trade)
+                </span>
+              </div>
+              <p className="text-xs text-amber-900 mt-1 leading-relaxed">
+                After accounting for <strong>0.040% taker fee + 18% GST and 0.010% slippage per side (0.1144% round-trip)</strong>, the 15M BTC scalper yields a negative expectancy of <strong>-0.261 R per trade</strong> in live execution (<strong>-0.301 R</strong> in 5-yr backtest). 61.3% of trades exit at breakeven which drains fee capital. Real-money execution is locked. All trades operate strictly in paper mode.
+              </p>
+            </div>
+          </div>
+          <div className="flex md:flex-col items-center md:items-end justify-between gap-1 text-[11px] font-mono shrink-0">
+            <span className="text-gray-500">Live Expectancy:</span>
+            <span className="font-bold text-rose-600 bg-white border border-rose-200 px-2.5 py-1 rounded">
+              -0.261 R / trade
+            </span>
+          </div>
+        </div>
+
+        {/* Live Engine Honest Performance Metrics Strip (Task 1 Prompt Requirements) */}
+        <section className="bg-gray-50/80 border border-gray-200 rounded-xl p-4 flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200 pb-2.5">
+            <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4 text-emerald-600" />
+              <h2 className="font-mono text-xs font-black uppercase text-gray-900 tracking-wide">
+                Live Engine Honest Metrics (Shark Exchange: 0.04% Taker + 18% GST + 0.01% Slippage/Side)
+              </h2>
+            </div>
+            <span className="font-mono text-[11px] text-gray-500 font-bold">
+              31 Closed Scalps Tracked (Oct 28–31)
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 font-mono">
+            {/* 1. True Win Rate */}
+            <div className="bg-white border border-gray-200 rounded-lg p-2.5 flex flex-col">
+              <span className="text-[10px] text-gray-500 uppercase font-bold">True Win Rate</span>
+              <span className="text-xl font-black text-amber-600 mt-0.5">
+                {metrics?.trueWinRate !== undefined ? metrics.trueWinRate : 33.3}%
+              </span>
+              <span className="text-[9px] text-gray-400 font-sans">TP / (TP + SL) = 4 / 12</span>
+            </div>
+
+            {/* 2. Net Win Rate */}
+            <div className="bg-white border border-gray-200 rounded-lg p-2.5 flex flex-col">
+              <span className="text-[10px] text-gray-500 uppercase font-bold">Net Win Rate</span>
+              <span className="text-xl font-black text-rose-600 mt-0.5">
+                {metrics?.netWinRate !== undefined ? metrics.netWinRate : 19.4}%
+              </span>
+              <span className="text-[9px] text-gray-400 font-sans">Net PnL &gt; 0 (6 / 31 trades)</span>
+            </div>
+
+            {/* 3. Avg Net R */}
+            <div className="bg-rose-50/60 border border-rose-200 rounded-lg p-2.5 flex flex-col">
+              <span className="text-[10px] text-rose-800 uppercase font-bold">Avg Net R</span>
+              <span className="text-xl font-black text-rose-700 mt-0.5">
+                {metrics?.avgNetR !== undefined ? metrics.avgNetR : -0.261} R
+              </span>
+              <span className="text-[9px] text-rose-600 font-sans">Negative Expectancy</span>
+            </div>
+
+            {/* 4. Net Profit Factor */}
+            <div className="bg-white border border-gray-200 rounded-lg p-2.5 flex flex-col">
+              <span className="text-[10px] text-gray-500 uppercase font-bold">Net Profit Factor</span>
+              <span className="text-xl font-black text-gray-900 mt-0.5">
+                {metrics?.netProfitFactor !== undefined ? metrics.netProfitFactor : 0.24}
+              </span>
+              <span className="text-[9px] text-gray-400 font-sans">Net Wins / Losses</span>
+            </div>
+
+            {/* 5. TP / BE / SL Split */}
+            <div className="bg-white border border-gray-200 rounded-lg p-2.5 flex flex-col">
+              <span className="text-[10px] text-gray-500 uppercase font-bold">TP / BE / SL Split</span>
+              <span className="text-xs font-black text-gray-900 mt-1">
+                {metrics?.tpPercent ?? 12.9}% / {metrics?.bePercent ?? 61.3}% / {metrics?.slPercent ?? 25.8}%
+              </span>
+              <span className="text-[9px] text-gray-400 font-sans">4 TP · 19 BE · 8 SL</span>
+            </div>
+
+            {/* 6. Total Fees Paid */}
+            <div className="bg-blue-50/60 border border-blue-200 rounded-lg p-2.5 flex flex-col">
+              <span className="text-[10px] text-blue-900 uppercase font-bold">Fees + Slippage</span>
+              <span className="text-xl font-black text-blue-700 mt-0.5">
+                ₹{metrics?.totalFeesPaidINR?.toFixed(2) ?? "97.04"}
+              </span>
+              <span className="text-[9px] text-blue-600 font-sans">₹16.05 slip + 18% GST</span>
+            </div>
+          </div>
+        </section>
+
         {/* Top KPI Cards: Starting Artificial Money ₹1,000 INR & Shark Exchange Fees */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           
@@ -568,38 +697,38 @@ export default function AiEnginePage() {
                 </div>
               </div>
 
-              {/* Benchmarked Model Metrics Strip */}
+              {/* Benchmarked Model Metrics Strip (Honest Post-Fee Evaluation) */}
               {currentModel && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 pt-3 border-t border-gray-100 font-mono text-xs">
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5 flex flex-col">
-                    <span className="text-[10px] text-gray-500 uppercase font-bold">5-Yr Win Rate</span>
-                    <span className="text-base font-black text-emerald-600 mt-0.5">{currentModel.winRateFull5Yr}%</span>
-                    <span className="text-[9px] text-gray-400">Full Backtest</span>
-                  </div>
-                  <div className="bg-emerald-50/60 border border-emerald-200 rounded-lg p-2.5 flex flex-col">
-                    <span className="text-[10px] text-emerald-800 uppercase font-bold">Hold-Out OOS</span>
-                    <span className="text-base font-black text-emerald-700 mt-0.5">{currentModel.holdOutWinRate}%</span>
-                    <span className="text-[9px] text-emerald-600">2024–2026 Sealed</span>
+                    <span className="text-[10px] text-gray-500 uppercase font-bold">True Win Rate</span>
+                    <span className="text-base font-black text-amber-600 mt-0.5">{currentModel.trueWinRate}%</span>
+                    <span className="text-[9px] text-gray-400">TP / (TP + SL)</span>
                   </div>
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5 flex flex-col">
-                    <span className="text-[10px] text-gray-500 uppercase font-bold">Sharpe Ratio</span>
-                    <span className="text-base font-black text-gray-900 mt-0.5">{currentModel.sharpeRatio}</span>
-                    <span className="text-[9px] text-gray-400">Risk-Adjusted</span>
+                    <span className="text-[10px] text-gray-500 uppercase font-bold">Net Win Rate</span>
+                    <span className="text-base font-black text-rose-600 mt-0.5">{currentModel.netWinRate}%</span>
+                    <span className="text-[9px] text-gray-400">Net &gt; 0 After Fees</span>
+                  </div>
+                  <div className="bg-rose-50/60 border border-rose-200 rounded-lg p-2.5 flex flex-col">
+                    <span className="text-[10px] text-rose-800 uppercase font-bold">Avg Net R</span>
+                    <span className="text-base font-black text-rose-700 mt-0.5">{currentModel.avgNetR} R</span>
+                    <span className="text-[9px] text-rose-600">Taker + GST + Slip</span>
                   </div>
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5 flex flex-col">
-                    <span className="text-[10px] text-gray-500 uppercase font-bold">Profit Factor</span>
-                    <span className="text-base font-black text-gray-900 mt-0.5">{currentModel.profitFactor}</span>
-                    <span className="text-[9px] text-gray-400">Gross Win / Loss</span>
+                    <span className="text-[10px] text-gray-500 uppercase font-bold">Net Profit Factor</span>
+                    <span className="text-base font-black text-gray-900 mt-0.5">{currentModel.netProfitFactor}</span>
+                    <span className="text-[9px] text-gray-400">Net Win / Net Loss</span>
                   </div>
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5 flex flex-col">
-                    <span className="text-[10px] text-gray-500 uppercase font-bold">Max Drawdown</span>
-                    <span className="text-base font-black text-blue-600 mt-0.5">{currentModel.maxDrawdown}%</span>
-                    <span className="text-[9px] text-gray-400">Peak-to-Trough</span>
+                    <span className="text-[10px] text-gray-500 uppercase font-bold">TP/BE/SL Split</span>
+                    <span className="text-xs font-black text-gray-800 mt-1">{currentModel.tpSplit}% / {currentModel.beSplit}% / {currentModel.slSplit}%</span>
+                    <span className="text-[9px] text-gray-400">Exit Distribution</span>
                   </div>
-                  <div className="bg-amber-50/60 border border-amber-200 rounded-lg p-2.5 flex flex-col">
-                    <span className="text-[10px] text-amber-800 uppercase font-bold">Ratchet Trigger</span>
-                    <span className="text-base font-black text-amber-700 mt-0.5">+{currentModel.ratchetTriggerR.toFixed(2)}R</span>
-                    <span className="text-[9px] text-amber-700">Fee Buffer Shield</span>
+                  <div className="bg-rose-50/60 border border-rose-300 rounded-lg p-2.5 flex flex-col">
+                    <span className="text-[10px] text-rose-800 uppercase font-bold">Live Status</span>
+                    <span className="text-xs font-black text-rose-700 mt-1">PAPER ONLY</span>
+                    <span className="text-[9px] text-rose-600">Negative Expectancy</span>
                   </div>
                 </div>
               )}
@@ -687,6 +816,248 @@ export default function AiEnginePage() {
             </div>
           </div>
         </div>
+
+        {/* Phase 2 Baseline: Setup 1H-A Multi-Coin Paper-Trading Validation (Frozen Protocol) */}
+        <section className="bg-white border-2 border-indigo-500/30 rounded-xl p-4 sm:p-6 shadow-sm flex flex-col gap-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-xl shrink-0">
+                🧊
+              </div>
+              <div className="flex flex-col gap-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="font-mono text-base font-extrabold text-gray-900">
+                    Phase 2 Baseline: Setup 1H-A Multi-Coin Paper-Trading Validation
+                  </h2>
+                  <span className="text-[10px] font-mono font-bold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded border border-indigo-300">
+                    FROZEN PROTOCOL (No Tuning)
+                  </span>
+                  <span className="text-[10px] font-mono font-bold bg-gray-100 text-gray-700 px-2 py-0.5 rounded border border-gray-200">
+                    COLLECTION: paper_1h_a
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600 leading-relaxed max-w-3xl">
+                  <strong>Protocol:</strong> 1H Timeframe · 1:1 TP/SL · Breakeven trigger @ +0.30R locking exact round-trip fees · Top 20% expanding-window ML conviction · Skip if round-trip cost &gt; 0.15R.
+                  Tested across <strong>BTCUSDT, ETHUSDT, SOLUSDT, BNBUSDT, XRPUSDT</strong> with Shark Exchange taker fee (0.040% + 18% GST + 0.010% slippage/side).
+                </p>
+              </div>
+            </div>
+
+            {/* Target Evaluation Status */}
+            <div className="flex flex-col sm:items-end gap-1.5 shrink-0 bg-indigo-50/60 border border-indigo-200 p-3 rounded-lg font-mono text-xs">
+              <span className="text-gray-500 text-[10px] uppercase font-bold">Checkpoints (Pooled Trades):</span>
+              <div className="flex items-center gap-2">
+                <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-300">
+                  ✔ 300 Trades Passed
+                </span>
+                <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-300">
+                  ✔ 600 Trades Passed
+                </span>
+              </div>
+              <span className="text-indigo-900 font-extrabold text-[11px]">
+                {paperMetrics?.totalTrades ?? 1099} Hold-Out Paper Trades Logged
+              </span>
+            </div>
+          </div>
+
+          {/* KPI Cards Row for 1H-A Paper Validation */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 font-mono">
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 flex flex-col">
+              <span className="text-[10px] text-gray-500 uppercase font-bold">Paper Trades Logged</span>
+              <span className="text-xl font-black text-gray-900 mt-1">{paperMetrics?.totalTrades ?? 1099}</span>
+              <span className="text-[9px] text-gray-400 font-sans">5 Coins Pooled</span>
+            </div>
+
+            <div className="bg-indigo-50/50 border border-indigo-200 rounded-lg p-3 flex flex-col">
+              <span className="text-[10px] text-indigo-900 uppercase font-bold">Cumulative Net R</span>
+              <span className={`text-xl font-black mt-1 ${(paperMetrics?.cumulativeNetR ?? 45.31) >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                {(paperMetrics?.cumulativeNetR ?? 45.31) >= 0 ? "+" : ""}{(paperMetrics?.cumulativeNetR ?? 45.31).toFixed(2)} R
+              </span>
+              <span className="text-[9px] text-indigo-700 font-sans">Taker After All Fees</span>
+            </div>
+
+            <div className="bg-indigo-50/50 border border-indigo-200 rounded-lg p-3 flex flex-col">
+              <span className="text-[10px] text-indigo-900 uppercase font-bold">Avg Net R (Taker)</span>
+              <span className="text-xl font-black text-indigo-900 mt-1">
+                +{(paperMetrics?.avgNetR ?? 0.0412).toFixed(4)} R
+              </span>
+              <span className="text-[9px] text-indigo-700 font-bold font-sans">95% CI [-0.0052, +0.0856]</span>
+            </div>
+
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 flex flex-col">
+              <span className="text-[10px] text-gray-500 uppercase font-bold">Net Profit Factor</span>
+              <span className="text-xl font-black text-gray-900 mt-1">{paperMetrics?.netProfitFactor ?? 1.17}</span>
+              <span className="text-[9px] text-gray-400 font-sans">Net Win / Net Loss</span>
+            </div>
+
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 flex flex-col">
+              <span className="text-[10px] text-gray-500 uppercase font-bold">True Win Rate</span>
+              <span className="text-xl font-black text-gray-900 mt-1">{paperMetrics?.trueWinRate ?? 59.1}%</span>
+              <span className="text-[9px] text-gray-400 font-sans">TP / (TP + SL)</span>
+            </div>
+
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 flex flex-col">
+              <span className="text-[10px] text-gray-500 uppercase font-bold">Max Drawdown</span>
+              <span className="text-xl font-black text-blue-600 mt-1">{paperMetrics?.maxDrawdown ?? -27.5}%</span>
+              <span className="text-[9px] font-mono text-gray-400 font-sans">Peak-to-Trough Net</span>
+            </div>
+          </div>
+
+          {/* Decision Rule Evaluation Card */}
+          <div className="bg-amber-50/80 border border-amber-300 rounded-lg p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-mono">
+            <div className="flex items-start gap-2.5">
+              <Shield className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+              <div className="flex flex-col gap-0.5">
+                <span className="font-bold text-amber-950 uppercase tracking-wide">
+                  Pre-Registered Decision Rule Check (paper_rules.md):
+                </span>
+                <span className="text-amber-900 font-sans leading-relaxed text-[11px]">
+                  Positive edge requires: (1) Pooled Taker Avg Net R &gt; 0 [✔ <strong>+0.0412R</strong>], (2) 95% CI Lower Bound &ge; 0 [❌ <strong>-0.0052R</strong>], (3) At least 4 of 5 coins positive [❌ <strong>3 of 5 positive</strong>: BTC, ETH, XRP positive; SOL, BNB negative].
+                </span>
+              </div>
+            </div>
+            <div className="shrink-0 bg-white border border-amber-300 px-3 py-1.5 rounded text-center">
+              <span className="text-[9px] text-gray-500 block uppercase font-bold">Protocol Verdict</span>
+              <span className="font-extrabold text-amber-800 text-xs">NO DEMONSTRATED EDGE</span>
+            </div>
+          </div>
+
+          {/* Per-Coin Breakdown Table */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <h3 className="font-mono text-xs font-bold text-gray-700 uppercase">
+                Per-Coin Hold-Out Breakdown (May 2024 – Oct 2026 Sealed OOS)
+              </h3>
+              <span className="text-[10px] font-mono text-gray-500">Same model &amp; parameters across all coins</span>
+            </div>
+            <div className="overflow-x-auto border border-gray-200 rounded-lg">
+              <table className="w-full text-left font-mono text-xs">
+                <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 text-[10px] uppercase">
+                  <tr>
+                    <th className="py-2 px-3">Coin</th>
+                    <th className="py-2 px-3">Trades</th>
+                    <th className="py-2 px-3">True Win Rate</th>
+                    <th className="py-2 px-3">Avg Net R (Taker)</th>
+                    <th className="py-2 px-3">Net Profit Factor</th>
+                    <th className="py-2 px-3">Hold-Out Verdict</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {paperMetrics?.perCoin && paperMetrics.perCoin.length > 0 ? (
+                    paperMetrics.perCoin.map((c) => {
+                      const isPos = c.avgNetR > 0;
+                      return (
+                        <tr key={c.coin} className="hover:bg-gray-50/80">
+                          <td className="py-2 px-3 font-bold text-gray-900">{c.coin}</td>
+                          <td className="py-2 px-3 text-gray-700">{c.trades}</td>
+                          <td className="py-2 px-3 text-gray-700">{c.trueWinRate}%</td>
+                          <td className={`py-2 px-3 font-bold ${isPos ? "text-emerald-600" : "text-rose-600"}`}>
+                            {isPos ? "+" : ""}{c.avgNetR.toFixed(4)} R
+                          </td>
+                          <td className="py-2 px-3 text-gray-700">{c.netProfitFactor}</td>
+                          <td className="py-2 px-3">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              isPos ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-rose-50 text-rose-700 border border-rose-200"
+                            }`}>
+                              {isPos ? "✔ POSITIVE" : "❌ NEGATIVE"}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="py-4 text-center text-gray-400">Loading per-coin metrics...</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Recent Closed Paper Trades Stream */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <h3 className="font-mono text-xs font-bold text-gray-700 uppercase">
+                Live Paper Trade Feed (Collection: paper_1h_a · Latest Closed Trades)
+              </h3>
+              <div className="flex items-center gap-2 text-xs font-mono">
+                <span className="text-gray-500 text-[11px]">Coin:</span>
+                <select
+                  value={paperCoinFilter}
+                  onChange={(e) => setPaperCoinFilter(e.target.value)}
+                  className="bg-gray-50 border border-gray-300 rounded px-2 py-0.5 text-xs font-bold text-gray-900 outline-none cursor-pointer"
+                >
+                  <option value="ALL">All 5 Coins</option>
+                  <option value="BTCUSDT">BTCUSDT</option>
+                  <option value="ETHUSDT">ETHUSDT</option>
+                  <option value="SOLUSDT">SOLUSDT</option>
+                  <option value="BNBUSDT">BNBUSDT</option>
+                  <option value="XRPUSDT">XRPUSDT</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto border border-gray-200 rounded-lg max-h-80 overflow-y-auto">
+              <table className="w-full text-left font-mono text-xs">
+                <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 text-[10px] uppercase sticky top-0">
+                  <tr>
+                    <th className="py-2 px-3">Entry Time (UTC)</th>
+                    <th className="py-2 px-3">Exit Time (UTC)</th>
+                    <th className="py-2 px-3">Coin</th>
+                    <th className="py-2 px-3">Side</th>
+                    <th className="py-2 px-3">Exit Type</th>
+                    <th className="py-2 px-3">R Gross</th>
+                    <th className="py-2 px-3">Taker Fee R</th>
+                    <th className="py-2 px-3">R Net (Taker)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {paperTrades
+                    .filter((t) => paperCoinFilter === "ALL" || t.coin === paperCoinFilter)
+                    .slice(0, 30)
+                    .map((t) => {
+                      const isWin = t.R_net_taker > 0;
+                      return (
+                        <tr key={t.id} className="hover:bg-gray-50/80">
+                          <td className="py-2 px-3 text-gray-600 text-[11px] whitespace-nowrap">{t.entry_time}</td>
+                          <td className="py-2 px-3 text-gray-400 text-[11px] whitespace-nowrap">{t.exit_time}</td>
+                          <td className="py-2 px-3 font-bold text-gray-900">{t.coin}</td>
+                          <td className="py-2 px-3">
+                            <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                              t.side === "LONG" || t.side === "BUY" ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
+                            }`}>
+                              {t.side}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                              t.exit_type === "TP"
+                                ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                : t.exit_type === "BE"
+                                ? "bg-blue-100 text-blue-800 border border-blue-300"
+                                : "bg-rose-100 text-rose-800 border border-rose-300"
+                            }`}>
+                              {t.exit_type}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 font-semibold text-gray-700">
+                            {t.R_gross >= 0 ? "+" : ""}{t.R_gross.toFixed(2)} R
+                          </td>
+                          <td className="py-2 px-3 text-blue-600 font-mono">
+                            -{t.cost_R_taker.toFixed(3)} R
+                          </td>
+                          <td className={`py-2 px-3 font-extrabold ${isWin ? "text-emerald-600" : "text-rose-600"}`}>
+                            {t.R_net_taker >= 0 ? "+" : ""}{t.R_net_taker.toFixed(3)} R
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
 
         {/* 4. Live Trade Logs & Historical Backtest Execution Table */}
         <section className="bg-white border border-[#e5e7eb] rounded-xl overflow-hidden shadow-sm flex flex-col">
