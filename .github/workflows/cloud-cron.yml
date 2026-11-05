@@ -12,5 +12,7 @@ jobs:
     steps:
       - name: Ping Trader-Pro Scalp Endpoint
         run: |
-          echo "Calling Vercel AI Scalp Engine..."
+          echo "Calling Vercel AI Scalp Engine (15M)..."
           curl -s -X GET "https://trader-pro-dashboard.vercel.app/api/cron/scalp" | jq . || true
+          echo "Calling Vercel AI Paper 1H-A Executor..."
+          curl -s -X GET "https://trader-pro-dashboard.vercel.app/api/cron/paper-1h-a" | jq . || true
