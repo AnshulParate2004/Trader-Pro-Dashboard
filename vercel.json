@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/paper-1h-a",
+      "schedule": "1 * * * *"
+    },
+    {
+      "path": "/api/cron/scalp",
+      "schedule": "*/15 * * * *"
+    }
+  ]
+}

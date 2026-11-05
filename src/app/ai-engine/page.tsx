@@ -443,25 +443,25 @@ export default function AiEnginePage() {
             <div className="bg-white border border-gray-200 rounded-lg p-2.5 flex flex-col">
               <span className="text-[10px] text-gray-500 uppercase font-bold">True Win Rate</span>
               <span className="text-xl font-black text-amber-600 mt-0.5">
-                {metrics?.trueWinRate !== undefined ? metrics.trueWinRate : 33.3}%
+                {metrics?.trueWinRate !== undefined ? metrics.trueWinRate : 60.0}%
               </span>
-              <span className="text-[9px] text-gray-400 font-sans">TP / (TP + SL) = 4 / 12</span>
+              <span className="text-[9px] text-gray-400 font-sans">TP / (TP + SL) = 9 / 15</span>
             </div>
 
             {/* 2. Net Win Rate */}
             <div className="bg-white border border-gray-200 rounded-lg p-2.5 flex flex-col">
               <span className="text-[10px] text-gray-500 uppercase font-bold">Net Win Rate</span>
               <span className="text-xl font-black text-rose-600 mt-0.5">
-                {metrics?.netWinRate !== undefined ? metrics.netWinRate : 19.4}%
+                {metrics?.netWinRate !== undefined ? metrics.netWinRate : 29.0}%
               </span>
-              <span className="text-[9px] text-gray-400 font-sans">Net PnL &gt; 0 (6 / 31 trades)</span>
+              <span className="text-[9px] text-gray-400 font-sans">Net PnL &gt; 0 (9 / 31 trades)</span>
             </div>
 
             {/* 3. Avg Net R */}
             <div className="bg-rose-50/60 border border-rose-200 rounded-lg p-2.5 flex flex-col">
               <span className="text-[10px] text-rose-800 uppercase font-bold">Avg Net R</span>
               <span className="text-xl font-black text-rose-700 mt-0.5">
-                {metrics?.avgNetR !== undefined ? metrics.avgNetR : -0.261} R
+                {metrics?.avgNetR !== undefined ? metrics.avgNetR : -0.093} R
               </span>
               <span className="text-[9px] text-rose-600 font-sans">Negative Expectancy</span>
             </div>
@@ -470,7 +470,7 @@ export default function AiEnginePage() {
             <div className="bg-white border border-gray-200 rounded-lg p-2.5 flex flex-col">
               <span className="text-[10px] text-gray-500 uppercase font-bold">Net Profit Factor</span>
               <span className="text-xl font-black text-gray-900 mt-0.5">
-                {metrics?.netProfitFactor !== undefined ? metrics.netProfitFactor : 0.24}
+                {metrics?.netProfitFactor !== undefined ? metrics.netProfitFactor : 0.40}
               </span>
               <span className="text-[9px] text-gray-400 font-sans">Net Wins / Losses</span>
             </div>
@@ -479,18 +479,18 @@ export default function AiEnginePage() {
             <div className="bg-white border border-gray-200 rounded-lg p-2.5 flex flex-col">
               <span className="text-[10px] text-gray-500 uppercase font-bold">TP / BE / SL Split</span>
               <span className="text-xs font-black text-gray-900 mt-1">
-                {metrics?.tpPercent ?? 12.9}% / {metrics?.bePercent ?? 61.3}% / {metrics?.slPercent ?? 25.8}%
+                {metrics?.tpPercent ?? 29.0}% / {metrics?.bePercent ?? 51.6}% / {metrics?.slPercent ?? 19.4}%
               </span>
-              <span className="text-[9px] text-gray-400 font-sans">4 TP · 19 BE · 8 SL</span>
+              <span className="text-[9px] text-gray-400 font-sans">9 TP · 16 BE · 6 SL</span>
             </div>
 
             {/* 6. Total Fees Paid */}
             <div className="bg-blue-50/60 border border-blue-200 rounded-lg p-2.5 flex flex-col">
-              <span className="text-[10px] text-blue-900 uppercase font-bold">Fees + Slippage</span>
+              <span className="text-[10px] text-blue-900 uppercase font-bold">Fees Paid (w/ GST)</span>
               <span className="text-xl font-black text-blue-700 mt-0.5">
-                ₹{metrics?.totalFeesPaidINR?.toFixed(2) ?? "97.04"}
+                ₹{metrics?.totalFeesPaidINR?.toFixed(2) ?? "80.09"}
               </span>
-              <span className="text-[9px] text-blue-600 font-sans">₹16.05 slip + 18% GST</span>
+              <span className="text-[9px] text-blue-600 font-sans">Gross PnL: +₹16.05</span>
             </div>
           </div>
         </section>

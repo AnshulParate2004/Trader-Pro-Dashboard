@@ -36,7 +36,35 @@ export interface Paper1HAMetrics {
   }[];
 }
 
-export async function getPaper1HAMetrics(): Promise<{ metrics: Paper1HAMetrics; trades: Paper1HATrade[] }> {
+export interface BacktestHoldoutBTC {
+  label: string;
+  window: string;
+  trades: number;
+  trueWinRate: number;
+  avgNetR: number;
+  ciLower: number;
+  ciUpper: number;
+  netProfitFactor: number;
+  cumulativeNetR: number;
+}
+
+export const BACKTEST_HOLDOUT_BTC: BacktestHoldoutBTC = {
+  label: "Backtest hold-out (2024-05 to 2026-10)",
+  window: "2024-05-01 to 2026-10-27",
+  trades: 104,
+  trueWinRate: 62.7,
+  avgNetR: 0.0669,
+  ciLower: -0.065,
+  ciUpper: 0.197,
+  netProfitFactor: 1.33,
+  cumulativeNetR: 6.96,
+};
+
+export async function getPaper1HAMetrics(): Promise<{
+  metrics: Paper1HAMetrics;
+  trades: Paper1HATrade[];
+  backtestHoldout: BacktestHoldoutBTC;
+}> {
   const db = await getDb();
   let trades: Paper1HATrade[] = [];
 
@@ -80,6 +108,7 @@ export async function getPaper1HAMetrics(): Promise<{ metrics: Paper1HAMetrics; 
         perCoin: [],
       },
       trades: [],
+      backtestHoldout: BACKTEST_HOLDOUT_BTC,
     };
   }
 
@@ -171,5 +200,6 @@ export async function getPaper1HAMetrics(): Promise<{ metrics: Paper1HAMetrics; 
       perCoin,
     },
     trades: trades.slice(0, 50),
+    backtestHoldout: BACKTEST_HOLDOUT_BTC,
   };
 }

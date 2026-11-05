@@ -423,12 +423,14 @@ export async function computePerformanceMetrics(modelId?: string, feeOverride?: 
       const gross = t.grossPnLINR || 0;
       const net = t.netPnLINR || 0;
 
-      // Classify exit reason into TP, BE, or SL
+      // Classify exit reason accurately into TP, BE, or SL directly from exitReason label
       const reason = (t.exitReason || "").toUpperCase();
-      if (reason.includes("TP") || reason.includes("TAKE_PROFIT") || gross >= 6) {
+      if (reason.includes("TAKE PROFIT") || reason.includes("TAKE_PROFIT") || reason.includes("TP")) {
         tpCount++;
-      } else if (reason.includes("BE") || reason.includes("RATCHET") || reason.includes("BREAKEVEN") || (gross > 0 && gross < 5)) {
+      } else if (reason.includes("BREAKEVEN") || reason.includes("RATCHET") || reason.includes("BE")) {
         beCount++;
+      } else if (reason.includes("STOP LOSS") || reason.includes("STOP_LOSS") || reason.includes("SL")) {
+        slCount++;
       } else {
         slCount++;
       }

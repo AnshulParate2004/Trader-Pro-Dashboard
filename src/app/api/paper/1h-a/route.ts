@@ -8,6 +8,7 @@ export async function GET() {
       success: true,
       metrics: data.metrics,
       trades: data.trades,
+      backtestHoldout: data.backtestHoldout,
     });
   } catch (error: any) {
     return NextResponse.json(
