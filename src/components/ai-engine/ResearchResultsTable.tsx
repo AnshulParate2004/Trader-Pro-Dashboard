@@ -131,9 +131,9 @@ export const ResearchResultsTable: React.FC = () => {
               {RESEARCH_STUDIES.map((study) => {
                 let badgeClass = "bg-rose-50 text-loss-dark border-loss/30";
                 if (study.verdict === "NO_EDGE") {
-                  badgeClass = "bg-amber-50 text-amber-900 border-amber-300";
-                } else if (study.verdict === "INCONCLUSIVE") {
                   badgeClass = "bg-blue-50 text-chrome-dim border-blue-200";
+                } else if (study.verdict === "INCONCLUSIVE") {
+                  badgeClass = "bg-chrome-field text-chrome-dim border-chrome-line";
                 }
 
                 return (

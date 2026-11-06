@@ -33,8 +33,8 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
         {/* Left: Headline & Explanation */}
         <div className="flex flex-col gap-2.5 max-w-3xl">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-50 text-amber-900 border border-amber-300 font-mono text-[11px] font-bold uppercase tracking-wider">
-              <ShieldAlert className="w-3.5 h-3.5 text-amber-700" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-accent-tint text-chrome-green-ink border border-accent/40 font-mono text-[11px] font-bold uppercase tracking-wider">
+              <ShieldAlert className="w-3.5 h-3.5 text-chrome-green-ink" />
               PAPER ONLY · Negative Expectancy
             </span>
 

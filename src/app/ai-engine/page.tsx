@@ -353,7 +353,7 @@ export default function AiEnginePage() {
             className={`hidden sm:flex items-center gap-1.5 font-mono text-[11px] px-2.5 py-0.5 rounded border ${
               mongoConnected
                 ? "bg-win-tint text-win-dark border-win/30"
-                : "bg-amber-50 text-amber-900 border-amber-300"
+                : "bg-chrome-field text-chrome-dim border-chrome-line"
             }`}
             title="MongoDB Atlas Cluster: cluster0.ilejs4x.mongodb.net"
           >

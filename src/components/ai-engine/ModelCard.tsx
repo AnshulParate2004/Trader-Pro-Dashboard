@@ -106,10 +106,10 @@ export const ModelCard: React.FC<ModelCardProps> = ({
             <span className="text-[9px] text-chrome-dim font-sans">Exit Distribution</span>
           </div>
 
-          <div className="bg-amber-50/70 border border-amber-300 rounded p-2 flex flex-col overflow-hidden">
-            <span className="text-[10px] text-amber-900 uppercase font-bold">Live Status</span>
-            <span className="text-xs font-bold text-amber-800 mt-1">PAPER ONLY</span>
-            <span className="text-[9px] text-amber-700 font-sans">Negative Expectancy</span>
+          <div className="bg-accent-tint border border-accent/40 rounded p-2 flex flex-col overflow-hidden">
+            <span className="text-[10px] text-chrome-green-ink uppercase font-bold">Live Status</span>
+            <span className="text-xs font-bold text-chrome-green-ink mt-1">PAPER ONLY</span>
+            <span className="text-[9px] text-chrome-dim font-sans">Negative Expectancy</span>
           </div>
         </div>
       )}

@@ -27,8 +27,8 @@ The portfolio uses an editorial, technical aesthetic combining custom Swiss/Germ
 ## 2. Color Palette & Design Tokens
 
 ### Primary Accent
-- **Accent (User Designated):** `#D97757` (Warm Terracotta / Clay)
-- **Accent Light / Subtle Tint:** `#FBF0EB` / `rgba(217, 119, 87, 0.12)` (Used for active badge backgrounds and focus rings)
+- **Accent (Portfolio Green):** `#007D33` (Green Ink: `rgb(0 125 51)`) / `#00C851` (Bright Chrome Green)
+- **Accent Light / Subtle Tint:** `rgba(0, 200, 81, 0.10)` (Used for active badge backgrounds and focus rings)
 - **Accent Foreground:** `#FFFFFF`
 
 ### Neutrals (Stagehand Chrome System)
