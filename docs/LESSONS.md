@@ -9,7 +9,7 @@
 
 ## 1. Executive Summary
 
-Between October and November 2026, an exhaustive quantitative audit of the Trader-Pro algorithmic trading systems (15M, 1H, and 4H LightGBM + Donchian breakout models across BTCUSDT and multi-coin universes) revealed that **nominal historical outperformance was an artifact of multiple compounding compounding methodology flaws**:
+Between October and November 2026, an exhaustive quantitative audit of the Trader-Pro algorithmic trading systems (15M, 1H, and 4H LightGBM + Donchian breakout models across BTCUSDT and multi-coin universes) evaluated at least 126 formal variants; the true count across all studies is higher and was not tracked (including 108 variants in the 4H-B pre-registered parameter grid on DEV folds, plus earlier multi-coin iterations; the 18 Phase-B2 parameter sets were exploratory proposals and were never run). The audit revealed that **nominal historical outperformance was an artifact of multiple compounding methodology flaws**:
 1. Target label lookahead leakage in training scripts.
 2. Favorable execution assumptions in the historical backtesting engine that generated phantom profits on pure synthetic random walk noise.
 3. Unintentional in-sample evaluation masquerading as out-of-sample hold-out testing.
@@ -129,8 +129,8 @@ Before any new strategy, signal, or timeframe may be committed, backtested, or p
 ### Gate 4: Cost Friction Feasibility Ratio
 - [ ] Calculate the friction-to-stop ratio before testing:
   $$\text{cost\_R} = \frac{\text{Round-Trip Friction \%}}{\text{Median Stop Distance \%}}$$
-- [ ] **Pass Requirement:** $\text{cost\_R} \le 0.025$ ($2.5\%$ of risk).  
-  *Strategies with $\text{cost\_R} > 0.05$ ($5\%$ fee drag) are automatically rejected prior to research.*
+- [ ] **Pass Requirement:** $\text{cost\_R} \le 0.05$ (round-trip exchange friction must not consume more than $5.0\%$ of the initial stop distance).
+- [ ] **Economic Rationale:** At standard taker friction ($0.1144\%$ round turn), a $5\%$ cap mandates a minimum median stop distance of $\ge 2.29\%$. When fee drag exceeds $5\%$ of risk (such as scalping with $0.23\%$ stops where $\text{cost\_R} \approx 0.50$), even an exceptional gross edge is entirely wiped out by exchange fees. Capping $\text{cost\_R} \le 0.05$ guarantees that at least $95\%$ of gross trade expectation survives to net PnL.
 
 ### Gate 5: Sealed Out-of-Sample Integrity
 - [ ] All model parameters, hyperparameters, and conviction thresholds must be fit strictly on data prior to a sealed cutoff date.
@@ -143,6 +143,12 @@ Before any new strategy, signal, or timeframe may be committed, backtested, or p
   $$\text{R} = \frac{\text{Net PnL}}{\text{Actual Entry Risk Amount}}$$
 - [ ] Never divide by fixed notional percentages.
 
+### Gate 7: Factor Exposure & Residual Edge Attribution Invariant
+- [ ] Any proposed strategy must be evaluated against predeclared simple baseline exposures (e.g. underlying asset buy-and-hold) using returns-based OLS with Newey-West HAC inference (`residual-edge-analyzer`).
+- [ ] **Pass Requirement:** The strategy must demonstrate statistically significant residual alpha with $t_{\text{HAC}} \ge 2.0$ after controlling for market beta ($\beta$), and rolling positive alpha fraction $\ge 60\%$.
+- [ ] If apparent gains are fully explained by systematic beta loading and cash allocation (e.g., $t_{\alpha} < 2.0$), the strategy must be classified as `RESIDUAL_FRAGILE` and cannot be claimed as an independent alpha edge.
+- [ ] **Calendar Scaling Invariant:** In crypto markets (24/7/365), annualization factors must be set to 365 days, not the equity-default 252 days, to prevent 31% return distortion.
+
 ---
 
 ## 4. Current Architecture Status
@@ -152,3 +158,4 @@ Before any new strategy, signal, or timeframe may be committed, backtested, or p
    - *Optimistic Fills:* $+0.0412\text{R}$ (assumes zero-slippage stop fills at entry + fees).
    - *Pessimistic Fills:* $-0.0074\text{R}$ (honest entry fill with fees paid).
 3. **Future Research:** Strictly confined to low-turnover, macro regimes (Daily/Weekly trend following and delta-neutral funding harvest) where holding periods span days to weeks and fee friction drops to $< 2\%$ of gross edge.
+4. **Daily Macro Benchmarks (Donchian 20/10 Tool Tests on BTC & ETH):** Falsification tests confirmed that while simple trend rules provide drawdown dampening (-53.9% on BTC, -65.6% on ETH) by holding ~50% cash, their apparent alpha is not statistically significant ($t_{\text{HAC}} = 1.25$ on BTC, $0.89$ on ETH). They serve as robust execution baselines, not claims of independent edge.
