@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { jwtVerify } from "jose/jwt/verify";
+import { jwtVerify } from "jose";
 
 const AUTH_COOKIE_NAME = "trader_pro_session";
 
@@ -23,7 +23,8 @@ async function verifyToken(token: string): Promise<boolean> {
   try {
     await jwtVerify(token, getAuthSecret());
     return true;
-  } catch {
+  } catch (err) {
+    console.warn("Middleware JWT verification rejected:", err instanceof Error ? err.message : err);
     return false;
   }
 }

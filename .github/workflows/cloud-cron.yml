@@ -10,14 +10,10 @@ jobs:
   run-scalp-cycle:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Trader-Pro Scalp Endpoint
+      - name: Ping Trader-Pro Paper 1H-A Executor
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          echo "Calling Vercel AI Scalp Engine (15M)..."
-          curl -fsS --max-time 30 -X GET \
-            -H "Authorization: Bearer ${CRON_SECRET}" \
-            "https://trader-pro-dashboard.vercel.app/api/cron/scalp"
           echo "Calling Vercel AI Paper 1H-A Executor..."
           curl -fsS --max-time 30 -X GET \
             -H "Authorization: Bearer ${CRON_SECRET}" \

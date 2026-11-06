@@ -1,5 +1,4 @@
-import { SignJWT } from "jose/jwt/sign";
-import { jwtVerify } from "jose/jwt/verify";
+import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 
 export interface AuthUser {
@@ -26,6 +25,22 @@ function getAuthSecret(): Uint8Array {
     );
   }
   return new TextEncoder().encode(secret);
+}
+
+// Validate CRON_SECRET configuration (Mandatory in production)
+export function validateCronSecret(): string {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "CRITICAL SECURITY CONFIGURATION ERROR: CRON_SECRET environment variable is missing in production."
+      );
+    }
+    throw new Error(
+      "CRON_SECRET is required. Please define CRON_SECRET in your .env.local file for local development."
+    );
+  }
+  return secret;
 }
 
 // Generate signed JWT session token (HS256, 30 days)
