@@ -41,6 +41,12 @@ Thumbs.db
 .vscode/
 *.sw?
 
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.ipynb_checkpoints/
+
 # Scratch & test verification assets
 *.png
 /scripts/
