@@ -11,6 +11,7 @@ Trader-Pro is a full-stack quantitative trading platform and paper-execution eng
 > Following an exhaustive institutional audit of feature engineering lookahead leakage, execution simulator bias, fee friction drag, and hold-out contamination, **no quantitative strategy in this repository has demonstrated a statistically verified positive net alpha edge**.
 > - **Live Real-Money Trading:** **DISABLED.** All engines operate strictly in paper-trading simulation mode.
 > - **Setup 1H-A Forward Run:** **1,099 closed trades** recorded in `paper_1h_a`.
+> - **Exact 1H-A Paper Execution Today:** The forward runner (`/api/cron/paper-1h-a`) executes on hourly snapshot closes using handcrafted momentum/breakout heuristics (neither LightGBM nor joblib models are loaded at runtime; `FROZEN_1H_A_MODEL_HASH` is a static metadata string). Intrahour TP/SL touches are missed by the hourly close evaluation, and funding rates are not modelled. See [`paper_rules.md`](paper_rules.md) for full execution audit details.
 > - **Shadow Metric Architecture:** The dashboard surfaces dual execution accounting side-by-side:
 >   - *Optimistic Paper Accounting:* $+0.0412\text{R}$ (assumes zero-slippage stop fills at entry + fee offset).
 >   - *Strict-Fill Shadow Metric:* $-0.0074\text{R}$ (honest entry fills with full round-trip friction and realistic stops).

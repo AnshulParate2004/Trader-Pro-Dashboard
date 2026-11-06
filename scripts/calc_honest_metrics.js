@@ -1,5 +1,5 @@
 const { MongoClient } = require('D:/Projects_Main/Trade-Pro/Trader-Pro-Dashboard/node_modules/mongodb');
-const uri = "mongodb+srv://aibot:N8VrpfZ1w3UnbTge@cluster0.ilejs4x.mongodb.net/that?retryWrites=true&w=majority";
+const uri = process.env.MONGODB_URI;
 
 async function check() {
   const client = new MongoClient(uri);

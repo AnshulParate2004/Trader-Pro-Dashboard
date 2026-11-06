@@ -1,4 +1,4 @@
-process.env.MONGODB_URI = "mongodb+srv://aibot:N8VrpfZ1w3UnbTge@cluster0.ilejs4x.mongodb.net/that?retryWrites=true&w=majority";
+// MONGODB_URI is read from process.env.MONGODB_URI
 
 import { runPaper1HAExecutor } from "../src/lib/paperExecutor1HA";
 

@@ -2,7 +2,7 @@ const { MongoClient } = require('D:/Projects_Main/Trade-Pro/Trader-Pro-Dashboard
 const fs = require('fs');
 const path = require('path');
 
-const uri = "mongodb+srv://aibot:N8VrpfZ1w3UnbTge@cluster0.ilejs4x.mongodb.net/that?retryWrites=true&w=majority";
+const uri = process.env.MONGODB_URI;
 
 async function seed() {
   const client = new MongoClient(uri);

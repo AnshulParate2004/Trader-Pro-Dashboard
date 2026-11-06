@@ -2,7 +2,7 @@ import { MongoClient, ObjectId } from "mongodb";
 import { Candle, getModelPrediction } from "../src/lib/lgbmEvaluator";
 import { calculateSharkExchangeFees } from "../src/lib/tradingEngine";
 
-const uri = "mongodb+srv://aibot:N8VrpfZ1w3UnbTge@cluster0.ilejs4x.mongodb.net/that?retryWrites=true&w=majority";
+const uri = process.env.MONGODB_URI;
 
 async function fetchBinanceHistorical(interval: string, startTimeMs: number, endTimeMs: number): Promise<Candle[]> {
   const allCandles: Candle[] = [];
@@ -39,6 +39,7 @@ async function fetchBinanceHistorical(interval: string, startTimeMs: number, end
 
 async function main() {
   console.log("Connecting to MongoDB Atlas...");
+  if (!uri) throw new Error('MONGODB_URI required');
   const client = new MongoClient(uri);
   await client.connect();
   const db = client.db("that");
