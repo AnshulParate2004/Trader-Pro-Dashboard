@@ -157,46 +157,12 @@ export async function GET(req: Request) {
     if (remainingActive >= 1) {
       actionsTaken.push(`AI Holding 1 Active Position: Capital fully allocated. Awaiting Target TP, Ratchet, or Vertical Time Barrier exit before taking next trade.`);
     } else {
-      // Check if a brand-new candle on the active cadence has just closed
-      const lastProcessedTime = config.lastProcessedClosedBarTime || 0;
-      const isNewClosedCandle = executionCandle.openTime > lastProcessedTime;
-
-      if (!isNewClosedCandle) {
-        const minsLeft = Math.floor(candleClosingInSeconds / 60);
-        const secsLeft = candleClosingInSeconds % 60;
-        actionsTaken.push(`Candle-Close Standby: Current ${executionInterval} candle is forming (closes in ${minsLeft}m ${secsLeft}s). Next trade evaluation strictly on candle close.`);
-      } else {
-        // A new candle has closed! Evaluate signal on this closed candle:
-        if (prediction.signal === "BUY") {
-          const newTrade = await executeNewTrade({
-            symbol: "BTCUSDT",
-            direction: "LONG",
-            entryPrice: currentPrice,
-            atr,
-            triggerReason: `Candle Close Signal [${prediction.modelName}]: Bar ${new Date(executionCandle.openTime).toISOString()} Closed + LightGBM P_Long ${(prediction.pLong * 100).toFixed(1)}% (Conviction ${prediction.confidence}%, HTF Score: ${prediction.htfScore.toFixed(2)})`,
-            customFeePercent: config.tradingFeePercent,
-            modelId: config.activeModelId,
-          });
-          await updateEngineConfig({ lastProcessedClosedBarTime: executionCandle.openTime });
-          actionsTaken.push(`[AI AUTONOMOUS LONG ON CANDLE CLOSE] ${newTrade.id} opened at $${currentPrice.toFixed(1)} on ₹${newTrade.positionSizeINR.toFixed(2)} capital (${newTrade.modelName})`);
-        } else if (prediction.signal === "SELL") {
-          const newTrade = await executeNewTrade({
-            symbol: "BTCUSDT",
-            direction: "SHORT",
-            entryPrice: currentPrice,
-            atr,
-            triggerReason: `Candle Close Signal [${prediction.modelName}]: Bar ${new Date(executionCandle.openTime).toISOString()} Closed + LightGBM P_Short ${(prediction.pShort * 100).toFixed(1)}% (Conviction ${prediction.confidence}%, HTF Score: ${prediction.htfScore.toFixed(2)})`,
-            customFeePercent: config.tradingFeePercent,
-            modelId: config.activeModelId,
-          });
-          await updateEngineConfig({ lastProcessedClosedBarTime: executionCandle.openTime });
-          actionsTaken.push(`[AI AUTONOMOUS SHORT ON CANDLE CLOSE] ${newTrade.id} opened at $${currentPrice.toFixed(1)} on ₹${newTrade.positionSizeINR.toFixed(2)} capital (${newTrade.modelName})`);
-        } else {
-          // Closed candle did not have edge; mark bar as processed so we wait for NEXT candle close!
-          await updateEngineConfig({ lastProcessedClosedBarTime: executionCandle.openTime });
-          actionsTaken.push(`Candle Closed Neutral: Bar ${new Date(executionCandle.openTime).toISOString()} closed without edge (P_L: ${(prediction.pLong * 100).toFixed(1)}%, P_S: ${(prediction.pShort * 100).toFixed(1)}%, HTF: ${prediction.htfScore.toFixed(2)}). Next evaluation strictly on next ${executionInterval} candle close.`);
-        }
-      }
+      // Phase E: 15M and 5M scalpers are RETIRED due to negative net expectancy at live stop size.
+      // New paper trade entries are stopped. Active trades continue to be monitored for exit. Data preserved for research.
+      await updateEngineConfig({ lastProcessedClosedBarTime: executionCandle.openTime });
+      actionsTaken.push(
+        `[SCALP CRON RETIRED] 15M & 5M scalpers are formally retired (negative net expectancy at live stop size, 95% CI upper bound below 0). New trade entries halted. Existing trade data preserved for quantitative research.`
+      );
     }
 
     const updatedMetrics = await computePerformanceMetrics();

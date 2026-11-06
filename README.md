@@ -60,7 +60,7 @@ Generated across 7 production models using 10,000-resample bootstrap 95% confide
    - Net Avg R (0.1144% Taker): **`+0.2814R`**
    - 95% Bootstrap CI: `[+0.0483, +0.5069]R`
    - Positive across 2024 (`+0.1694R`), 2025 (`+0.3832R`), and 2026 (`+0.3411R`).
-4. **Honest Decision Rule**: Because sample size was 65 trades ($< 150$), 4H-B is formally classified in the Research Results table as **"No demonstrated edge (N < 150 trades)"** and is **NOT** wired into live background cron.
+4. **Honest Decision Rule**: **Not tested properly: dev gates failed (38 trades), hold-out has 65 trades; not evidence of an edge**. 0/108 variants passed pre-registered dev gates, and the hold-out window was opened improperly. The 4H re-simulation metric of +0.068R at live stop is **estimated, unvalidated; negative (-0.0297R) under pessimistic same-candle assumption**. As documented in [`notebooks/holdout_log.md`](notebooks/holdout_log.md), the 4H hold-out window is burned and permanently locked against live execution.
 
 ### Model Quality & Noise Analysis (`notebooks/model_quality_report.md` & `notebooks/leakage_audit.md`)
 - **Leakage Audit**: A previous report showing `0.8923` AUC was audited in [`notebooks/leakage_audit.md`](notebooks/leakage_audit.md) and identified as **INVALID** due to backward lookback leakage in the target formula (`rolling(6)` on `shift(-1)`).
