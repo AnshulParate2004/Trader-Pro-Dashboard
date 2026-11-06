@@ -40,10 +40,11 @@
   --font-mono: 'GT Standard Mono', 'GeistMono', monospace;
   --font-bbmono: 'GT Standard Mono', 'GeistMono', monospace;
 
-  /* Primary Accent: #D97757 (Warm Terracotta from Portfolio) */
-  --color-accent: #D97757;
-  --color-accent-hover: #C26546;
-  --color-accent-tint: #FBF0EB;
+  /* Primary Accent: Green (Original from Portfolio: rgb(0 125 51) / #007D33) */
+  --color-accent: #007d33;
+  --color-accent-bright: #00c851;
+  --color-accent-hover: #006328;
+  --color-accent-tint: rgba(0, 200, 81, 0.10);
 
   /* Chrome light theme exact tokens from portfolio */
   --color-chrome-bg: #ececed;
@@ -73,7 +74,7 @@ body {
 }
 
 ::selection {
-  background: rgba(217, 119, 87, 0.22);
+  background: rgba(0, 200, 81, 0.20);
   color: #111111;
 }
 
@@ -99,9 +100,14 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.text-chrome-green-ink {
+  --tw-text-opacity: 1;
+  color: rgb(0 125 51 / var(--tw-text-opacity, 1));
+}
+
 /* Accessible keyboard focus rings matching portfolio accent */
 *:focus-visible {
-  outline: 2px solid #D97757 !important;
+  outline: 2px solid #007d33 !important;
   outline-offset: 2px !important;
 }
 

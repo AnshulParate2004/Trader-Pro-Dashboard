@@ -18,14 +18,14 @@ export const FeeModeToggle: React.FC<FeeModeToggleProps> = ({
     <div className="bg-white border border-chrome-line rounded-lg p-4 sm:p-5 flex flex-col gap-3 shadow-xs">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-chrome-edge pb-2.5">
         <div className="flex items-center gap-2">
-          <Percent className="w-4 h-4 text-accent" />
+          <Percent className="w-4 h-4 text-chrome-green-ink" />
           <h3 className="font-brand text-sm font-medium text-chrome-ink uppercase">
             Exchange Fee Mode &amp; Slippage Config
           </h3>
           <span
             className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
               isTaker
-                ? "bg-accent-tint text-accent border-accent/30"
+                ? "bg-accent-tint text-chrome-green-ink border-accent/30"
                 : "bg-blue-50 text-chrome-dim border-blue-200"
             }`}
           >

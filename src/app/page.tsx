@@ -27,8 +27,8 @@ export default function LandingPage() {
               btc strategy research &amp; paper-trading
             </span>
           </div>
-          <div className="hidden md:flex items-center gap-1.5 font-mono text-[11px] text-accent bg-accent-tint border border-accent/30 px-2 py-0.5 rounded ml-2">
-            <span className="size-1.5 rounded-full bg-accent animate-pulse" />
+          <div className="hidden md:flex items-center gap-1.5 font-mono text-[11px] text-chrome-green-ink bg-win-tint border border-win/30 px-2 py-0.5 rounded ml-2">
+            <span className="size-1.5 rounded-full bg-chrome-green animate-pulse" />
             <span>PAPER SYSTEM ACTIVE</span>
           </div>
         </div>
@@ -38,7 +38,7 @@ export default function LandingPage() {
             href="/ai-engine"
             className="flex items-center gap-1 text-chrome-dim hover:text-chrome-ink bg-white border border-chrome-line font-mono text-xs font-bold px-3 py-1.5 rounded transition-all shadow-xs hover:border-chrome-ink"
           >
-            <Zap className="w-3.5 h-3.5 text-accent" />
+            <Zap className="w-3.5 h-3.5 text-chrome-green-ink" />
             <span>AI Engine Logs</span>
           </Link>
 
@@ -60,13 +60,13 @@ export default function LandingPage() {
         {/* Simple & Clear Hero */}
         <div className="flex flex-col gap-4 text-center items-center max-w-2xl mx-auto pt-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-white border border-chrome-line text-chrome-dim font-mono text-xs">
-            <span className="text-accent font-bold">● Walk-Forward Strategy Research</span>
+            <span className="text-chrome-green-ink font-bold">● Walk-Forward Strategy Research</span>
             <span>·</span>
             <span>Zero Lookahead Bias</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-brand font-medium tracking-tight text-chrome-ink leading-tight">
-            BTC Strategy Research &amp; <span className="text-accent">Paper-Trading Dashboard</span>
+            BTC Strategy Research &amp; <span className="text-chrome-green-ink">Paper-Trading Dashboard</span>
           </h1>
 
           <p className="text-chrome-dim text-sm sm:text-base leading-relaxed font-body max-w-xl">
@@ -94,7 +94,7 @@ export default function LandingPage() {
         <section className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-white border border-chrome-line rounded-lg p-5 shadow-xs">
           <div className="flex flex-col gap-0.5 border-r border-chrome-edge pr-3 last:border-none">
             <span className="text-[10px] font-mono text-chrome-dim uppercase font-bold">Honest Fee Model</span>
-            <span className="text-2xl font-bold font-mono text-accent">0.1144%</span>
+            <span className="text-2xl font-bold font-mono text-chrome-green-ink">0.1144%</span>
             <span className="text-[10px] text-chrome-dim font-mono">Round-Trip Taker + GST + Slip</span>
           </div>
           <div className="flex flex-col gap-0.5 border-r border-chrome-edge pr-3 last:border-none">

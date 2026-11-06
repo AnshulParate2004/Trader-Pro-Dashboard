@@ -19,7 +19,7 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
     <span
       className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded border font-semibold ${
         isTaker
-          ? "bg-accent-tint text-accent border-accent/30"
+          ? "bg-accent-tint text-chrome-green-ink border-accent/30"
           : "bg-blue-50 text-chrome-dim border-blue-200"
       }`}
     >
@@ -38,14 +38,14 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
       {/* Section Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-chrome-line pb-2">
         <div className="flex items-center gap-2">
-          <Activity className="w-4 h-4 text-accent" />
+          <Activity className="w-4 h-4 text-chrome-green-ink" />
           <h2 className="font-brand text-sm font-medium tracking-tight text-chrome-ink uppercase">
             Honest Performance Metrics Strip
           </h2>
           <span
             className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
               isTaker
-                ? "bg-accent-tint text-accent border-accent/30"
+                ? "bg-accent-tint text-chrome-green-ink border-accent/30"
                 : "bg-blue-50 text-chrome-dim border-blue-200"
             }`}
           >
@@ -61,14 +61,14 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         
         {/* 1. True Win Rate */}
-        <div className="bg-white border border-chrome-line rounded-lg p-3.5 flex flex-col justify-between shadow-xs transition-shadow hover:shadow-sm">
+        <div className="bg-white border border-chrome-line rounded-lg p-3 sm:p-3.5 flex flex-col justify-between shadow-xs transition-shadow hover:shadow-sm overflow-hidden">
           <div className="flex items-center justify-between gap-1">
             <span className="font-mono text-[10px] text-chrome-dim uppercase font-bold tracking-wider">
               True Win Rate
             </span>
             {feeBadge}
           </div>
-          <div className="font-mono text-2xl font-bold text-chrome-ink mt-2">
+          <div className="font-mono text-xl sm:text-2xl font-bold text-chrome-ink mt-2">
             {metrics?.trueWinRate !== undefined ? metrics.trueWinRate : 0.0}%
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate" title={`TP / (TP + SL) = ${metrics?.tpCount ?? 0} / ${(metrics?.tpCount ?? 0) + (metrics?.slCount ?? 0)}`}>
@@ -77,7 +77,7 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
         </div>
 
         {/* 2. Net Win Rate */}
-        <div className="bg-white border border-chrome-line rounded-lg p-3.5 flex flex-col justify-between shadow-xs transition-shadow hover:shadow-sm">
+        <div className="bg-white border border-chrome-line rounded-lg p-3 sm:p-3.5 flex flex-col justify-between shadow-xs transition-shadow hover:shadow-sm overflow-hidden">
           <div className="flex items-center justify-between gap-1">
             <span className="font-mono text-[10px] text-chrome-dim uppercase font-bold tracking-wider">
               Net Win Rate
@@ -85,7 +85,7 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
             {feeBadge}
           </div>
           <div
-            className={`font-mono text-2xl font-bold mt-2 ${
+            className={`font-mono text-xl sm:text-2xl font-bold mt-2 ${
               (metrics?.netWinRate ?? 0) >= 40 ? "text-win" : "text-loss"
             }`}
           >
@@ -96,16 +96,23 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
           </div>
         </div>
 
-        {/* 3. TP / BE / SL Split */}
-        <div className="bg-white border border-chrome-line rounded-lg p-3.5 flex flex-col justify-between shadow-xs transition-shadow hover:shadow-sm">
+        {/* 3. TP / BE / SL Split (Fixed Overflow and Squeezing) */}
+        <div className="bg-white border border-chrome-line rounded-lg p-3 sm:p-3.5 flex flex-col justify-between shadow-xs transition-shadow hover:shadow-sm overflow-hidden">
           <div className="flex items-center justify-between gap-1">
             <span className="font-mono text-[10px] text-chrome-dim uppercase font-bold tracking-wider">
               TP/BE/SL Split
             </span>
             {feeBadge}
           </div>
-          <div className="font-mono text-base sm:text-lg font-bold text-chrome-ink mt-2 whitespace-nowrap">
-            {metrics?.tpPercent ?? 0}% / {metrics?.bePercent ?? 0}% / {metrics?.slPercent ?? 0}%
+          <div
+            className="font-mono text-xs sm:text-sm lg:text-[13px] xl:text-[14px] font-bold text-chrome-ink mt-2 flex items-baseline gap-0.5 sm:gap-1 flex-nowrap"
+            title={`TP: ${metrics?.tpPercent ?? 0}% | BE: ${metrics?.bePercent ?? 0}% | SL: ${metrics?.slPercent ?? 0}%`}
+          >
+            <span className="text-win-dark">{metrics?.tpPercent ?? 0}%</span>
+            <span className="text-chrome-dim font-normal">/</span>
+            <span className="text-chrome-ink">{metrics?.bePercent ?? 0}%</span>
+            <span className="text-chrome-dim font-normal">/</span>
+            <span className="text-loss-dark">{metrics?.slPercent ?? 0}%</span>
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate" title={`${metrics?.tpCount ?? 0} TP · ${metrics?.beCount ?? 0} BE · ${metrics?.slCount ?? 0} SL`}>
             {metrics?.tpCount ?? 0} TP · {metrics?.beCount ?? 0} BE · {metrics?.slCount ?? 0} SL
@@ -113,7 +120,7 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
         </div>
 
         {/* 4. Net Profit Factor */}
-        <div className="bg-white border border-chrome-line rounded-lg p-3.5 flex flex-col justify-between shadow-xs transition-shadow hover:shadow-sm">
+        <div className="bg-white border border-chrome-line rounded-lg p-3 sm:p-3.5 flex flex-col justify-between shadow-xs transition-shadow hover:shadow-sm overflow-hidden">
           <div className="flex items-center justify-between gap-1">
             <span className="font-mono text-[10px] text-chrome-dim uppercase font-bold tracking-wider">
               Net Profit Factor
@@ -121,7 +128,7 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
             {feeBadge}
           </div>
           <div
-            className={`font-mono text-2xl font-bold mt-2 ${
+            className={`font-mono text-xl sm:text-2xl font-bold mt-2 ${
               (metrics?.netProfitFactor ?? 0) >= 1 ? "text-win" : "text-chrome-ink"
             }`}
           >
@@ -133,14 +140,14 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
         </div>
 
         {/* 5. Fees Paid & Slippage */}
-        <div className="bg-white border border-chrome-line rounded-lg p-3.5 flex flex-col justify-between shadow-xs transition-shadow hover:shadow-sm">
+        <div className="bg-white border border-chrome-line rounded-lg p-3 sm:p-3.5 flex flex-col justify-between shadow-xs transition-shadow hover:shadow-sm overflow-hidden">
           <div className="flex items-center justify-between gap-1">
             <span className="font-mono text-[10px] text-chrome-dim uppercase font-bold tracking-wider">
               Total Fees Paid
             </span>
             {feeBadge}
           </div>
-          <div className="font-mono text-2xl font-bold text-accent mt-2">
+          <div className="font-mono text-xl sm:text-2xl font-bold text-chrome-ink mt-2">
             ₹{totalCostINR.toFixed(2)}
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate" title={`Exch: ₹${metrics?.totalFeesPaidINR?.toFixed(2) ?? "0.00"} · Slip: ₹${metrics?.slippagePaidINR?.toFixed(2) ?? "0.00"}`}>
@@ -149,14 +156,14 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
         </div>
 
         {/* 6. Virtual Balance */}
-        <div className="bg-white border border-chrome-line rounded-lg p-3.5 flex flex-col justify-between shadow-xs transition-shadow hover:shadow-sm">
+        <div className="bg-white border border-chrome-line rounded-lg p-3 sm:p-3.5 flex flex-col justify-between shadow-xs transition-shadow hover:shadow-sm overflow-hidden">
           <div className="flex items-center justify-between gap-1">
             <span className="font-mono text-[10px] text-chrome-dim uppercase font-bold tracking-wider">
               Account Balance
             </span>
             {feeBadge}
           </div>
-          <div className="font-mono text-2xl font-bold text-chrome-ink mt-2">
+          <div className="font-mono text-xl sm:text-2xl font-bold text-chrome-ink mt-2">
             ₹{displayBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">

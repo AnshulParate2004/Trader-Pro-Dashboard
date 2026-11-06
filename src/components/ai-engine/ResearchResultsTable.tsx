@@ -116,38 +116,38 @@ export const ResearchResultsTable: React.FC = () => {
       {/* Table Content */}
       {isExpanded && (
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse font-mono text-xs">
+          <table className="w-full min-w-[1020px] text-left border-collapse font-mono text-xs">
             <thead>
               <tr className="bg-chrome-field/60 border-b border-chrome-line text-chrome-dim uppercase text-[10px] tracking-wider">
-                <th className="py-2.5 px-3">Study / Strategy</th>
-                <th className="py-2.5 px-3">TF</th>
-                <th className="py-2.5 px-3">Sample Size</th>
-                <th className="py-2.5 px-3">Avg Net R (Taker)</th>
-                <th className="py-2.5 px-3">95% Bootstrap CI</th>
-                <th className="py-2.5 px-3">Pre-Registered Verdict</th>
+                <th className="py-2.5 px-3.5 w-[36%] min-w-[320px]">Study / Strategy</th>
+                <th className="py-2.5 px-3 w-[6%] min-w-[50px]">TF</th>
+                <th className="py-2.5 px-3 w-[20%] min-w-[180px]">Sample Size</th>
+                <th className="py-2.5 px-3 w-[15%] min-w-[150px]">Avg Net R (Taker)</th>
+                <th className="py-2.5 px-3 w-[12%] min-w-[130px]">95% Bootstrap CI</th>
+                <th className="py-2.5 px-3.5 w-[11%] min-w-[190px]">Pre-Registered Verdict</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-chrome-edge">
               {RESEARCH_STUDIES.map((study) => {
-                let badgeClass = "bg-rose-50 text-loss border-loss/30";
+                let badgeClass = "bg-rose-50 text-loss-dark border-loss/30";
                 if (study.verdict === "NO_EDGE") {
-                  badgeClass = "bg-accent-tint text-accent border-accent/40";
+                  badgeClass = "bg-amber-50 text-amber-900 border-amber-300";
                 } else if (study.verdict === "INCONCLUSIVE") {
                   badgeClass = "bg-blue-50 text-chrome-dim border-blue-200";
                 }
 
                 return (
                   <tr key={study.id} className="hover:bg-chrome-field/40 transition-colors">
-                    <td className="py-3 px-3">
-                      <div className="flex flex-col gap-0.5">
-                        <span className="font-bold text-chrome-ink">{study.strategy}</span>
-                        <span className="text-[11px] text-chrome-dim font-sans">{study.notes}</span>
+                    <td className="py-3 px-3.5">
+                      <div className="flex flex-col gap-1 max-w-md">
+                        <span className="font-bold text-chrome-ink leading-snug">{study.strategy}</span>
+                        <span className="text-[11px] text-chrome-dim font-sans leading-relaxed">{study.notes}</span>
                       </div>
                     </td>
                     <td className="py-3 px-3 text-chrome-dim font-bold whitespace-nowrap">
                       {study.timeframe}
                     </td>
-                    <td className="py-3 px-3 text-chrome-dim text-[11px] whitespace-nowrap">
+                    <td className="py-3 px-3 text-chrome-dim text-[11px]">
                       {study.sample}
                     </td>
                     <td className="py-3 px-3 font-bold whitespace-nowrap text-chrome-ink">
@@ -156,8 +156,8 @@ export const ResearchResultsTable: React.FC = () => {
                     <td className="py-3 px-3 text-chrome-dim text-[11px] whitespace-nowrap">
                       {study.confidenceInterval}
                     </td>
-                    <td className="py-3 px-3 whitespace-nowrap">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border inline-block ${badgeClass}`}>
+                    <td className="py-3 px-3.5 whitespace-nowrap">
+                      <span className={`px-2.5 py-1 rounded text-[10px] font-bold border inline-block ${badgeClass}`}>
                         {study.verdictLabel}
                       </span>
                     </td>

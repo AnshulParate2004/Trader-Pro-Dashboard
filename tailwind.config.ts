@@ -11,10 +11,11 @@ const config: Config = {
     extend: {
       colors: {
         accent: {
-          DEFAULT: "#D97757",
-          hover: "#C26546",
-          tint: "#FBF0EB",
-          dark: "#B85434",
+          DEFAULT: "#007d33",
+          bright: "#00c851",
+          hover: "#006328",
+          tint: "rgba(0, 200, 81, 0.10)",
+          dark: "#005020",
         },
         chrome: {
           bg: "#ececed",

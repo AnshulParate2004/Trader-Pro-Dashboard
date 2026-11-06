@@ -35,7 +35,7 @@ export const ModelCard: React.FC<ModelCardProps> = ({
                   RANK #{currentModel.rank}
                 </span>
               )}
-              <span className="text-[10px] font-mono font-bold bg-accent-tint text-accent px-2 py-0.5 rounded border border-accent/30">
+              <span className="text-[10px] font-mono font-bold bg-accent-tint text-chrome-green-ink px-2 py-0.5 rounded border border-accent/30">
                 {currentModel ? currentModel.timeframe.toUpperCase() : "MULTI-TIMEFRAME"}
               </span>
             </div>
@@ -70,42 +70,46 @@ export const ModelCard: React.FC<ModelCardProps> = ({
       {/* Model Benchmarked Metrics Strip */}
       {currentModel && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 pt-3 border-t border-chrome-edge font-mono text-xs">
-          <div className="bg-chrome-field/50 border border-chrome-line rounded p-2 flex flex-col">
+          <div className="bg-chrome-field/50 border border-chrome-line rounded p-2 flex flex-col overflow-hidden">
             <span className="text-[10px] text-chrome-dim uppercase font-bold">True Win Rate</span>
             <span className="text-base font-bold text-chrome-ink mt-0.5">{currentModel.trueWinRate}%</span>
             <span className="text-[9px] text-chrome-dim font-sans">TP / (TP + SL)</span>
           </div>
 
-          <div className="bg-chrome-field/50 border border-chrome-line rounded p-2 flex flex-col">
+          <div className="bg-chrome-field/50 border border-chrome-line rounded p-2 flex flex-col overflow-hidden">
             <span className="text-[10px] text-chrome-dim uppercase font-bold">Net Win Rate</span>
             <span className="text-base font-bold text-loss mt-0.5">{currentModel.netWinRate}%</span>
             <span className="text-[9px] text-chrome-dim font-sans">Net &gt; 0 After Fees</span>
           </div>
 
-          <div className="bg-accent-tint/60 border border-accent/30 rounded p-2 flex flex-col">
-            <span className="text-[10px] text-accent uppercase font-bold">Avg Net R</span>
+          <div className="bg-chrome-field/50 border border-chrome-line rounded p-2 flex flex-col overflow-hidden">
+            <span className="text-[10px] text-chrome-dim uppercase font-bold">Avg Net R</span>
             <span className="text-base font-bold text-loss mt-0.5">{currentModel.avgNetR} R</span>
-            <span className="text-[9px] text-accent font-sans">Taker + GST + Slip</span>
+            <span className="text-[9px] text-chrome-dim font-sans">Taker + GST + Slip</span>
           </div>
 
-          <div className="bg-chrome-field/50 border border-chrome-line rounded p-2 flex flex-col">
+          <div className="bg-chrome-field/50 border border-chrome-line rounded p-2 flex flex-col overflow-hidden">
             <span className="text-[10px] text-chrome-dim uppercase font-bold">Net Profit Factor</span>
             <span className="text-base font-bold text-chrome-ink mt-0.5">{currentModel.netProfitFactor}</span>
             <span className="text-[9px] text-chrome-dim font-sans">Net Win / Net Loss</span>
           </div>
 
-          <div className="bg-chrome-field/50 border border-chrome-line rounded p-2 flex flex-col">
+          <div className="bg-chrome-field/50 border border-chrome-line rounded p-2 flex flex-col overflow-hidden">
             <span className="text-[10px] text-chrome-dim uppercase font-bold">TP/BE/SL Split</span>
-            <span className="text-xs font-bold text-chrome-ink mt-1">
-              {currentModel.tpSplit}% / {currentModel.beSplit}% / {currentModel.slSplit}%
+            <span className="text-xs font-bold text-chrome-ink mt-1 flex items-baseline gap-0.5 flex-nowrap">
+              <span className="text-win-dark">{currentModel.tpSplit}%</span>
+              <span className="text-chrome-dim font-normal">/</span>
+              <span>{currentModel.beSplit}%</span>
+              <span className="text-chrome-dim font-normal">/</span>
+              <span className="text-loss-dark">{currentModel.slSplit}%</span>
             </span>
             <span className="text-[9px] text-chrome-dim font-sans">Exit Distribution</span>
           </div>
 
-          <div className="bg-accent-tint/60 border border-accent/40 rounded p-2 flex flex-col">
-            <span className="text-[10px] text-accent uppercase font-bold">Live Status</span>
-            <span className="text-xs font-bold text-accent mt-1">PAPER ONLY</span>
-            <span className="text-[9px] text-accent font-sans">Negative Expectancy</span>
+          <div className="bg-amber-50/70 border border-amber-300 rounded p-2 flex flex-col overflow-hidden">
+            <span className="text-[10px] text-amber-900 uppercase font-bold">Live Status</span>
+            <span className="text-xs font-bold text-amber-800 mt-1">PAPER ONLY</span>
+            <span className="text-[9px] text-amber-700 font-sans">Negative Expectancy</span>
           </div>
         </div>
       )}

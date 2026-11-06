@@ -353,13 +353,13 @@ export default function AiEnginePage() {
             className={`hidden sm:flex items-center gap-1.5 font-mono text-[11px] px-2.5 py-0.5 rounded border ${
               mongoConnected
                 ? "bg-win-tint text-win-dark border-win/30"
-                : "bg-accent-tint text-accent border-accent/30"
+                : "bg-amber-50 text-amber-900 border-amber-300"
             }`}
             title="MongoDB Atlas Cluster: cluster0.ilejs4x.mongodb.net"
           >
             <Database className="w-3 h-3" />
             <span className="font-semibold">
-              {mongoConnected ? "ATLAS CONNECTED" : "MEMORY CACHE"}
+              {mongoConnected ? "ATLAS CONNECTED" : "STANDBY (CACHE)"}
             </span>
           </div>
 
@@ -387,7 +387,7 @@ export default function AiEnginePage() {
             className="flex items-center gap-1.5 text-xs font-mono text-chrome-dim hover:text-chrome-ink px-2 py-1 rounded transition-colors cursor-pointer"
             title="Refresh Metrics"
           >
-            <RotateCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-accent" : ""}`} />
+            <RotateCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-chrome-green-ink" : ""}`} />
             <span className="hidden xl:inline text-[11px]">{lastUpdated}</span>
           </button>
 

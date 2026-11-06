@@ -252,7 +252,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
       {/* Table Data View */}
       <div className="overflow-x-auto">
         {tableTab === "live" ? (
-          <table className="w-full text-left border-collapse font-mono text-xs">
+          <table className="w-full min-w-[1080px] text-left border-collapse font-mono text-xs">
             <thead>
               <tr className="bg-chrome-field/70 border-b border-chrome-line text-chrome-dim uppercase text-[10px] tracking-wider">
                 <th className="py-2.5 px-3">Time</th>
@@ -375,7 +375,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
             </tbody>
           </table>
         ) : (
-          <table className="w-full text-left border-collapse font-mono text-xs">
+          <table className="w-full min-w-[960px] text-left border-collapse font-mono text-xs">
             <thead>
               <tr className="bg-chrome-field/70 border-b border-chrome-line text-chrome-dim uppercase text-[10px] tracking-wider">
                 <th className="py-2.5 px-3">Entry Time (UTC)</th>

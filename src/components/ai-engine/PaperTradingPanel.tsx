@@ -145,7 +145,7 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
               <span className="text-[10px] font-mono text-chrome-dim">Zero tuning per coin · Identical parameters</span>
             </div>
             <div className="overflow-x-auto border border-chrome-line rounded-lg">
-              <table className="w-full text-left font-mono text-xs">
+              <table className="w-full min-w-[650px] text-left font-mono text-xs">
                 <thead className="bg-chrome-field border-b border-chrome-line text-chrome-dim text-[10px] uppercase">
                   <tr>
                     <th className="py-2 px-3">Coin</th>
@@ -219,7 +219,7 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
             </div>
 
             <div className="overflow-x-auto border border-chrome-line rounded-lg max-h-72 overflow-y-auto">
-              <table className="w-full text-left font-mono text-xs">
+              <table className="w-full min-w-[720px] text-left font-mono text-xs">
                 <thead className="bg-chrome-field border-b border-chrome-line text-chrome-dim text-[10px] uppercase sticky top-0">
                   <tr>
                     <th className="py-2 px-3">Entry Time (UTC)</th>

@@ -23,7 +23,7 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
   return (
     <section
       aria-label="Net Expectancy and Paper Trading Status"
-      className="w-full bg-white border-2 border-accent/40 rounded-lg p-5 sm:p-6 shadow-xs relative overflow-hidden transition-all"
+      className="w-full bg-white border-2 border-accent/30 rounded-lg pt-7 pb-6 px-5 sm:px-6 shadow-xs relative overflow-hidden transition-all"
     >
       {/* Subtle top indicator bar */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-accent" />
@@ -31,17 +31,17 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         
         {/* Left: Headline & Explanation */}
-        <div className="flex flex-col gap-2 max-w-3xl">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-accent-tint text-accent border border-accent/30 font-mono text-[11px] font-bold uppercase tracking-wider">
-              <ShieldAlert className="w-3.5 h-3.5" />
+        <div className="flex flex-col gap-2.5 max-w-3xl">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-50 text-amber-900 border border-amber-300 font-mono text-[11px] font-bold uppercase tracking-wider">
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-700" />
               PAPER ONLY · Negative Expectancy
             </span>
 
             <span
               className={`font-mono text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${
                 isTaker
-                  ? "bg-accent-tint text-accent border-accent/30"
+                  ? "bg-accent-tint text-chrome-green-ink border-accent/30"
                   : "bg-blue-50 text-chrome-dim border-blue-200"
               }`}
             >
