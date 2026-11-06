@@ -1,4 +1,5 @@
 import { getDb } from "./mongodb";
+import { fetchBinanceKlines } from "./binanceData";
 import fs from "fs";
 import path from "path";
 
@@ -13,7 +14,7 @@ export interface Candle {
   low: number;
   close: number;
   volume: number;
-  closeTime: number;
+  closeTime?: number;
 }
 
 export interface PaperTradeRecord {
@@ -51,20 +52,21 @@ export async function runPaper1HAExecutor(): Promise<{
     return { status: "DB_UNAVAILABLE", actions: ["MongoDB not connected"] };
   }
 
-  // 1. Fetch live 1H candles for BTCUSDT from Binance Futures
-  const res = await fetch("https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=1h&limit=100");
-  if (!res.ok) {
-    return { status: "API_ERROR", actions: [`Failed to fetch Binance klines: ${res.statusText}`] };
+  // 1. Fetch live 1H candles for BTCUSDT using resilient multi-endpoint fetcher
+  let rawCandles: any[] = [];
+  try {
+    rawCandles = await fetchBinanceKlines("1h", 100);
+  } catch (err: any) {
+    return { status: "API_ERROR", actions: [`Failed to fetch Binance klines: ${err.message}`] };
   }
-  const rawKlines = await res.json();
-  const candles: Candle[] = rawKlines.map((k: any) => ({
-    openTime: k[0],
-    open: parseFloat(k[1]),
-    high: parseFloat(k[2]),
-    low: parseFloat(k[3]),
-    close: parseFloat(k[4]),
-    volume: parseFloat(k[5]),
-    closeTime: k[6],
+  const candles: Candle[] = rawCandles.map((c) => ({
+    openTime: c.openTime,
+    open: c.open,
+    high: c.high,
+    low: c.low,
+    close: c.close,
+    volume: c.volume,
+    closeTime: c.closeTime || c.openTime + 3600000 - 1,
   }));
 
   if (candles.length < 30) {
@@ -251,7 +253,7 @@ export async function runPaper1HAExecutor(): Promise<{
           coin: "BTCUSDT",
           side,
           signal_time: new Date(lastClosed.openTime).toISOString(),
-          entry_time: new Date(lastClosed.closeTime).toISOString(),
+          entry_time: new Date(lastClosed.closeTime || (lastClosed.openTime + 3600000)).toISOString(),
           entry_price: entryPrice,
           stop_distance_pct: slDistPct,
           cost_R_taker: cost_R,

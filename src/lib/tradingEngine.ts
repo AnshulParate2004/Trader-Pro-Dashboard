@@ -367,8 +367,17 @@ export async function closeTrade(tradeId: string, exitPrice: number, reason: str
 }
 
 // Compute Engine Performance in INR (all models or filtered by modelId, with dynamic fee calculation)
+// Strictly computes all metrics (true win rate, net win rate, split, avg R, profit factor, fees, slippage, gross, net, balance)
+// from the same single unified list of closed trades using the active fee mode (default Taker: 0.040% + 18% GST + 0.010% slippage/side).
 export async function computePerformanceMetrics(modelId?: string, feeOverride?: number): Promise<EnginePerformanceMetrics> {
-  const trades = await getTradeLogs(500, modelId, feeOverride);
+  const config = await getEngineConfig();
+  // Default fee mode is strictly Taker (0.040%) unless an override is provided
+  const feeRate = feeOverride !== undefined && !isNaN(feeOverride) ? feeOverride : (config.tradingFeePercent || 0.040);
+  const gstRate = (config.gstPercent || 18.0) / 100;
+  const isTaker = feeRate > 0.020;
+  const slipRate = isTaker ? 0.0001 : 0.00005; // 0.01% per side for Taker, 0.005% for Maker
+
+  const trades = await getTradeLogs(500, modelId, feeRate);
 
   if (!trades || trades.length === 0) {
     return {
@@ -405,69 +414,93 @@ export async function computePerformanceMetrics(modelId?: string, feeOverride?: 
   let lossCount = 0;
   let grossProfit = 0;
   let grossLoss = 0;
-  let totalFees = 0;
+  let totalExchangeFees = 0;
   let totalSlippage = 0;
-  let netPnL = 0;
-  let tpCount = 0;
-  let beCount = 0;
-  let slCount = 0;
   let netWinsINR = 0;
   let netLossesINR = 0;
   let totalNetR = 0;
 
-  for (const t of trades) {
-    totalFees += t.totalFeeINR || 0;
-    if (t.slippageINR) totalSlippage += t.slippageINR;
+  let tpCount = 0;
+  let beCount = 0;
+  let slCount = 0;
 
+  for (const t of trades) {
     if (t.status === "ACTIVE" || t.status === "BE_ACTIVATED") {
       activeCount++;
+      continue;
+    }
+
+    closedCount++;
+    const pos = t.positionSizeINR || 1000;
+    const gross = t.grossPnLINR !== undefined ? t.grossPnLINR : 0;
+    const exitPos = pos + gross;
+
+    // Unified fee and slippage per trade
+    const entryFee = Number((pos * (feeRate / 100) * (1 + gstRate)).toFixed(4));
+    const exitFee = Number((exitPos * (feeRate / 100) * (1 + gstRate)).toFixed(4));
+    const entrySlip = Number((pos * slipRate).toFixed(4));
+    const exitSlip = Number((exitPos * slipRate).toFixed(4));
+
+    const tradeExchangeFee = entryFee + exitFee;
+    const tradeSlippage = entrySlip + exitSlip;
+    const tradeTotalCost = tradeExchangeFee + tradeSlippage;
+    const net = Number((gross - tradeTotalCost).toFixed(2));
+
+    totalExchangeFees += tradeExchangeFee;
+    totalSlippage += tradeSlippage;
+
+    // Gross PnL classification (independent of fees)
+    if (gross > 0) {
+      grossProfit += gross;
+    } else if (gross < 0) {
+      grossLoss += Math.abs(gross);
+    }
+
+    // Net PnL classification (after fees)
+    if (net > 0) {
+      winCount++;
+      netWinsINR += net;
     } else {
-      closedCount++;
-      const gross = t.grossPnLINR || 0;
-      const net = t.netPnLINR || 0;
+      lossCount++;
+      netLossesINR += Math.abs(net);
+    }
 
-      // Classify exit reason accurately into TP, BE, or SL directly from exitReason label
-      const reason = (t.exitReason || "").toUpperCase();
-      if (reason.includes("TAKE PROFIT") || reason.includes("TAKE_PROFIT") || reason.includes("TP")) {
-        tpCount++;
-      } else if (reason.includes("BREAKEVEN") || reason.includes("RATCHET") || reason.includes("BE")) {
-        beCount++;
-      } else if (reason.includes("STOP LOSS") || reason.includes("STOP_LOSS") || reason.includes("SL")) {
-        slCount++;
-      } else {
-        slCount++;
-      }
+    // 1R = 1% volatility risk parity
+    const oneR = pos * 0.01;
+    const rVal = oneR > 0 ? net / oneR : 0;
+    totalNetR += rVal;
 
-      // Net R (1R = 1% risk = 10 INR on 1000 INR account)
-      const oneR = (t.positionSizeINR || 1000) * 0.01;
-      const rVal = oneR > 0 ? net / oneR : 0;
-      totalNetR += rVal;
-
-      if (net > 0) {
-        winCount++;
-        grossProfit += gross;
-        netWinsINR += net;
-      } else if (net < 0) {
-        lossCount++;
-        grossLoss += Math.abs(gross);
-        netLossesINR += Math.abs(net);
-      }
-      netPnL += net;
+    // Exit reason classification:
+    const reason = ((t as any).exitReason || (t as any).actionReason || "").toUpperCase();
+    if (reason.includes("TAKE PROFIT") || reason.includes("TAKE_PROFIT") || reason.includes("TP")) {
+      tpCount++;
+    } else if (reason.includes("BREAKEVEN") || reason.includes("RATCHET") || reason.includes("BE")) {
+      beCount++;
+    } else {
+      slCount++;
     }
   }
 
-  const currentBalance = INITIAL_BALANCE_INR + netPnL;
-  const profitFactor = grossLoss > 0 ? Number((grossProfit / grossLoss).toFixed(2)) : grossProfit > 0 ? 9.99 : 1.0;
-  const averageTradeINR = closedCount > 0 ? Number((netPnL / closedCount).toFixed(2)) : 0;
-  const feeImpactPercent = grossProfit > 0 ? Number(((totalFees / grossProfit) * 100).toFixed(1)) : 0;
+  const totalFeesPaidINR = Number(totalExchangeFees.toFixed(2));
+  const slippagePaidINR = Number(totalSlippage.toFixed(2));
+  const totalCostINR = Number((totalFeesPaidINR + slippagePaidINR).toFixed(2));
+  const grossProfitINR = Number(grossProfit.toFixed(2));
+  const grossLossINR = Number(grossLoss.toFixed(2));
+  const totalGrossINR = Number((grossProfitINR - grossLossINR).toFixed(2));
+  const netPnLINR = Number((totalGrossINR - totalCostINR).toFixed(2));
+  const currentBalanceINR = Number((INITIAL_BALANCE_INR + netPnLINR).toFixed(2));
 
   const trueWinRate = (tpCount + slCount) > 0 ? Number(((tpCount / (tpCount + slCount)) * 100).toFixed(1)) : 0;
   const netWinRate = closedCount > 0 ? Number(((winCount / closedCount) * 100).toFixed(1)) : 0;
   const tpPercent = closedCount > 0 ? Number(((tpCount / closedCount) * 100).toFixed(1)) : 0;
   const bePercent = closedCount > 0 ? Number(((beCount / closedCount) * 100).toFixed(1)) : 0;
   const slPercent = closedCount > 0 ? Number(((slCount / closedCount) * 100).toFixed(1)) : 0;
-  const avgNetR = closedCount > 0 ? Number((totalNetR / closedCount).toFixed(3)) : 0;
+
+  const profitFactor = grossLossINR > 0 ? Number((grossProfitINR / grossLossINR).toFixed(2)) : (grossProfitINR > 0 ? 9.99 : 1.0);
   const netProfitFactor = netLossesINR > 0 ? Number((netWinsINR / netLossesINR).toFixed(2)) : (netWinsINR > 0 ? 9.99 : 1.0);
+  const averageTradeINR = closedCount > 0 ? Number((netPnLINR / closedCount).toFixed(2)) : 0;
+  const avgNetR = closedCount > 0 ? Number((totalNetR / closedCount).toFixed(3)) : 0;
+  const feeImpactPercent = grossProfitINR > 0 ? Number(((totalCostINR / grossProfitINR) * 100).toFixed(1)) : 0;
 
   return {
     totalTrades: trades.length,
@@ -475,12 +508,12 @@ export async function computePerformanceMetrics(modelId?: string, feeOverride?: 
     closedTradesCount: closedCount,
     winningTrades: winCount,
     losingTrades: lossCount,
-    currentBalanceINR: Number(currentBalance.toFixed(2)),
-    grossProfitINR: Number(grossProfit.toFixed(2)),
-    grossLossINR: Number(grossLoss.toFixed(2)),
-    totalFeesPaidINR: Number(totalFees.toFixed(2)),
-    slippagePaidINR: Number(totalSlippage.toFixed(2)),
-    netPnLINR: Number(netPnL.toFixed(2)),
+    currentBalanceINR,
+    grossProfitINR,
+    grossLossINR,
+    totalFeesPaidINR,
+    slippagePaidINR,
+    netPnLINR,
     profitFactor,
     averageTradeINR,
     feeImpactPercent,

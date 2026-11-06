@@ -52,8 +52,8 @@ export default function AiEnginePage() {
     autoTradingEnabled: true,
     currency: "INR",
     accountBalanceINR: 1000,
-    tradingFeePercent: 0.040, // Shark Exchange Taker
-    makerFeePercent: 0.016,   // Shark Exchange Maker
+    tradingFeePercent: 0.040, // Shark Exchange Taker Default (0.040% + 18% GST + 0.010% slippage/side)
+    makerFeePercent: 0.016,   // Shark Exchange Maker (0.016% Optimistic Scenario)
     gstPercent: 18.0,         // 18% GST
     slippagePercent: 0.010,   // 0.01% slippage per side
     riskPerTradePercent: 1.0, // 1% = ₹10
@@ -147,7 +147,7 @@ export default function AiEnginePage() {
   const fetchData = async (modelIdToFetch?: string, feeOverride?: number, limitOverride?: number) => {
     try {
       const activeM = modelIdToFetch !== undefined ? modelIdToFetch : selectedModelId;
-      const activeFee = feeOverride !== undefined ? feeOverride : (config.tradingFeePercent || 0.016);
+      const activeFee = feeOverride !== undefined ? feeOverride : (config.tradingFeePercent || 0.040);
       const activeLimit = limitOverride !== undefined ? limitOverride : liveLimit;
       const res = await fetch(`/api/trades?modelId=${activeM}&fee=${activeFee}&limit=${activeLimit}`);
       if (!res.ok) throw new Error("Failed to fetch engine data");
@@ -427,225 +427,284 @@ export default function AiEnginePage() {
         </div>
 
         {/* Live Engine Honest Performance Metrics Strip (Task 1 Prompt Requirements) */}
-        <section className="bg-gray-50/80 border border-gray-200 rounded-xl p-4 flex flex-col gap-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200 pb-2.5">
-            <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-emerald-600" />
-              <h2 className="font-mono text-xs font-black uppercase text-gray-900 tracking-wide">
-                Live Engine Honest Metrics (Shark Exchange: 0.04% Taker + 18% GST + 0.01% Slippage/Side)
-              </h2>
-            </div>
-            <span className="font-mono text-[11px] text-gray-500 font-bold">
-              31 Closed Scalps Tracked (Oct 28–31)
+        {/* 2. Top Honest Metrics Panel */}
+        {(() => {
+          const isTaker = (config.tradingFeePercent || 0.040) > 0.020;
+          const feeBadge = (
+            <span className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded border font-bold ${
+              isTaker ? 'bg-amber-50 text-amber-900 border-amber-300' : 'bg-blue-50 text-blue-900 border-blue-300'
+            }`}>
+              {isTaker ? "Taker" : "Maker [Optimistic]"}
             </span>
-          </div>
+          );
+          const totalCostINR = (metrics?.totalFeesPaidINR ?? 0) + (metrics?.slippagePaidINR ?? 0);
+          const displayBalance = metrics?.currentBalanceINR ?? currentBalance;
+          const displayNetPnL = metrics?.netPnLINR ?? netPnL;
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 font-mono">
-            {/* 1. True Win Rate */}
-            <div className="bg-white border border-gray-200 rounded-lg p-2.5 flex flex-col">
-              <span className="text-[10px] text-gray-500 uppercase font-bold">True Win Rate</span>
-              <span className="text-xl font-black text-amber-600 mt-0.5">
-                {metrics?.trueWinRate !== undefined ? metrics.trueWinRate : 60.0}%
-              </span>
-              <span className="text-[9px] text-gray-400 font-sans">TP / (TP + SL) = 9 / 15</span>
-            </div>
+          return (
+            <>
+              <section className="bg-gray-50/80 border border-gray-200 rounded-xl p-4 flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-emerald-600" />
+                    <h2 className="font-mono text-xs font-black uppercase text-gray-900 tracking-wide">
+                      Live Engine Honest Metrics
+                    </h2>
+                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                      isTaker ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-blue-100 text-blue-900 border-blue-300'
+                    }`}>
+                      Active Fee Mode: {isTaker ? "Taker (0.040% + 18% GST + 0.01% Slippage)" : "Maker (0.016% + 18% GST) [Optimistic Scenario]"}
+                    </span>
+                  </div>
+                  <span className="font-mono text-[11px] text-gray-500 font-bold">
+                    {metrics?.closedTradesCount ?? trades.length} Closed Scalps Tracked
+                  </span>
+                </div>
 
-            {/* 2. Net Win Rate */}
-            <div className="bg-white border border-gray-200 rounded-lg p-2.5 flex flex-col">
-              <span className="text-[10px] text-gray-500 uppercase font-bold">Net Win Rate</span>
-              <span className="text-xl font-black text-rose-600 mt-0.5">
-                {metrics?.netWinRate !== undefined ? metrics.netWinRate : 29.0}%
-              </span>
-              <span className="text-[9px] text-gray-400 font-sans">Net PnL &gt; 0 (9 / 31 trades)</span>
-            </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 font-mono">
+                  {/* 1. True Win Rate */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-2.5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-gray-500 uppercase font-bold">True Win Rate</span>
+                      {feeBadge}
+                    </div>
+                    <span className="text-xl font-black text-amber-600 mt-0.5">
+                      {metrics?.trueWinRate !== undefined ? metrics.trueWinRate : 0.0}%
+                    </span>
+                    <span className="text-[9px] text-gray-400 font-sans">
+                      TP / (TP + SL) = {metrics?.tpCount ?? 0} / {(metrics?.tpCount ?? 0) + (metrics?.slCount ?? 0)}
+                    </span>
+                  </div>
 
-            {/* 3. Avg Net R */}
-            <div className="bg-rose-50/60 border border-rose-200 rounded-lg p-2.5 flex flex-col">
-              <span className="text-[10px] text-rose-800 uppercase font-bold">Avg Net R</span>
-              <span className="text-xl font-black text-rose-700 mt-0.5">
-                {metrics?.avgNetR !== undefined ? metrics.avgNetR : -0.093} R
-              </span>
-              <span className="text-[9px] text-rose-600 font-sans">Negative Expectancy</span>
-            </div>
+                  {/* 2. Net Win Rate */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-2.5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-gray-500 uppercase font-bold">Net Win Rate</span>
+                      {feeBadge}
+                    </div>
+                    <span className={`text-xl font-black mt-0.5 ${(metrics?.netWinRate ?? 0) >= 40 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      {metrics?.netWinRate !== undefined ? metrics.netWinRate : 0.0}%
+                    </span>
+                    <span className="text-[9px] text-gray-400 font-sans">
+                      Net PnL &gt; 0 ({metrics?.winningTrades ?? 0} / {metrics?.closedTradesCount ?? 0} trades)
+                    </span>
+                  </div>
 
-            {/* 4. Net Profit Factor */}
-            <div className="bg-white border border-gray-200 rounded-lg p-2.5 flex flex-col">
-              <span className="text-[10px] text-gray-500 uppercase font-bold">Net Profit Factor</span>
-              <span className="text-xl font-black text-gray-900 mt-0.5">
-                {metrics?.netProfitFactor !== undefined ? metrics.netProfitFactor : 0.40}
-              </span>
-              <span className="text-[9px] text-gray-400 font-sans">Net Wins / Losses</span>
-            </div>
+                  {/* 3. Avg Net R */}
+                  <div className="bg-rose-50/60 border border-rose-200 rounded-lg p-2.5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-rose-800 uppercase font-bold">Avg Net R</span>
+                      {feeBadge}
+                    </div>
+                    <span className={`text-xl font-black mt-0.5 ${(metrics?.avgNetR ?? 0) >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                      {metrics?.avgNetR !== undefined ? metrics.avgNetR : 0.000} R
+                    </span>
+                    <span className="text-[9px] text-rose-600 font-sans">
+                      {(metrics?.avgNetR ?? 0) >= 0 ? "Positive Expectancy" : "Negative Expectancy"}
+                    </span>
+                  </div>
 
-            {/* 5. TP / BE / SL Split */}
-            <div className="bg-white border border-gray-200 rounded-lg p-2.5 flex flex-col">
-              <span className="text-[10px] text-gray-500 uppercase font-bold">TP / BE / SL Split</span>
-              <span className="text-xs font-black text-gray-900 mt-1">
-                {metrics?.tpPercent ?? 29.0}% / {metrics?.bePercent ?? 51.6}% / {metrics?.slPercent ?? 19.4}%
-              </span>
-              <span className="text-[9px] text-gray-400 font-sans">9 TP · 16 BE · 6 SL</span>
-            </div>
+                  {/* 4. Net Profit Factor */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-2.5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-gray-500 uppercase font-bold">Net Profit Factor</span>
+                      {feeBadge}
+                    </div>
+                    <span className={`text-xl font-black mt-0.5 ${(metrics?.netProfitFactor ?? 0) >= 1 ? 'text-emerald-600' : 'text-gray-900'}`}>
+                      {metrics?.netProfitFactor !== undefined ? metrics.netProfitFactor : 0.00}
+                    </span>
+                    <span className="text-[9px] text-gray-400 font-sans">Gross PF: {metrics?.profitFactor ?? 0.00}</span>
+                  </div>
 
-            {/* 6. Total Fees Paid */}
-            <div className="bg-blue-50/60 border border-blue-200 rounded-lg p-2.5 flex flex-col">
-              <span className="text-[10px] text-blue-900 uppercase font-bold">Fees Paid (w/ GST)</span>
-              <span className="text-xl font-black text-blue-700 mt-0.5">
-                ₹{metrics?.totalFeesPaidINR?.toFixed(2) ?? "80.09"}
-              </span>
-              <span className="text-[9px] text-blue-600 font-sans">Gross PnL: +₹16.05</span>
-            </div>
-          </div>
-        </section>
+                  {/* 5. TP / BE / SL Split */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-2.5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-gray-500 uppercase font-bold">TP / BE / SL Split</span>
+                      {feeBadge}
+                    </div>
+                    <span className="text-xs font-black text-gray-900 mt-1">
+                      {metrics?.tpPercent ?? 0}% / {metrics?.bePercent ?? 0}% / {metrics?.slPercent ?? 0}%
+                    </span>
+                    <span className="text-[9px] text-gray-400 font-sans">
+                      {metrics?.tpCount ?? 0} TP · {metrics?.beCount ?? 0} BE · {metrics?.slCount ?? 0} SL
+                    </span>
+                  </div>
 
-        {/* Top KPI Cards: Starting Artificial Money ₹1,000 INR & Shark Exchange Fees */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          
-          {/* Card 1: Virtual Balance (Starting ₹1,000 INR) */}
-          <div className="bg-white border border-[#e5e7eb] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono text-gray-500 uppercase font-semibold flex items-center gap-1">
-                <Coins className="w-3.5 h-3.5 text-amber-500" /> Account Balance
-              </span>
-              <span className="text-[10px] font-mono bg-amber-50 text-amber-800 px-2 py-0.5 rounded border border-amber-200 font-bold">
-                START: ₹1,000
-              </span>
-            </div>
-            <div className="text-2xl sm:text-3xl font-extrabold font-mono tracking-tight text-gray-900">
-              ₹{currentBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
-            <div className="text-[11px] text-gray-500 font-mono flex items-center justify-between pt-1 border-t border-gray-100">
-              <span>Artificial Capital: ₹1,000.00</span>
-              {trades.length > 0 ? (
-                <span className={netPnL >= 0 ? "text-emerald-600 font-bold" : "text-rose-600 font-bold"}>
-                  {netPnL >= 0 ? "+" : ""}₹{netPnL.toFixed(2)}
-                </span>
-              ) : (
-                <span className="text-gray-400">Realized: —</span>
-              )}
-            </div>
-          </div>
+                  {/* 6. Total Fees Paid */}
+                  <div className="bg-blue-50/60 border border-blue-200 rounded-lg p-2.5 flex flex-col justify-between">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-blue-900 uppercase font-bold">Fees + Slip</span>
+                      {feeBadge}
+                    </div>
+                    <span className="text-xl font-black text-blue-700 mt-0.5">
+                      ₹{totalCostINR.toFixed(2)}
+                    </span>
+                    <span className="text-[9px] text-blue-600 font-sans">
+                      Gross: {metrics?.grossProfitINR !== undefined ? `+₹${metrics.grossProfitINR.toFixed(2)}` : "₹0.00"}
+                    </span>
+                  </div>
+                </div>
+              </section>
 
-          {/* Card 2: Net PnL (After Shark Exchange Fees & GST) */}
-          <div className="bg-white border border-[#e5e7eb] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono text-gray-500 uppercase font-semibold">Net Realized PnL</span>
-              <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-bold ${
-                trades.length > 0
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : "bg-gray-50 text-gray-400 border-gray-200"
-              }`}>
-                {trades.length > 0 ? "AFTER FEES & GST" : "NO TRADES YET"}
-              </span>
-            </div>
-            <div className={`text-2xl sm:text-3xl font-extrabold font-mono tracking-tight ${
-              trades.length === 0
-                ? "text-gray-400"
-                : netPnL >= 0
-                ? "text-emerald-600"
-                : "text-rose-600"
-            }`}>
-              {trades.length > 0 ? `${netPnL >= 0 ? "+" : ""}₹${netPnL.toFixed(2)}` : "—"}
-            </div>
-            <div className="text-[11px] text-gray-500 font-mono flex items-center justify-between pt-1 border-t border-gray-100">
-              {trades.length > 0 ? (
-                <>
-                  <span>Gross: +₹{metrics?.grossProfitINR?.toFixed(2) || "0.00"}</span>
-                  <span>Loss: -₹{metrics?.grossLossINR?.toFixed(2) || "0.00"}</span>
-                </>
-              ) : (
-                <span className="text-gray-400 italic">No closed trades recorded</span>
-              )}
-            </div>
-          </div>
+              {/* Top KPI Cards: Starting Artificial Money ₹1,000 INR & Shark Exchange Fees */}
+              <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Card 1: Virtual Balance (Starting ₹1,000 INR) */}
+                <div className="bg-white border border-[#e5e7eb] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-gray-500 uppercase font-semibold flex items-center gap-1">
+                      <Coins className="w-3.5 h-3.5 text-amber-500" /> Account Balance
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-mono bg-amber-50 text-amber-800 px-2 py-0.5 rounded border border-amber-200 font-bold">
+                        START: ₹1,000
+                      </span>
+                      {feeBadge}
+                    </div>
+                  </div>
+                  <div className="text-2xl sm:text-3xl font-extrabold font-mono tracking-tight text-gray-900">
+                    ₹{displayBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                  <div className="text-[11px] text-gray-500 font-mono flex items-center justify-between pt-1 border-t border-gray-100">
+                    <span>Artificial Capital: ₹1,000.00</span>
+                    {trades.length > 0 ? (
+                      <span className={displayNetPnL >= 0 ? "text-emerald-600 font-bold" : "text-rose-600 font-bold"}>
+                        {displayNetPnL >= 0 ? "+" : ""}₹{displayNetPnL.toFixed(2)}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">Realized: —</span>
+                    )}
+                  </div>
+                </div>
 
-          {/* Card 3: Shark Exchange Fees Deducted */}
-          <div className="bg-white border border-[#e5e7eb] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono text-gray-500 uppercase font-semibold">Shark Exchange Fees</span>
-              <span className="text-[10px] font-mono bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 font-bold">
-                {(config.tradingFeePercent || 0.016).toFixed(3)}% + 18% GST
-              </span>
-            </div>
-            <div className={`text-2xl sm:text-3xl font-extrabold font-mono tracking-tight ${
-              trades.length > 0 ? "text-blue-600" : "text-gray-400"
-            }`}>
-              {trades.length > 0 ? `₹${totalFees.toFixed(2)}` : "—"}
-            </div>
-            <div className="text-[11px] text-gray-500 font-mono flex items-center justify-between pt-1 border-t border-gray-100">
-              <span>Effective {(config.tradingFeePercent || 0.016) <= 0.020 ? "Maker" : "Taker"} Fee:</span>
-              <span className="font-bold text-gray-700">{((config.tradingFeePercent || 0.016) * 1.18).toFixed(4)}% (w/ GST)</span>
-            </div>
-          </div>
+                {/* Card 2: Net PnL (After Shark Exchange Fees & GST) */}
+                <div className="bg-white border border-[#e5e7eb] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-gray-500 uppercase font-semibold">Net Realized PnL</span>
+                    <div className="flex items-center gap-1">
+                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-bold ${
+                        trades.length > 0
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : "bg-gray-50 text-gray-400 border-gray-200"
+                      }`}>
+                        {trades.length > 0 ? "AFTER FEES & GST" : "NO TRADES YET"}
+                      </span>
+                      {feeBadge}
+                    </div>
+                  </div>
+                  <div className={`text-2xl sm:text-3xl font-extrabold font-mono tracking-tight ${
+                    trades.length === 0
+                      ? "text-gray-400"
+                      : displayNetPnL >= 0
+                      ? "text-emerald-600"
+                      : "text-rose-600"
+                  }`}>
+                    {trades.length > 0 ? `${displayNetPnL >= 0 ? "+" : ""}₹${displayNetPnL.toFixed(2)}` : "—"}
+                  </div>
+                  <div className="text-[11px] text-gray-500 font-mono flex items-center justify-between pt-1 border-t border-gray-100">
+                    {trades.length > 0 ? (
+                      <>
+                        <span>Gross: +₹{metrics?.grossProfitINR?.toFixed(2) || "0.00"}</span>
+                        <span>Loss: -₹{metrics?.grossLossINR?.toFixed(2) || "0.00"}</span>
+                      </>
+                    ) : (
+                      <span className="text-gray-400 italic">No closed trades recorded</span>
+                    )}
+                  </div>
+                </div>
 
-          {/* Card 4: Shark Exchange Fee Config */}
-          <div className="bg-white border border-[#e5e7eb] rounded-xl p-4 flex flex-col gap-2 shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-mono text-gray-500 uppercase font-semibold flex items-center gap-1">
-                <Percent className="w-3.5 h-3.5 text-gray-400" /> Shark Fee Mode
-              </span>
-              <span className="text-[10px] font-mono text-emerald-700 font-bold">DERIVATIVES</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                step="0.002"
-                min="0.005"
-                max="0.2"
-                value={config.tradingFeePercent}
-                onChange={(e) => handleFeeChange(parseFloat(e.target.value) || 0.016)}
-                className="w-24 bg-gray-50 border border-gray-300 rounded px-2.5 py-1 text-sm font-mono font-bold text-gray-900 focus:outline-none focus:border-emerald-500 shadow-inner"
-              />
-              <span className="text-xs font-mono font-bold text-gray-500">% + 18% GST</span>
-            </div>
-            <div className="flex flex-wrap gap-1">
-              <button
-                onClick={() => handleFeeChange(0.016)}
-                className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-colors ${
-                  config.tradingFeePercent === 0.016
-                    ? "bg-blue-600 text-white border-blue-700 font-bold"
-                    : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
-                }`}
-                title="Shark Exchange Maker Fee: 0.016%"
-              >
-                Maker (0.016%)
-              </button>
-              <button
-                onClick={() => handleFeeChange(0.018)}
-                className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-colors ${
-                  config.tradingFeePercent === 0.018
-                    ? "bg-blue-600 text-white border-blue-700 font-bold"
-                    : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
-                }`}
-                title="VIP Maker Fee: 0.018%"
-              >
-                Maker (0.018%)
-              </button>
-              <button
-                onClick={() => handleFeeChange(0.030)}
-                className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-colors ${
-                  config.tradingFeePercent === 0.030
-                    ? "bg-blue-600 text-white border-blue-700 font-bold"
-                    : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
-                }`}
-                title="Discount Taker Fee: 0.030%"
-              >
-                Mid (0.030%)
-              </button>
-              <button
-                onClick={() => handleFeeChange(0.040)}
-                className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-colors ${
-                  config.tradingFeePercent === 0.040
-                    ? "bg-blue-600 text-white border-blue-700 font-bold"
-                    : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
-                }`}
-                title="Shark Exchange Standard Taker Fee: 0.040%"
-              >
-                Taker (0.040%)
-              </button>
-            </div>
-          </div>
+                {/* Card 3: Shark Exchange Fees Deducted */}
+                <div className="bg-white border border-[#e5e7eb] rounded-xl p-4 flex flex-col gap-1 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-gray-500 uppercase font-semibold">Fees &amp; Slippage Paid</span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] font-mono bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200 font-bold">
+                        {(config.tradingFeePercent || 0.040).toFixed(3)}% + 18% GST
+                      </span>
+                      {feeBadge}
+                    </div>
+                  </div>
+                  <div className={`text-2xl sm:text-3xl font-extrabold font-mono tracking-tight ${
+                    trades.length > 0 ? "text-blue-600" : "text-gray-400"
+                  }`}>
+                    {trades.length > 0 ? `₹${totalCostINR.toFixed(2)}` : "—"}
+                  </div>
+                  <div className="text-[11px] text-gray-500 font-mono flex items-center justify-between pt-1 border-t border-gray-100">
+                    <span>Exch: ₹{metrics?.totalFeesPaidINR?.toFixed(2) ?? "0.00"}</span>
+                    <span>Slip: ₹{metrics?.slippagePaidINR?.toFixed(2) ?? "0.00"}</span>
+                  </div>
+                </div>
 
-        </section>
+                {/* Card 4: Shark Exchange Fee Config */}
+                <div className="bg-white border border-[#e5e7eb] rounded-xl p-4 flex flex-col gap-2 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-gray-500 uppercase font-semibold flex items-center gap-1">
+                      <Percent className="w-3.5 h-3.5 text-gray-400" /> Shark Fee Mode
+                    </span>
+                    {feeBadge}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      step="0.002"
+                      min="0.005"
+                      max="0.2"
+                      value={config.tradingFeePercent}
+                      onChange={(e) => handleFeeChange(parseFloat(e.target.value) || 0.040)}
+                      className="w-24 bg-gray-50 border border-gray-300 rounded px-2.5 py-1 text-sm font-mono font-bold text-gray-900 focus:outline-none focus:border-emerald-500 shadow-inner"
+                    />
+                    <span className="text-xs font-mono font-bold text-gray-500">% + 18% GST</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    <button
+                      onClick={() => handleFeeChange(0.040)}
+                      className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-colors ${
+                        config.tradingFeePercent === 0.040
+                          ? "bg-amber-600 text-white border-amber-700 font-bold"
+                          : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                      }`}
+                      title="Shark Exchange Standard Taker: 0.040% (Realistic Default)"
+                    >
+                      Taker (0.040% Default)
+                    </button>
+                    <button
+                      onClick={() => handleFeeChange(0.016)}
+                      className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-colors ${
+                        config.tradingFeePercent === 0.016
+                          ? "bg-blue-600 text-white border-blue-700 font-bold"
+                          : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                      }`}
+                      title="Maker: 0.016% (Optimistic Scenario - assumes 100% passive queue fills)"
+                    >
+                      Maker (0.016% Optimistic)
+                    </button>
+                    <button
+                      onClick={() => handleFeeChange(0.030)}
+                      className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-colors ${
+                        config.tradingFeePercent === 0.030
+                          ? "bg-blue-600 text-white border-blue-700 font-bold"
+                          : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                      }`}
+                      title="Discount Taker Fee: 0.030%"
+                    >
+                      Mid (0.030%)
+                    </button>
+                    <button
+                      onClick={() => handleFeeChange(0.018)}
+                      className={`text-[10px] font-mono px-2 py-0.5 rounded border transition-colors ${
+                        config.tradingFeePercent === 0.018
+                          ? "bg-blue-600 text-white border-blue-700 font-bold"
+                          : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                      }`}
+                      title="VIP Maker Fee: 0.018%"
+                    >
+                      VIP Maker (0.018%)
+                    </button>
+                  </div>
+                </div>
+              </section>
+            </>
+          );
+        })()}
 
         {/* 3. AI Strategy Model Selector Deck (Top 4 Backtested Models) */}
         {(() => {
