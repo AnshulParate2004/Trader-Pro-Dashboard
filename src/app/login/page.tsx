@@ -13,7 +13,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Zap,
-  KeyRound,
   RotateCw,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -52,12 +51,6 @@ export default function LoginPage() {
       setErrorMsg(res.error || "Authentication failed. Check your credentials.");
       setIsSubmitting(false);
     }
-  };
-
-  const handleQuickFill = () => {
-    setEmail("anshulnparate@gmail.com");
-    setPassword("20102004");
-    setErrorMsg(null);
   };
 
   return (
@@ -109,24 +102,6 @@ export default function LoginPage() {
               <p className="text-xs text-gray-400 font-sans max-w-xs">
                 Enter your authorized credentials to access the live quantitative execution terminal & AI models.
               </p>
-            </div>
-
-            {/* One-Click Quick Fill Helper */}
-            <div className="mb-5 p-3 rounded-xl bg-[#182133] border border-gray-700/70 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <KeyRound className="w-4 h-4 text-emerald-400" />
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-mono font-bold text-gray-300">Anshul Parate Account</span>
-                  <span className="text-[10px] font-mono text-gray-500">anshulnparate@gmail.com</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleQuickFill}
-                className="text-[11px] font-mono font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/40 px-2.5 py-1 rounded-md transition-all cursor-pointer"
-              >
-                Auto Fill
-              </button>
             </div>
 
             {/* Error Message */}

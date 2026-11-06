@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { AUTH_COOKIE_NAME, AuthUser } from "@/lib/auth";
+import { AUTH_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,14 @@ export async function GET() {
       });
     }
 
-    const user: AuthUser = JSON.parse(sessionCookie.value);
+    const user = await verifySessionToken(sessionCookie.value);
+    if (!user) {
+      return NextResponse.json({
+        authenticated: false,
+        user: null,
+      });
+    }
+
     return NextResponse.json({
       authenticated: true,
       user,

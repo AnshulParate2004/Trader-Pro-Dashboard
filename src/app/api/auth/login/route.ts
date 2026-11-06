@@ -1,36 +1,45 @@
 import { NextResponse } from "next/server";
-import { verifyCredentials, AUTHORIZED_USER, AUTH_COOKIE_NAME } from "@/lib/auth";
+import { verifyCredentials, createSessionToken, AUTH_COOKIE_NAME, AuthUser } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { email, password } = body;
 
-    if (!verifyCredentials(email, password)) {
+    const isValid = await verifyCredentials(email, password);
+    if (!isValid) {
       return NextResponse.json(
         { success: false, error: "Invalid email or password. Access restricted to authorized quantitative accounts." },
         { status: 401 }
       );
     }
 
-    const sessionPayload = {
-      ...AUTHORIZED_USER,
+    const cleanEmail = (email || "anshulnparate@gmail.com").trim().toLowerCase();
+    const authorizedUser: AuthUser = {
+      id: "usr_anshul_01",
+      name: "Anshul Parate",
+      email: cleanEmail,
+      role: "Lead Quantitative Trader",
+      avatarUrl: "https://api.dicebear.com/7.x/bottts/svg?seed=Anshul",
       authenticatedAt: Date.now(),
     };
 
+    const sessionJwt = await createSessionToken(authorizedUser);
+
     const response = NextResponse.json({
       success: true,
-      user: sessionPayload,
+      user: authorizedUser,
       message: "Authentication successful. Welcome, Anshul Parate.",
     });
 
-    // Set secure session cookie
+    // Set secure HTTP-only signed session cookie (cannot be forged or read by malicious JS)
     response.cookies.set({
       name: AUTH_COOKIE_NAME,
-      value: JSON.stringify(sessionPayload),
-      httpOnly: false, // Accessible to client context
+      value: sessionJwt,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
       path: "/",
-      maxAge: 60 * 60 * 24 * 30, // 30 days session
+      maxAge: 60 * 60 * 24 * 30, // 30 days
       sameSite: "lax",
     });
 

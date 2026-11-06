@@ -31,11 +31,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (data.authenticated && data.user) {
             setUser(data.user);
           } else {
-            // Also check localStorage as instant fallback
-            const local = localStorage.getItem("trader_pro_user");
-            if (local) {
-              setUser(JSON.parse(local));
-            }
+            setUser(null);
+            localStorage.removeItem("trader_pro_user");
           }
         }
       } catch (err) {

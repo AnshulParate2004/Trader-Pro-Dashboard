@@ -3,6 +3,7 @@ import {
   getEngineConfig,
   updateEngineConfig,
   getTradeLogs,
+  getActiveTradeLogs,
   executeNewTrade,
   closeTrade,
   computePerformanceMetrics,
@@ -73,10 +74,8 @@ export async function GET(req: Request) {
     const actionsTaken: string[] = [];
 
     // 3. Inspect Active Trades & Manage Exits / Breakeven Ratchets / Vertical Time Barrier
-    const allTrades = await getTradeLogs(50);
-    const activeTrades = allTrades.filter(
-      (t) => t.status === "ACTIVE" || t.status === "BE_ACTIVATED"
-    );
+    // Query MongoDB directly for active trades so older open trades are never missed by pagination/limits
+    const activeTrades = await getActiveTradeLogs();
 
     for (const trade of activeTrades) {
       // Invariant: Vertical Time Barrier (Horizon Expiry Exit)
@@ -152,9 +151,8 @@ export async function GET(req: Request) {
 
     // 4. Strict Single-Position & CANDLE-CLOSE Execution Rule:
     // User Rule: "IT WILL DO TRADE AFTER THE CANDLE CLOSE ONLY ELSE IT WILL NOT DO THE TRADE"
-    const remainingActive = allTrades.filter(
-      (t) => t.status === "ACTIVE" || t.status === "BE_ACTIVATED"
-    ).length;
+    const remainingActiveTrades = await getActiveTradeLogs();
+    const remainingActive = remainingActiveTrades.length;
 
     if (remainingActive >= 1) {
       actionsTaken.push(`AI Holding 1 Active Position: Capital fully allocated. Awaiting Target TP, Ratchet, or Vertical Time Barrier exit before taking next trade.`);

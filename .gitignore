@@ -40,3 +40,7 @@ Thumbs.db
 .idea/
 .vscode/
 *.sw?
+
+# Scratch & test verification assets
+*.png
+/scripts/

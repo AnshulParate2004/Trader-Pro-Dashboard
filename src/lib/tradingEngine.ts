@@ -1,5 +1,6 @@
 import { getDb, isMongoConfigured } from "./mongodb";
 export * from "./engineTypes";
+export * from "./feeModel";
 import {
   AIStrategyModel,
   TOP_MODELS,
@@ -7,6 +8,14 @@ import {
   EngineConfig,
   EnginePerformanceMetrics,
 } from "./engineTypes";
+import {
+  computeTradeCost,
+  getSlippageRate,
+  isTakerFee,
+  TAKER_BASE_FEE_PERCENT,
+  MAKER_BASE_FEE_PERCENT,
+  GST_RATE_PERCENT,
+} from "./feeModel";
 
 // Shark Exchange Fee Calculations (0.040% Taker, 0.016% Maker, 18% Indian GST, 0.01% Slippage)
 export function calculateSharkExchangeFees(
@@ -213,6 +222,65 @@ export async function getTradeLogs(limit: number = 200, modelId?: string, feeOve
   return list.sort((a, b) => b.openedAt - a.openedAt);
 }
 
+// Query all currently active and breakeven-activated trades directly (Never misses trades beyond pagination/limit)
+export async function getActiveTradeLogs(): Promise<TradeOrder[]> {
+  const db = await getDb();
+  if (db) {
+    try {
+      const activeDocs = await db
+        .collection("trade_logs")
+        .find({ status: { $in: ["ACTIVE", "BE_ACTIVATED"] } })
+        .sort({ openedAt: 1 })
+        .toArray();
+
+      if (Array.isArray(activeDocs) && activeDocs.length > 0) {
+        return activeDocs.map((t: any) => ({
+          id: t.id || t._id.toString(),
+          symbol: t.symbol,
+          direction: t.direction,
+          orderType: t.orderType || "TAKER",
+          modelId: t.modelId || "15m-sniper-030",
+          modelName: t.modelName || "15M Sniper (+0.30R)",
+          entryPrice: t.entryPrice,
+          exitPrice: t.exitPrice,
+          positionSizeINR: t.positionSizeINR || 1000,
+          coins: t.coins,
+          feePercentage: t.feePercentage || TAKER_BASE_FEE_PERCENT,
+          gstPercentage: t.gstPercentage || GST_RATE_PERCENT,
+          entryFeeINR: t.entryFeeINR || 0,
+          exitFeeINR: t.exitFeeINR || 0,
+          slippageINR: t.slippageINR || 0,
+          totalFeeINR: t.totalFeeINR || 0,
+          grossPnLINR: t.grossPnLINR || 0,
+          netPnLINR: t.netPnLINR || 0,
+          stopLoss: t.stopLoss,
+          breakevenTrigger: t.breakevenTrigger,
+          breakevenLocked: t.breakevenLocked,
+          breakevenActivated: t.breakevenActivated,
+          takeProfit1: t.takeProfit1,
+          takeProfit2: t.takeProfit2,
+          status: t.status,
+          exitReason: t.exitReason,
+          triggerReason: t.triggerReason,
+          openedAt: t.openedAt,
+          closedAt: t.closedAt,
+        }));
+      }
+    } catch (err) {
+      console.warn("MongoDB getActiveTradeLogs error, falling back to memory:", err);
+    }
+  }
+
+  // Warn loudly on serverless if MONGODB_URI is not set
+  if (process.env.NODE_ENV === "production" && !process.env.MONGODB_URI) {
+    console.error("CRITICAL PRODUCTION MISCONFIGURATION: MONGODB_URI is missing on serverless! Trades and engine state will vanish across invocations.");
+  }
+
+  return memoryTrades.filter(
+    (t) => t.status === "ACTIVE" || t.status === "BE_ACTIVATED"
+  );
+}
+
 // Execute New Automated Trade Order sized on ₹1,000 INR
 export async function executeNewTrade(params: {
   symbol: string;
@@ -366,19 +434,12 @@ export async function closeTrade(tradeId: string, exitPrice: number, reason: str
   return trade;
 }
 
-// Compute Engine Performance in INR (all models or filtered by modelId, with dynamic fee calculation)
-// Strictly computes all metrics (true win rate, net win rate, split, avg R, profit factor, fees, slippage, gross, net, balance)
-// from the same single unified list of closed trades using the active fee mode (default Taker: 0.040% + 18% GST + 0.010% slippage/side).
-export async function computePerformanceMetrics(modelId?: string, feeOverride?: number): Promise<EnginePerformanceMetrics> {
-  const config = await getEngineConfig();
-  // Default fee mode is strictly Taker (0.040%) unless an override is provided
-  const feeRate = feeOverride !== undefined && !isNaN(feeOverride) ? feeOverride : (config.tradingFeePercent || 0.040);
-  const gstRate = (config.gstPercent || 18.0) / 100;
-  const isTaker = feeRate > 0.020;
-  const slipRate = isTaker ? 0.0001 : 0.00005; // 0.01% per side for Taker, 0.005% for Maker
-
-  const trades = await getTradeLogs(500, modelId, feeRate);
-
+// Pure synchronous computation of all performance metrics from a list of trades using the unified fee model
+export function computePurePerformanceMetrics(
+  trades: TradeOrder[],
+  feeRate: number = TAKER_BASE_FEE_PERCENT,
+  gstPercent: number = GST_RATE_PERCENT
+): EnginePerformanceMetrics {
   if (!trades || trades.length === 0) {
     return {
       totalTrades: 0,
@@ -433,21 +494,12 @@ export async function computePerformanceMetrics(modelId?: string, feeOverride?: 
     closedCount++;
     const pos = t.positionSizeINR || 1000;
     const gross = t.grossPnLINR !== undefined ? t.grossPnLINR : 0;
-    const exitPos = pos + gross;
 
-    // Unified fee and slippage per trade
-    const entryFee = Number((pos * (feeRate / 100) * (1 + gstRate)).toFixed(4));
-    const exitFee = Number((exitPos * (feeRate / 100) * (1 + gstRate)).toFixed(4));
-    const entrySlip = Number((pos * slipRate).toFixed(4));
-    const exitSlip = Number((exitPos * slipRate).toFixed(4));
+    const cost = computeTradeCost(pos, gross, feeRate, gstPercent);
+    const net = cost.netPnLINR;
 
-    const tradeExchangeFee = entryFee + exitFee;
-    const tradeSlippage = entrySlip + exitSlip;
-    const tradeTotalCost = tradeExchangeFee + tradeSlippage;
-    const net = Number((gross - tradeTotalCost).toFixed(2));
-
-    totalExchangeFees += tradeExchangeFee;
-    totalSlippage += tradeSlippage;
+    totalExchangeFees += cost.totalExchangeFeesINR;
+    totalSlippage += cost.totalSlippageINR;
 
     // Gross PnL classification (independent of fees)
     if (gross > 0) {
@@ -528,4 +580,17 @@ export async function computePerformanceMetrics(modelId?: string, feeOverride?: 
     avgNetR,
     netProfitFactor,
   };
+}
+
+// Compute Engine Performance in INR (all models or filtered by modelId, with dynamic fee calculation)
+// Strictly computes all metrics (true win rate, net win rate, split, avg R, profit factor, fees, slippage, gross, net, balance)
+// from the same single unified list of closed trades using the active fee mode (default Taker: 0.040% + 18% GST + 0.010% slippage/side).
+export async function computePerformanceMetrics(modelId?: string, feeOverride?: number): Promise<EnginePerformanceMetrics> {
+  const config = await getEngineConfig();
+  // Default fee mode is strictly Taker (0.040%) unless an override is provided
+  const feeRate = feeOverride !== undefined && !isNaN(feeOverride) ? feeOverride : (config.tradingFeePercent || TAKER_BASE_FEE_PERCENT);
+  const gstRate = config.gstPercent || GST_RATE_PERCENT;
+
+  const trades = await getTradeLogs(500, modelId, feeRate);
+  return computePurePerformanceMetrics(trades, feeRate, gstRate);
 }
