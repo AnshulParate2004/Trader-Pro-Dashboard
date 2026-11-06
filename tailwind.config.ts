@@ -10,6 +10,12 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        accent: {
+          DEFAULT: "#D97757",
+          hover: "#C26546",
+          tint: "#FBF0EB",
+          dark: "#B85434",
+        },
         chrome: {
           bg: "#ececed",
           canvas: "#ffffff",
@@ -26,19 +32,38 @@ const config: Config = {
           "green-ink": "#007d33",
           tint: "#f7f9fc",
         },
-        trade: {
-          long: "#089981",
-          short: "#f23645",
-          blue: "#0070f3",
-          amber: "#f59e0b",
-        }
+        loss: {
+          DEFAULT: "#ef4444",
+          dark: "#dc2626",
+          tint: "rgba(239, 68, 68, 0.08)",
+        },
+        win: {
+          DEFAULT: "#00c851",
+          dark: "#007d33",
+          tint: "rgba(0, 200, 81, 0.08)",
+        },
       },
       fontFamily: {
-        sans: ["-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "Inter", "sans-serif"],
-        mono: ["GeistMono", "JetBrains Mono", "SF Mono", "Menlo", "Consolas", "monospace"],
+        brand: ["'GT Planar'", "sans-serif"],
+        body: ["'Plain'", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+        sans: ["'Plain'", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+        mono: ["'GT Standard Mono'", "'GeistMono'", "ui-monospace", "monospace"],
+        bbmono: ["'GT Standard Mono'", "'GeistMono'", "monospace"],
+      },
+      borderRadius: {
+        xl: "12px",
+        lg: "8px",
+        md: "6px",
+        sm: "4px",
+      },
+      boxShadow: {
+        xs: "0 1px 2px 0 rgba(0, 0, 0, 0.04)",
+        sm: "0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.06)",
+        card: "0 0 0 1px #cfcfd6, 0 1px 2px 0 rgba(0, 0, 0, 0.04)",
       },
     },
   },
   plugins: [],
 };
+
 export default config;

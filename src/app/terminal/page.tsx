@@ -375,7 +375,7 @@ export default function TerminalPage() {
             beTrigger = currentClose + ratchetTriggerR * realAtr;
             beLocked = currentClose + 0.05 * realAtr;
             conviction = 92;
-            actionGuidance = `[${activeModel.shortName}] Confirmed 15m breakout above $${realResistance.toFixed(1)}. Enter Market Long at $${entryPrice.toFixed(2)}. Target TP (+1.0R) at $${takeProfit.toFixed(2)} with +${ratchetTriggerR}R Breakeven Ratchet.`;
+            actionGuidance = `[${activeModel.shortName}] Confirmed 15m breakout above $${realResistance.toFixed(1)}. Enter Market Long at $${entryPrice.toFixed(2)}. Target TP (+1.0R) at $${takeProfit.toFixed(2)} with +${ratchetTriggerR}R Breakeven trail.`;
           }
         } else if (isBreakdownShort) {
           if (!gate4HApproved) {
@@ -397,7 +397,7 @@ export default function TerminalPage() {
             beTrigger = currentClose - ratchetTriggerR * realAtr;
             beLocked = currentClose - 0.05 * realAtr;
             conviction = 92;
-            actionGuidance = `[${activeModel.shortName}] Confirmed 15m breakdown below $${realSupport.toFixed(1)}. Enter Market Short at $${entryPrice.toFixed(2)}. Target TP (+1.0R) at $${takeProfit.toFixed(2)} with +${ratchetTriggerR}R Breakeven Ratchet.`;
+            actionGuidance = `[${activeModel.shortName}] Confirmed 15m breakdown below $${realSupport.toFixed(1)}. Enter Market Short at $${entryPrice.toFixed(2)}. Target TP (+1.0R) at $${takeProfit.toFixed(2)} with +${ratchetTriggerR}R Breakeven trail.`;
           }
         } else if (atResistance) {
           action = "LIMIT SELL AT RESISTANCE";
@@ -408,7 +408,7 @@ export default function TerminalPage() {
           beTrigger = realResistance - ratchetTriggerR * realAtr;
           beLocked = realResistance - 0.05 * realAtr;
           conviction = 91;
-          actionGuidance = `[${activeModel.shortName}] Testing 50-bar Resistance ($${realResistance.toFixed(1)}). Limit Sell at $${realResistance.toFixed(2)} on ceiling rejection wicks with +${ratchetTriggerR}R Breakeven ratchet.`;
+          actionGuidance = `[${activeModel.shortName}] Testing 50-bar Resistance ($${realResistance.toFixed(1)}). Limit Sell at $${realResistance.toFixed(2)} on ceiling rejection wicks with +${ratchetTriggerR}R Breakeven trail.`;
         } else if (atSupport) {
           action = "LIMIT BUY AT SUPPORT";
           orderType = "LIMIT";
@@ -418,7 +418,7 @@ export default function TerminalPage() {
           beTrigger = realSupport + ratchetTriggerR * realAtr;
           beLocked = realSupport + 0.05 * realAtr;
           conviction = 92;
-          actionGuidance = `[${activeModel.shortName}] Testing 50-bar Support ($${realSupport.toFixed(1)}). Limit Buy at Support on dip bounce with +${ratchetTriggerR}R Breakeven ratchet.`;
+          actionGuidance = `[${activeModel.shortName}] Testing 50-bar Support ($${realSupport.toFixed(1)}). Limit Buy at Support on dip bounce with +${ratchetTriggerR}R Breakeven trail.`;
         } else {
           action = "STANDBY: CHOP MID-ZONE";
           orderType = "STANDBY";
@@ -511,10 +511,10 @@ export default function TerminalPage() {
           </div>
 
           <Link href="/" className="flex items-center gap-2 group mr-1" title="Back to Home">
-            <div className="w-6 h-6 rounded-lg bg-gray-900 flex items-center justify-center text-white font-mono text-xs font-black shadow-xs group-hover:scale-105 transition-transform">
+            <div className="w-6 h-6 rounded bg-accent flex items-center justify-center text-white font-mono text-xs font-bold shadow-xs">
               TP
             </div>
-            <span className="font-mono text-xs font-black tracking-tight text-gray-900 group-hover:text-emerald-600 transition-colors hidden sm:inline">
+            <span className="font-mono text-xs font-bold tracking-tight text-gray-900 group-hover:text-accent transition-colors hidden sm:inline">
               TRADER-PRO
             </span>
           </Link>
@@ -1026,11 +1026,11 @@ export default function TerminalPage() {
 
                 </div>
 
-                {/* Breakeven Ratchet (+0.30R or +0.35R Trail Trigger) */}
+                {/* Breakeven Trail (+0.30R or +0.35R Trail Trigger) */}
                 <div className="clay-white-inset p-2.5 flex items-center justify-between font-mono text-[11px] bg-blue-50/30 border-blue-200/70">
                   <div className="flex flex-col">
                     <span className="text-[10px] font-bold text-blue-700 uppercase">
-                      ⚡ +{activeModel.ratchetTriggerR.toFixed(2)}R Breakeven Ratchet
+                      ⚡ +{activeModel.ratchetTriggerR.toFixed(2)}R Breakeven Trigger
                     </span>
                     <span className="text-[10px] text-slate-500">Auto-trail SL to lock Breakeven (+0.05R fee shield) at:</span>
                   </div>
@@ -1469,7 +1469,7 @@ export default function TerminalPage() {
                   </div>
                   <p className="italic text-slate-700 text-[11px] leading-relaxed">
                     {currentActiveTrade
-                      ? `Currently holding and managing an active ${currentActiveTrade.direction} position entered at $${currentActiveTrade.entryPrice.toFixed(2)}. Capital is secured. The Breakeven ratchet is armed to trail Stop Loss to Breakeven (+0.05R fee shield) at $${currentActiveTrade.breakevenTrigger.toFixed(2)}.`
+                      ? `Currently holding and managing an active ${currentActiveTrade.direction} position entered at $${currentActiveTrade.entryPrice.toFixed(2)}. Capital is secured. The Breakeven trail is armed to move Stop Loss to Breakeven (+0.05R fee shield) at $${currentActiveTrade.breakevenTrigger.toFixed(2)}.`
                       : `"I am tracking two primary boundary levels: If price tests $${resPrice.toFixed(0)} and rejects, I will SHORT the ceiling back down to $${resShortTp.toFixed(0)} (or BUY if a 15m candle closes firmly above). If price drops to $${supPrice.toFixed(0)} and absorbs, I will BUY the dip bounce back up to $${supLongTp.toFixed(0)} (or SHORT on breakdown). Currently at $${livePrice ? livePrice.toFixed(0) : "81070"}, price is hovering in the neutral mid-corridor, so I am safely keeping ₹1,000 capital shielded in cash until either boundary is tested."`}
                   </p>
                 </div>
@@ -1574,7 +1574,7 @@ export default function TerminalPage() {
                   </div>
 
                   <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100">
-                    <span className="text-slate-500">Breakeven Ratchet:</span>
+                    <span className="text-slate-500">Breakeven SL Trigger:</span>
                     <span className={`font-bold ${currentActiveTrade.breakevenActivated ? "text-emerald-700" : "text-blue-700"}`}>
                       {currentActiveTrade.breakevenActivated
                         ? "✔ LOCKED (+0.05R FEE SHIELD)"
@@ -1641,6 +1641,11 @@ export default function TerminalPage() {
                   {indicators ? `$${indicators.nearestSupport.toFixed(1)} (-${indicators.distToSupportATR.toFixed(1)}R)` : "—"}
                 </span>
               </div>
+            </div>
+
+            {/* Footer Notice */}
+            <div className="pt-2 text-[10px] font-mono text-slate-400 text-center border-t border-slate-200/60">
+              Research and paper trading only. Not financial advice.
             </div>
           </div>
 

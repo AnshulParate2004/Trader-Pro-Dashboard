@@ -3,8 +3,8 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 
 export const metadata: Metadata = {
-  title: "Trader-Pro Quant Platform | Institutional Scalping Engine",
-  description: "Institutional cryptocurrency scalping platform with real-time TradingView sync, +0.30R Breakeven Ratchets, and dynamic S/R radar.",
+  title: "Trader-Pro: BTC Strategy Research & Paper-Trading Dashboard",
+  description: "Live out-of-sample paper trading and walk-forward research dashboard for BTC trading strategies evaluated after realistic taker fees and slippage.",
 };
 
 export default function RootLayout({
