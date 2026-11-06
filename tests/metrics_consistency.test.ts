@@ -110,4 +110,48 @@ describe("Live Production Metric & Fee Model Consistency Tests", () => {
     // Net win rate: 1 positive net trade / 3 total closed trades = 1/3 = 33.3%
     assert.strictEqual(metrics.netWinRate, 33.3);
   });
+
+  test("R Normalization: 0.23% stop trade and 1.00% stop trade must yield different R values proportional to true stop risk", () => {
+    // Both trades have ₹1,000 position size and gross = 0 (breakeven gross, paying standard 0.1144% taker friction)
+    // Trade A: Live 15M scalper stop size = 0.23% (risk = ₹2.30)
+    // entry = 100,000, SL = 99,770 (slDist = 230 -> 0.23%)
+    const tradeA = createMockTrade({
+      id: "trade_tight_stop",
+      positionSizeINR: 1000,
+      entryPrice: 100000,
+      stopLoss: 99770,
+      takeProfit1: 100230,
+      stopPct: 0.0023,
+      riskAmountINR: 2.30,
+      grossPnLINR: 0,
+      status: "CLOSED",
+      exitReason: "Breakeven Stop Hit",
+    });
+
+    // Trade B: Wide 1H model stop size = 1.00% (risk = ₹10.00)
+    // entry = 100,000, SL = 99,000 (slDist = 1,000 -> 1.00%)
+    const tradeB = createMockTrade({
+      id: "trade_wide_stop",
+      positionSizeINR: 1000,
+      entryPrice: 100000,
+      stopLoss: 99000,
+      takeProfit1: 101000,
+      stopPct: 0.01,
+      riskAmountINR: 10.00,
+      grossPnLINR: 0,
+      status: "CLOSED",
+      exitReason: "Breakeven Stop Hit",
+    });
+
+    const metricsA = computePurePerformanceMetrics([tradeA], 0.040, 18.0);
+    const metricsB = computePurePerformanceMetrics([tradeB], 0.040, 18.0);
+
+    // Expected R values:
+    // Trade A: -1.144 / 2.30 = -0.497R
+    // Trade B: -1.144 / 10.00 = -0.114R
+    assert.ok(Math.abs(metricsA.avgNetR - (-0.497)) < 0.005, `Trade A avgNetR (${metricsA.avgNetR}) should be ~ -0.497R`);
+    assert.ok(Math.abs(metricsB.avgNetR - (-0.114)) < 0.005, `Trade B avgNetR (${metricsB.avgNetR}) should be ~ -0.114R`);
+    assert.notStrictEqual(metricsA.avgNetR, metricsB.avgNetR, "R values must differ based on actual stop risk");
+    assert.ok(metricsA.avgNetR < metricsB.avgNetR, "Tighter stop must suffer higher friction in R units");
+  });
 });

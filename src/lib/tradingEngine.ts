@@ -205,6 +205,9 @@ export async function getTradeLogs(limit: number = 200, modelId?: string, feeOve
             grossPnLINR: gross,
             netPnLINR: net,
             stopLoss: t.stopLoss,
+            initialStopLoss: t.initialStopLoss || t.stopLoss,
+            stopPct: t.stopPct,
+            riskAmountINR: t.riskAmountINR,
             breakevenTrigger: t.breakevenTrigger,
             breakevenLocked: t.breakevenLocked,
             breakevenActivated: t.breakevenActivated,
@@ -262,6 +265,9 @@ export async function getActiveTradeLogs(): Promise<TradeOrder[]> {
           grossPnLINR: t.grossPnLINR || 0,
           netPnLINR: t.netPnLINR || 0,
           stopLoss: t.stopLoss,
+          initialStopLoss: t.initialStopLoss || t.stopLoss,
+          stopPct: t.stopPct,
+          riskAmountINR: t.riskAmountINR,
           breakevenTrigger: t.breakevenTrigger,
           breakevenLocked: t.breakevenLocked,
           breakevenActivated: t.breakevenActivated,
@@ -345,6 +351,9 @@ export async function executeNewTrade(params: {
     ? params.entryPrice + 1.5 * params.atr
     : params.entryPrice - 1.5 * params.atr;
 
+  const stopPct = Number((slDist / params.entryPrice).toFixed(6));
+  const riskAmountINR = Number((positionSizeINR * stopPct).toFixed(2));
+
   const newTrade: TradeOrder = {
     id: `trade-shark-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
     symbol: params.symbol,
@@ -360,6 +369,9 @@ export async function executeNewTrade(params: {
     entryFeeINR: feeCalc.entryFeeINR,
     totalFeeINR: feeCalc.entryFeeINR,
     stopLoss: sl,
+    initialStopLoss: sl,
+    stopPct,
+    riskAmountINR,
     breakevenTrigger: beTrigger,
     breakevenLocked: beLocked,
     breakevenActivated: false,
@@ -440,6 +452,43 @@ export async function closeTrade(tradeId: string, exitPrice: number, reason: str
   }
 
   return trade;
+}
+
+// Calculate the exact capital at risk (1R in currency units) for a given trade.
+// Never hardcodes or assumes a 1% stop - dynamically derives from the trade's actual stop loss.
+export function getTradeRiskINR(t: Partial<TradeOrder>): number {
+  const pos = t.positionSizeINR || 1000;
+  // 1. Explicit risk amount in INR
+  if (t.riskAmountINR && t.riskAmountINR > 0) {
+    return t.riskAmountINR;
+  }
+  // 2. Explicit stop percentage
+  if (t.stopPct && t.stopPct > 0) {
+    return pos * t.stopPct;
+  }
+  // 3. Derived from initial TP/SL distance
+  let slDist = 0;
+  // If takeProfit1 is set and different from entryPrice, it reflects 1.0 * ATR (the initial stop distance)
+  if (t.takeProfit1 && t.entryPrice && Math.abs(t.takeProfit1 - t.entryPrice) > 0) {
+    slDist = Math.abs(t.takeProfit1 - t.entryPrice);
+  } else if (t.initialStopLoss && t.entryPrice && Math.abs(t.entryPrice - t.initialStopLoss) > 0) {
+    slDist = Math.abs(t.entryPrice - t.initialStopLoss);
+  } else if (t.stopLoss && t.entryPrice && Math.abs(t.entryPrice - t.stopLoss) > 0) {
+    slDist = Math.abs(t.entryPrice - t.stopLoss);
+  }
+  if (slDist > 0 && t.entryPrice && t.entryPrice > 0) {
+    const stopPct = slDist / t.entryPrice;
+    return pos * stopPct;
+  }
+  // Fallback only if no price or risk data exists
+  return pos * 0.01;
+}
+
+// Compute the R-multiple for a trade given its realized net PnL and true stop risk.
+export function getTradeRValue(t: Partial<TradeOrder>, netPnLINR?: number): number {
+  const net = netPnLINR !== undefined ? netPnLINR : (t.netPnLINR !== undefined ? t.netPnLINR : 0);
+  const riskINR = getTradeRiskINR(t);
+  return riskINR > 0 ? net / riskINR : 0;
 }
 
 // Pure synchronous computation of all performance metrics from a list of trades using the unified fee model
@@ -525,9 +574,9 @@ export function computePurePerformanceMetrics(
       netLossesINR += Math.abs(net);
     }
 
-    // 1R = 1% volatility risk parity
-    const oneR = pos * 0.01;
-    const rVal = oneR > 0 ? net / oneR : 0;
+    // Measure R against each trade's actual stop risk (never assuming a hardcoded 1% stop)
+    const riskINR = getTradeRiskINR({ ...t, positionSizeINR: pos });
+    const rVal = riskINR > 0 ? net / riskINR : 0;
     totalNetR += rVal;
 
     // Exit reason classification:

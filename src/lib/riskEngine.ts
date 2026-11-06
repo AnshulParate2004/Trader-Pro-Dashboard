@@ -9,6 +9,7 @@
 
 import { computeRoundTripFrictionPercent } from "./feeModel";
 import { TradeOrder } from "./engineTypes";
+import { getTradeRValue } from "./tradingEngine";
 
 export const DEFAULT_MAX_COST_R = 0.08;
 export const FROZEN_1HA_MAX_COST_R = 0.15;
@@ -69,10 +70,8 @@ export function evaluateRollingKillSwitch(
   let totalNetR = 0;
 
   for (const t of recentWindow) {
-    const pos = t.positionSizeINR || 1000;
-    const oneR = pos * 0.01;
     const netPnL = t.netPnLINR !== undefined ? t.netPnLINR : 0;
-    const rVal = oneR > 0 ? netPnL / oneR : 0;
+    const rVal = getTradeRValue(t, netPnL);
     totalNetR += rVal;
   }
 
@@ -120,10 +119,8 @@ export function checkDailyLossLimit(
 
   let todayNetR = 0;
   for (const t of todayClosed) {
-    const pos = t.positionSizeINR || 1000;
-    const oneR = pos * 0.01;
     const netPnL = t.netPnLINR !== undefined ? t.netPnLINR : 0;
-    todayNetR += oneR > 0 ? netPnL / oneR : 0;
+    todayNetR += getTradeRValue(t, netPnL);
   }
 
   todayNetR = Number(todayNetR.toFixed(4));
@@ -170,10 +167,8 @@ export function checkMaxDrawdownLimit(
   let maxDD = 0;
 
   for (const t of closed) {
-    const pos = t.positionSizeINR || 1000;
-    const oneR = pos * 0.01;
     const netPnL = t.netPnLINR !== undefined ? t.netPnLINR : 0;
-    cumulativeR += oneR > 0 ? netPnL / oneR : 0;
+    cumulativeR += getTradeRValue(t, netPnL);
 
     if (cumulativeR > peakR) {
       peakR = cumulativeR;

@@ -62,7 +62,7 @@ export async function verifySessionToken(token: string): Promise<AuthUser | null
   }
 }
 
-// Verified master credentials validation (No plaintext passwords hardcoded in repository)
+// Verified master credentials validation (Strict salted bcrypt hash only - No plaintext passwords in env or code)
 export async function verifyCredentials(email?: string, password?: string): Promise<boolean> {
   if (!email || !password) return false;
 
@@ -72,7 +72,7 @@ export async function verifyCredentials(email?: string, password?: string): Prom
 
   const inputPass = password.trim();
 
-  // 1. If explicit bcrypt hash is configured in environment (Highest security)
+  // Strict bcrypt hash validation (Highest security standard)
   const hashFromEnv = process.env.AUTH_PASSWORD_HASH;
   if (hashFromEnv) {
     try {
@@ -83,20 +83,14 @@ export async function verifyCredentials(email?: string, password?: string): Prom
     }
   }
 
-  // 2. If raw password is configured in environment
-  const plainFromEnv = process.env.AUTH_PASSWORD;
-  if (plainFromEnv) {
-    return inputPass === plainFromEnv;
-  }
-
-  // In production, require either AUTH_PASSWORD_HASH or AUTH_PASSWORD to be defined
+  // Require AUTH_PASSWORD_HASH in both production and development
   if (process.env.NODE_ENV === "production") {
     throw new Error(
-      "CRITICAL SECURITY CONFIGURATION ERROR: AUTH_PASSWORD_HASH (or AUTH_PASSWORD) environment variable is missing in production."
+      "CRITICAL SECURITY CONFIGURATION ERROR: AUTH_PASSWORD_HASH environment variable is missing in production."
     );
   }
 
   throw new Error(
-    "AUTH_PASSWORD_HASH or AUTH_PASSWORD is required. Please define AUTH_PASSWORD_HASH in .env.local for local development."
+    "AUTH_PASSWORD_HASH is required. Please define AUTH_PASSWORD_HASH (bcrypt hash) in .env.local for local development."
   );
 }

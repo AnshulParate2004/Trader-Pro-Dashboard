@@ -147,6 +147,9 @@ export interface TradeOrder {
   grossPnLINR?: number;
   netPnLINR?: number;
   stopLoss: number;
+  initialStopLoss?: number;
+  stopPct?: number;
+  riskAmountINR?: number;
   breakevenTrigger: number;
   breakevenLocked: number;
   breakevenActivated: boolean;
