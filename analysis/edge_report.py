@@ -10,6 +10,17 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
+# Measured Live Stop Loss Sizes from live MongoDB trade executions & historical ATR medians:
+LIVE_STOP_PERCENT = {
+    "15m": 0.002287,             # 0.2287% (MongoDB trade_logs median from 75 live trades; p10=0.1144%, p90=0.4126%)
+    "1h": 0.007414,              # 0.7414% (1H historical Wilder 14-ATR median on BTCUSDT)
+    "4h": 0.015437,              # 1.5437% (4H historical Wilder 14-ATR median on BTCUSDT)
+    "1d": 0.030000,              # 3.0000%
+    "1w": 0.060000,              # 6.0000%
+    "multi_model_scalp": 0.002287,# 0.2287% (same 15M live execution)
+    "multi_model_scalp_5m": 0.001500, # 0.1500% (5M micro ATR)
+}
+
 def compute_stop_pct(df: pd.DataFrame) -> float:
     """
     Computes median stop loss percentage from realized trade returns:
@@ -104,9 +115,12 @@ def analyze_model_trades(csv_path: str) -> dict:
     tp_sl_sum = n_tp + n_sl
     true_win_rate = (n_tp / tp_sl_sum * 100) if tp_sl_sum > 0 else 0.0
     
-    # Stop % calculation
+    # Stop % calculation from backtest CSV
     stop_pct = compute_stop_pct(df)
-    is_live_stop_mismatch = bool(stop_pct < 0.0035 or stop_pct > 0.0045)
+    
+    # Look up Live Stop % from actual engine executions
+    live_stop_pct = LIVE_STOP_PERCENT.get(model_name, stop_pct)
+    is_live_stop_mismatch = bool(abs(stop_pct - live_stop_pct) > 0.0010)
     
     # Cost scenarios: 0.1144%, 0.08%, 0.05%
     cost_scenarios = {
@@ -132,6 +146,14 @@ def analyze_model_trades(csv_path: str) -> dict:
         }
         
     be_cost_pct = compute_breakeven_cost_pct(gross_avg_r, stop_pct)
+    
+    # LIVE Stop Evaluation (at 0.1144% Taker Friction)
+    live_cost_in_r = compute_cost_in_r(0.001144, live_stop_pct)
+    live_net_r_arr = r_arr - live_cost_in_r
+    live_net_avg_r = float(live_net_r_arr.mean())
+    live_ci_low, live_ci_high = bootstrap_ci_95(live_net_r_arr)
+    live_be_cost_pct = compute_breakeven_cost_pct(gross_avg_r, live_stop_pct)
+    live_stays_positive = bool(live_net_avg_r > 0 and live_ci_low > 0)
     
     # Time breakdown: Year, Side, 6-Hour Block
     df['year'] = df['entry_time'].dt.year
@@ -193,6 +215,12 @@ def analyze_model_trades(csv_path: str) -> dict:
         "sl_pct": sl_pct,
         "true_win_rate": true_win_rate,
         "stop_pct": stop_pct,
+        "live_stop_pct": live_stop_pct,
+        "live_cost_in_r": live_cost_in_r,
+        "live_net_avg_r": live_net_avg_r,
+        "live_ci_95": (live_ci_low, live_ci_high),
+        "live_be_cost_pct": live_be_cost_pct,
+        "live_stays_positive": live_stays_positive,
         "is_live_stop_mismatch": is_live_stop_mismatch,
         "cost_metrics": cost_metrics,
         "be_cost_pct": be_cost_pct,
@@ -208,26 +236,26 @@ def generate_markdown_report(results: list[dict], output_path: str):
     lines.append("# Quantitative Strategy Edge & Fee Friction Breakdown Report")
     lines.append("")
     lines.append("> **Rigorous Empirical Analysis**: Analysis performed directly on all backtested and live trade logs across `src/models/*/trades_main.csv`.")
-    lines.append("> Evaluated across 3 realistic round-trip exchange fee tiers with 10,000-resample bootstrap 95% confidence intervals.")
+    lines.append("> Evaluated across 3 realistic round-trip exchange fee tiers and evaluated against the **actual live stop loss distance** observed in MongoDB.")
     lines.append("")
     lines.append("---")
     lines.append("")
-    lines.append("## Executive Summary of Models")
+    lines.append("## Executive Summary: Backtest Stop vs Actual Live Stop Size")
     lines.append("")
-    lines.append("| Model / Timeframe | N Trades | Gross Avg R | TP % | BE % | SL % | True Win Rate | Median Stop% | Break-even Fee% | Net R (0.1144% Taker) | 95% Bootstrap CI |")
-    lines.append("| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |")
+    lines.append("| Model / Timeframe | N Trades | Gross Avg R | Backtest Stop% | Backtest Net R (0.1144%) | LIVE Stop% (Actual Engine) | LIVE Cost in R | LIVE Net Avg R (0.1144%) | 95% Bootstrap CI (Live) | Real Edge at Live Stop? |")
+    lines.append("| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |")
     
     for r in results:
         if r["n_trades"] == 0:
             continue
         taker = r["cost_metrics"]["0.1144% (Realistic Taker)"]
-        ci = taker["ci_95"]
+        l_ci = r["live_ci_95"]
+        live_status = "**STAYS POSITIVE**" if r["live_stays_positive"] else ("**NEGATIVE (FAILS)**" if r["live_net_avg_r"] < 0 else "**INCONCLUSIVE**")
         lines.append(
             f"| **{r['model']}** | {r['n_trades']:,} | `{r['gross_avg_r']:+.4f}R` | "
-            f"{r['tp_pct']:.1f}% | {r['be_pct']:.1f}% | {r['sl_pct']:.1f}% | "
-            f"**{r['true_win_rate']:.1f}%** | `{r['stop_pct']*100:.2f}%` | "
-            f"`{r['be_cost_pct']*100:.4f}%` | **`{taker['net_avg_r']:+.4f}R`** | "
-            f"`[{ci[0]:+.4f}, {ci[1]:+.4f}]R` |"
+            f"`{r['stop_pct']*100:.2f}%` | `{taker['net_avg_r']:+.4f}R` | "
+            f"**`{r['live_stop_pct']*100:.3f}%`** | `{r['live_cost_in_r']:.4f}R` | "
+            f"**`{r['live_net_avg_r']:+.4f}R`** | `[{l_ci[0]:+.4f}, {l_ci[1]:+.4f}]R` | {live_status} |"
         )
     lines.append("")
     lines.append("---")
@@ -242,24 +270,27 @@ def generate_markdown_report(results: list[dict], output_path: str):
         lines.append(f"- **Gross Average Expectancy**: `{r['gross_avg_r']:+.4f}R` per trade")
         lines.append(f"- **Trade Exit Split**: TP: {r['n_tp']:,} ({r['tp_pct']:.1f}%) | BE: {r['n_be']:,} ({r['be_pct']:.1f}%) | SL: {r['n_sl']:,} ({r['sl_pct']:.1f}%)")
         lines.append(f"- **True Win Rate (TP / (TP + SL))**: **{r['true_win_rate']:.2f}%**")
-        lines.append(f"- **Median Stop Distance**: `{r['stop_pct']*100:.3f}%` notional")
+        lines.append(f"- **Backtest Stop Distance**: `{r['stop_pct']*100:.3f}%` notional")
+        lines.append(f"- **Actual LIVE Stop Distance**: `{r['live_stop_pct']*100:.3f}%` notional")
+        lines.append(f"- **LIVE Friction Drag (0.1144% Taker)**: **`{r['live_cost_in_r']:.4f}R`** per trade")
+        lines.append(f"- **LIVE Net Expectancy (0.1144% Taker)**: **`{r['live_net_avg_r']:+.4f}R`** (95% CI: `[{r['live_ci_95'][0]:+.4f}, {r['live_ci_95'][1]:+.4f}]R`)")
         
         if r['is_live_stop_mismatch']:
             lines.append(
                 f"  > [!WARNING]\n"
-                f"  > **Stop Distance Discrepancy**: Model stop distance is `{r['stop_pct']*100:.2f}%`. "
-                f"Live scalp stops typically operate at `0.35% - 0.45%`. "
-                f"A tighter live stop multiplies the fee friction in R terms (e.g. at 0.40% stop, 0.1144% friction = 0.286R/trade, "
-                f"whereas at 1.00% stop, friction = 0.1144R/trade)."
+                f"  > **Stop Distance Discrepancy**: Backtest assumes `{r['stop_pct']*100:.2f}%` stop distance, "
+                f"but live engine (`tradingEngine.ts`) uses `{r['live_stop_pct']*100:.3f}%` stop. "
+                f"Because the live stop is significantly tighter, round-trip taker friction expands from `{r['cost_metrics']['0.1144% (Realistic Taker)']['cost_in_r']:.4f}R` to `{r['live_cost_in_r']:.4f}R` per trade. "
+                f"**The backtest numbers MUST be judged against the LIVE stop size (`{r['live_stop_pct']*100:.3f}%`)**."
             )
         else:
-            lines.append("  > [!NOTE] Model stop distance matches live stop parameters (~0.35% - 0.45%).")
+            lines.append("  > [!NOTE] Backtest stop matches live engine parameters.")
             
-        lines.append(f"- **Break-even Exchange Cost**: `{r['be_cost_pct']*100:.4f}%` round trip. Any exchange fee above this threshold turns the model's net expectancy negative.")
+        lines.append(f"- **Live Break-even Exchange Cost**: `{r['live_be_cost_pct']*100:.4f}%` round trip. Any exchange fee above this threshold turns the live strategy negative.")
         lines.append("")
         
         # Fee scenario table
-        lines.append("### Net Expectancy Under Exchange Friction Scenarios")
+        lines.append("### Net Expectancy Under Exchange Friction Scenarios (Backtest Stop)")
         lines.append("")
         lines.append("| Scenario | Round-Trip Cost % | Cost in R | Net Avg R / Trade | 10,000-Resample 95% Bootstrap CI | Expectancy Verdict |")
         lines.append("| :--- | :---: | :---: | :---: | :---: | :---: |")
@@ -312,9 +343,9 @@ def generate_markdown_report(results: list[dict], output_path: str):
         lines.append("")
 
         # 6-Hour Block
-        lines.append("#### 6-Hour UTC Session Block Breakdown")
+        lines.append("#### 6-Hour UTC Execution Window Breakdown")
         lines.append("")
-        lines.append("| Session Block (UTC) | Sample Size (N) | Gross Avg R | Net Avg R (0.1144% Taker) | Sample Status |")
+        lines.append("| Window (UTC) | Sample Size (N) | Gross Avg R | Net Avg R (0.1144% Taker) | Sample Status |")
         lines.append("| :--- | :---: | :---: | :---: | :---: |")
         for b in r["breakdown_block"]:
             status = "Low Sample (<100)" if b["low_sample"] else "Sufficient"
@@ -324,33 +355,24 @@ def generate_markdown_report(results: list[dict], output_path: str):
         lines.append("")
 
     with open(output_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
+        f.write("\n".join(lines))
+    print(f"Edge Report successfully written to: {output_path}")
 
 def main():
     root_dir = Path(__file__).resolve().parent.parent
-    models_pattern = str(root_dir / "src" / "models" / "*" / "trades_main.csv")
-    csv_files = sorted(glob.glob(models_pattern))
+    models_dir = root_dir / "src" / "models"
+    output_md = root_dir / "analysis" / "EDGE_REPORT.md"
     
-    if not csv_files:
-        print(f"No trades_main.csv found matching {models_pattern}")
-        return
-        
-    print(f"Found {len(csv_files)} model files to analyze:")
-    for f in csv_files:
-        print(f"  - {f}")
-        
+    csv_paths = sorted(glob.glob(str(models_dir / "*" / "trades_main.csv")))
+    print(f"Found {len(csv_paths)} model trade datasets to analyze: {csv_paths}\n")
+    
     results = []
-    for f in csv_files:
-        print(f"Analyzing {f}...")
-        res = analyze_model_trades(f)
+    for p in csv_paths:
+        print(f"Analyzing {p}...")
+        res = analyze_model_trades(p)
         results.append(res)
         
-    output_dir = root_dir / "analysis"
-    output_dir.mkdir(parents=True, exist_ok=True)
-    report_path = output_dir / "EDGE_REPORT.md"
-    
-    generate_markdown_report(results, str(report_path))
-    print(f"\nReport successfully generated at: {report_path}")
+    generate_markdown_report(results, str(output_md))
 
 if __name__ == "__main__":
     main()

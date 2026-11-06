@@ -1,21 +1,21 @@
 # Quantitative Strategy Edge & Fee Friction Breakdown Report
 
 > **Rigorous Empirical Analysis**: Analysis performed directly on all backtested and live trade logs across `src/models/*/trades_main.csv`.
-> Evaluated across 3 realistic round-trip exchange fee tiers with 10,000-resample bootstrap 95% confidence intervals.
+> Evaluated across 3 realistic round-trip exchange fee tiers and evaluated against the **actual live stop loss distance** observed in MongoDB.
 
 ---
 
-## Executive Summary of Models
+## Executive Summary: Backtest Stop vs Actual Live Stop Size
 
-| Model / Timeframe | N Trades | Gross Avg R | TP % | BE % | SL % | True Win Rate | Median Stop% | Break-even Fee% | Net R (0.1144% Taker) | 95% Bootstrap CI |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **15m** | 11,548 | `+0.0940R` | 40.0% | 28.0% | 32.0% | **55.6%** | `0.94%` | `0.0885%` | **`-0.0275R`** | `[-0.0425, -0.0121]R` |
-| **1d** | 88 | `+0.0028R` | 35.2% | 28.4% | 36.4% | **49.2%** | `1.00%` | `0.0028%` | **`-0.1116R`** | `[-0.2849, +0.0691]R` |
-| **1h** | 2,624 | `+0.1021R` | 39.1% | 30.5% | 30.4% | **56.2%** | `1.00%` | `0.1021%` | **`-0.0123R`** | `[-0.0444, +0.0184]R` |
-| **1w** | 7 | `+0.1571R` | 42.9% | 28.6% | 28.6% | **60.0%** | `1.00%` | `0.1571%` | **`+0.0427R`** | `[-0.5430, +0.6142]R` |
-| **4h** | 598 | `+0.1525R` | 40.1% | 31.9% | 27.9% | **59.0%** | `1.00%` | `0.1525%` | **`+0.0381R`** | `[-0.0257, +0.1021]R` |
-| **multi_model_scalp** | 6,538 | `+0.1622R` | 36.5% | 41.2% | 22.3% | **62.0%** | `0.90%` | `0.1461%` | **`+0.0352R`** | `[+0.0168, +0.0534]R` |
-| **multi_model_scalp_5m** | 11,420 | `+0.1007R` | 35.1% | 37.9% | 26.9% | **56.6%** | `0.47%` | `0.0473%` | **`-0.1426R`** | `[-0.1572, -0.1283]R` |
+| Model / Timeframe | N Trades | Gross Avg R | Backtest Stop% | Backtest Net R (0.1144%) | LIVE Stop% (Actual Engine) | LIVE Cost in R | LIVE Net Avg R (0.1144%) | 95% Bootstrap CI (Live) | Real Edge at Live Stop? |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **15m** | 11,548 | `+0.0940R` | `0.94%` | `-0.0275R` | **`0.229%`** | `0.5002R` | **`-0.4062R`** | `[-0.4213, -0.3909]R` | **NEGATIVE (FAILS)** |
+| **1d** | 88 | `+0.0028R` | `1.00%` | `-0.1116R` | **`3.000%`** | `0.0381R` | **`-0.0353R`** | `[-0.2086, +0.1454]R` | **NEGATIVE (FAILS)** |
+| **1h** | 2,624 | `+0.1021R` | `1.00%` | `-0.0123R` | **`0.741%`** | `0.1543R` | **`-0.0522R`** | `[-0.0843, -0.0215]R` | **NEGATIVE (FAILS)** |
+| **1w** | 7 | `+0.1571R` | `1.00%` | `+0.0427R` | **`6.000%`** | `0.0191R` | **`+0.1381R`** | `[-0.4476, +0.7095]R` | **INCONCLUSIVE** |
+| **4h** | 598 | `+0.1525R` | `1.00%` | `+0.0381R` | **`1.544%`** | `0.0741R` | **`+0.0784R`** | `[+0.0146, +0.1424]R` | **STAYS POSITIVE** |
+| **multi_model_scalp** | 6,538 | `+0.1622R` | `0.90%` | `+0.0352R` | **`0.229%`** | `0.5002R` | **`-0.3380R`** | `[-0.3564, -0.3198]R` | **NEGATIVE (FAILS)** |
+| **multi_model_scalp_5m** | 11,420 | `+0.1007R` | `0.47%` | `-0.1426R` | **`0.150%`** | `0.7627R` | **`-0.6620R`** | `[-0.6766, -0.6477]R` | **NEGATIVE (FAILS)** |
 
 ---
 
@@ -25,12 +25,15 @@
 - **Gross Average Expectancy**: `+0.0940R` per trade
 - **Trade Exit Split**: TP: 4,616 (40.0%) | BE: 3,239 (28.0%) | SL: 3,693 (32.0%)
 - **True Win Rate (TP / (TP + SL))**: **55.55%**
-- **Median Stop Distance**: `0.942%` notional
+- **Backtest Stop Distance**: `0.942%` notional
+- **Actual LIVE Stop Distance**: `0.229%` notional
+- **LIVE Friction Drag (0.1144% Taker)**: **`0.5002R`** per trade
+- **LIVE Net Expectancy (0.1144% Taker)**: **`-0.4062R`** (95% CI: `[-0.4213, -0.3909]R`)
   > [!WARNING]
-  > **Stop Distance Discrepancy**: Model stop distance is `0.94%`. Live scalp stops typically operate at `0.35% - 0.45%`. A tighter live stop multiplies the fee friction in R terms (e.g. at 0.40% stop, 0.1144% friction = 0.286R/trade, whereas at 1.00% stop, friction = 0.1144R/trade).
-- **Break-even Exchange Cost**: `0.0885%` round trip. Any exchange fee above this threshold turns the model's net expectancy negative.
+  > **Stop Distance Discrepancy**: Backtest assumes `0.94%` stop distance, but live engine (`tradingEngine.ts`) uses `0.229%` stop. Because the live stop is significantly tighter, round-trip taker friction expands from `0.1215R` to `0.5002R` per trade. **The backtest numbers MUST be judged against the LIVE stop size (`0.229%`)**.
+- **Live Break-even Exchange Cost**: `0.0215%` round trip. Any exchange fee above this threshold turns the live strategy negative.
 
-### Net Expectancy Under Exchange Friction Scenarios
+### Net Expectancy Under Exchange Friction Scenarios (Backtest Stop)
 
 | Scenario | Round-Trip Cost % | Cost in R | Net Avg R / Trade | 10,000-Resample 95% Bootstrap CI | Expectancy Verdict |
 | :--- | :---: | :---: | :---: | :---: | :---: |
@@ -63,9 +66,9 @@
 | LONG | 6,030 | `+0.0907R` | `-0.0307R` | Sufficient |
 | SHORT | 5,518 | `+0.0975R` | `-0.0239R` | Sufficient |
 
-#### 6-Hour UTC Session Block Breakdown
+#### 6-Hour UTC Execution Window Breakdown
 
-| Session Block (UTC) | Sample Size (N) | Gross Avg R | Net Avg R (0.1144% Taker) | Sample Status |
+| Window (UTC) | Sample Size (N) | Gross Avg R | Net Avg R (0.1144% Taker) | Sample Status |
 | :--- | :---: | :---: | :---: | :---: |
 | 00:00-05:59 UTC (Asia Morn) | 2,501 | `+0.0636R` | `-0.0578R` | Sufficient |
 | 06:00-11:59 UTC (London Open) | 2,899 | `+0.1043R` | `-0.0172R` | Sufficient |
@@ -80,12 +83,15 @@
 - **Gross Average Expectancy**: `+0.0028R` per trade
 - **Trade Exit Split**: TP: 31 (35.2%) | BE: 25 (28.4%) | SL: 32 (36.4%)
 - **True Win Rate (TP / (TP + SL))**: **49.21%**
-- **Median Stop Distance**: `1.000%` notional
+- **Backtest Stop Distance**: `1.000%` notional
+- **Actual LIVE Stop Distance**: `3.000%` notional
+- **LIVE Friction Drag (0.1144% Taker)**: **`0.0381R`** per trade
+- **LIVE Net Expectancy (0.1144% Taker)**: **`-0.0353R`** (95% CI: `[-0.2086, +0.1454]R`)
   > [!WARNING]
-  > **Stop Distance Discrepancy**: Model stop distance is `1.00%`. Live scalp stops typically operate at `0.35% - 0.45%`. A tighter live stop multiplies the fee friction in R terms (e.g. at 0.40% stop, 0.1144% friction = 0.286R/trade, whereas at 1.00% stop, friction = 0.1144R/trade).
-- **Break-even Exchange Cost**: `0.0028%` round trip. Any exchange fee above this threshold turns the model's net expectancy negative.
+  > **Stop Distance Discrepancy**: Backtest assumes `1.00%` stop distance, but live engine (`tradingEngine.ts`) uses `3.000%` stop. Because the live stop is significantly tighter, round-trip taker friction expands from `0.1144R` to `0.0381R` per trade. **The backtest numbers MUST be judged against the LIVE stop size (`3.000%`)**.
+- **Live Break-even Exchange Cost**: `0.0085%` round trip. Any exchange fee above this threshold turns the live strategy negative.
 
-### Net Expectancy Under Exchange Friction Scenarios
+### Net Expectancy Under Exchange Friction Scenarios (Backtest Stop)
 
 | Scenario | Round-Trip Cost % | Cost in R | Net Avg R / Trade | 10,000-Resample 95% Bootstrap CI | Expectancy Verdict |
 | :--- | :---: | :---: | :---: | :---: | :---: |
@@ -118,9 +124,9 @@
 | LONG | 51 | `+0.0578R` | `-0.0566R` | Low Sample (<100) |
 | SHORT | 37 | `-0.0730R` | `-0.1874R` | Low Sample (<100) |
 
-#### 6-Hour UTC Session Block Breakdown
+#### 6-Hour UTC Execution Window Breakdown
 
-| Session Block (UTC) | Sample Size (N) | Gross Avg R | Net Avg R (0.1144% Taker) | Sample Status |
+| Window (UTC) | Sample Size (N) | Gross Avg R | Net Avg R (0.1144% Taker) | Sample Status |
 | :--- | :---: | :---: | :---: | :---: |
 | 00:00-05:59 UTC (Asia Morn) | 88 | `+0.0028R` | `-0.1116R` | Low Sample (<100) |
 
@@ -132,12 +138,15 @@
 - **Gross Average Expectancy**: `+0.1021R` per trade
 - **Trade Exit Split**: TP: 1,026 (39.1%) | BE: 800 (30.5%) | SL: 798 (30.4%)
 - **True Win Rate (TP / (TP + SL))**: **56.25%**
-- **Median Stop Distance**: `1.000%` notional
+- **Backtest Stop Distance**: `1.000%` notional
+- **Actual LIVE Stop Distance**: `0.741%` notional
+- **LIVE Friction Drag (0.1144% Taker)**: **`0.1543R`** per trade
+- **LIVE Net Expectancy (0.1144% Taker)**: **`-0.0522R`** (95% CI: `[-0.0843, -0.0215]R`)
   > [!WARNING]
-  > **Stop Distance Discrepancy**: Model stop distance is `1.00%`. Live scalp stops typically operate at `0.35% - 0.45%`. A tighter live stop multiplies the fee friction in R terms (e.g. at 0.40% stop, 0.1144% friction = 0.286R/trade, whereas at 1.00% stop, friction = 0.1144R/trade).
-- **Break-even Exchange Cost**: `0.1021%` round trip. Any exchange fee above this threshold turns the model's net expectancy negative.
+  > **Stop Distance Discrepancy**: Backtest assumes `1.00%` stop distance, but live engine (`tradingEngine.ts`) uses `0.741%` stop. Because the live stop is significantly tighter, round-trip taker friction expands from `0.1144R` to `0.1543R` per trade. **The backtest numbers MUST be judged against the LIVE stop size (`0.741%`)**.
+- **Live Break-even Exchange Cost**: `0.0757%` round trip. Any exchange fee above this threshold turns the live strategy negative.
 
-### Net Expectancy Under Exchange Friction Scenarios
+### Net Expectancy Under Exchange Friction Scenarios (Backtest Stop)
 
 | Scenario | Round-Trip Cost % | Cost in R | Net Avg R / Trade | 10,000-Resample 95% Bootstrap CI | Expectancy Verdict |
 | :--- | :---: | :---: | :---: | :---: | :---: |
@@ -170,9 +179,9 @@
 | LONG | 1,378 | `+0.1046R` | `-0.0098R` | Sufficient |
 | SHORT | 1,246 | `+0.0994R` | `-0.0150R` | Sufficient |
 
-#### 6-Hour UTC Session Block Breakdown
+#### 6-Hour UTC Execution Window Breakdown
 
-| Session Block (UTC) | Sample Size (N) | Gross Avg R | Net Avg R (0.1144% Taker) | Sample Status |
+| Window (UTC) | Sample Size (N) | Gross Avg R | Net Avg R (0.1144% Taker) | Sample Status |
 | :--- | :---: | :---: | :---: | :---: |
 | 00:00-05:59 UTC (Asia Morn) | 509 | `+0.1187R` | `+0.0043R` | Sufficient |
 | 06:00-11:59 UTC (London Open) | 461 | `+0.1351R` | `+0.0207R` | Sufficient |
@@ -187,12 +196,15 @@
 - **Gross Average Expectancy**: `+0.1571R` per trade
 - **Trade Exit Split**: TP: 3 (42.9%) | BE: 2 (28.6%) | SL: 2 (28.6%)
 - **True Win Rate (TP / (TP + SL))**: **60.00%**
-- **Median Stop Distance**: `1.000%` notional
+- **Backtest Stop Distance**: `1.000%` notional
+- **Actual LIVE Stop Distance**: `6.000%` notional
+- **LIVE Friction Drag (0.1144% Taker)**: **`0.0191R`** per trade
+- **LIVE Net Expectancy (0.1144% Taker)**: **`+0.1381R`** (95% CI: `[-0.4476, +0.7095]R`)
   > [!WARNING]
-  > **Stop Distance Discrepancy**: Model stop distance is `1.00%`. Live scalp stops typically operate at `0.35% - 0.45%`. A tighter live stop multiplies the fee friction in R terms (e.g. at 0.40% stop, 0.1144% friction = 0.286R/trade, whereas at 1.00% stop, friction = 0.1144R/trade).
-- **Break-even Exchange Cost**: `0.1571%` round trip. Any exchange fee above this threshold turns the model's net expectancy negative.
+  > **Stop Distance Discrepancy**: Backtest assumes `1.00%` stop distance, but live engine (`tradingEngine.ts`) uses `6.000%` stop. Because the live stop is significantly tighter, round-trip taker friction expands from `0.1144R` to `0.0191R` per trade. **The backtest numbers MUST be judged against the LIVE stop size (`6.000%`)**.
+- **Live Break-even Exchange Cost**: `0.9429%` round trip. Any exchange fee above this threshold turns the live strategy negative.
 
-### Net Expectancy Under Exchange Friction Scenarios
+### Net Expectancy Under Exchange Friction Scenarios (Backtest Stop)
 
 | Scenario | Round-Trip Cost % | Cost in R | Net Avg R / Trade | 10,000-Resample 95% Bootstrap CI | Expectancy Verdict |
 | :--- | :---: | :---: | :---: | :---: | :---: |
@@ -222,9 +234,9 @@
 | :--- | :---: | :---: | :---: | :---: |
 | LONG | 7 | `+0.1571R` | `+0.0427R` | Low Sample (<100) |
 
-#### 6-Hour UTC Session Block Breakdown
+#### 6-Hour UTC Execution Window Breakdown
 
-| Session Block (UTC) | Sample Size (N) | Gross Avg R | Net Avg R (0.1144% Taker) | Sample Status |
+| Window (UTC) | Sample Size (N) | Gross Avg R | Net Avg R (0.1144% Taker) | Sample Status |
 | :--- | :---: | :---: | :---: | :---: |
 | 00:00-05:59 UTC (Asia Morn) | 7 | `+0.1571R` | `+0.0427R` | Low Sample (<100) |
 
@@ -236,12 +248,15 @@
 - **Gross Average Expectancy**: `+0.1525R` per trade
 - **Trade Exit Split**: TP: 240 (40.1%) | BE: 191 (31.9%) | SL: 167 (27.9%)
 - **True Win Rate (TP / (TP + SL))**: **58.97%**
-- **Median Stop Distance**: `1.000%` notional
+- **Backtest Stop Distance**: `1.000%` notional
+- **Actual LIVE Stop Distance**: `1.544%` notional
+- **LIVE Friction Drag (0.1144% Taker)**: **`0.0741R`** per trade
+- **LIVE Net Expectancy (0.1144% Taker)**: **`+0.0784R`** (95% CI: `[+0.0146, +0.1424]R`)
   > [!WARNING]
-  > **Stop Distance Discrepancy**: Model stop distance is `1.00%`. Live scalp stops typically operate at `0.35% - 0.45%`. A tighter live stop multiplies the fee friction in R terms (e.g. at 0.40% stop, 0.1144% friction = 0.286R/trade, whereas at 1.00% stop, friction = 0.1144R/trade).
-- **Break-even Exchange Cost**: `0.1525%` round trip. Any exchange fee above this threshold turns the model's net expectancy negative.
+  > **Stop Distance Discrepancy**: Backtest assumes `1.00%` stop distance, but live engine (`tradingEngine.ts`) uses `1.544%` stop. Because the live stop is significantly tighter, round-trip taker friction expands from `0.1144R` to `0.0741R` per trade. **The backtest numbers MUST be judged against the LIVE stop size (`1.544%`)**.
+- **Live Break-even Exchange Cost**: `0.2355%` round trip. Any exchange fee above this threshold turns the live strategy negative.
 
-### Net Expectancy Under Exchange Friction Scenarios
+### Net Expectancy Under Exchange Friction Scenarios (Backtest Stop)
 
 | Scenario | Round-Trip Cost % | Cost in R | Net Avg R / Trade | 10,000-Resample 95% Bootstrap CI | Expectancy Verdict |
 | :--- | :---: | :---: | :---: | :---: | :---: |
@@ -274,9 +289,9 @@
 | LONG | 334 | `+0.1327R` | `+0.0183R` | Sufficient |
 | SHORT | 264 | `+0.1776R` | `+0.0632R` | Sufficient |
 
-#### 6-Hour UTC Session Block Breakdown
+#### 6-Hour UTC Execution Window Breakdown
 
-| Session Block (UTC) | Sample Size (N) | Gross Avg R | Net Avg R (0.1144% Taker) | Sample Status |
+| Window (UTC) | Sample Size (N) | Gross Avg R | Net Avg R (0.1144% Taker) | Sample Status |
 | :--- | :---: | :---: | :---: | :---: |
 | 00:00-05:59 UTC (Asia Morn) | 151 | `+0.2057R` | `+0.0913R` | Sufficient |
 | 06:00-11:59 UTC (London Open) | 69 | `+0.2162R` | `+0.1018R` | Low Sample (<100) |
@@ -291,12 +306,15 @@
 - **Gross Average Expectancy**: `+0.1622R` per trade
 - **Trade Exit Split**: TP: 2,386 (36.5%) | BE: 2,692 (41.2%) | SL: 1,460 (22.3%)
 - **True Win Rate (TP / (TP + SL))**: **62.04%**
-- **Median Stop Distance**: `0.901%` notional
+- **Backtest Stop Distance**: `0.901%` notional
+- **Actual LIVE Stop Distance**: `0.229%` notional
+- **LIVE Friction Drag (0.1144% Taker)**: **`0.5002R`** per trade
+- **LIVE Net Expectancy (0.1144% Taker)**: **`-0.3380R`** (95% CI: `[-0.3564, -0.3198]R`)
   > [!WARNING]
-  > **Stop Distance Discrepancy**: Model stop distance is `0.90%`. Live scalp stops typically operate at `0.35% - 0.45%`. A tighter live stop multiplies the fee friction in R terms (e.g. at 0.40% stop, 0.1144% friction = 0.286R/trade, whereas at 1.00% stop, friction = 0.1144R/trade).
-- **Break-even Exchange Cost**: `0.1461%` round trip. Any exchange fee above this threshold turns the model's net expectancy negative.
+  > **Stop Distance Discrepancy**: Backtest assumes `0.90%` stop distance, but live engine (`tradingEngine.ts`) uses `0.229%` stop. Because the live stop is significantly tighter, round-trip taker friction expands from `0.1270R` to `0.5002R` per trade. **The backtest numbers MUST be judged against the LIVE stop size (`0.229%`)**.
+- **Live Break-even Exchange Cost**: `0.0371%` round trip. Any exchange fee above this threshold turns the live strategy negative.
 
-### Net Expectancy Under Exchange Friction Scenarios
+### Net Expectancy Under Exchange Friction Scenarios (Backtest Stop)
 
 | Scenario | Round-Trip Cost % | Cost in R | Net Avg R / Trade | 10,000-Resample 95% Bootstrap CI | Expectancy Verdict |
 | :--- | :---: | :---: | :---: | :---: | :---: |
@@ -329,9 +347,9 @@
 | LONG | 3,483 | `+0.1573R` | `+0.0303R` | Sufficient |
 | SHORT | 3,055 | `+0.1678R` | `+0.0408R` | Sufficient |
 
-#### 6-Hour UTC Session Block Breakdown
+#### 6-Hour UTC Execution Window Breakdown
 
-| Session Block (UTC) | Sample Size (N) | Gross Avg R | Net Avg R (0.1144% Taker) | Sample Status |
+| Window (UTC) | Sample Size (N) | Gross Avg R | Net Avg R (0.1144% Taker) | Sample Status |
 | :--- | :---: | :---: | :---: | :---: |
 | 00:00-05:59 UTC (Asia Morn) | 1,449 | `+0.1404R` | `+0.0134R` | Sufficient |
 | 06:00-11:59 UTC (London Open) | 1,629 | `+0.1400R` | `+0.0130R` | Sufficient |
@@ -346,12 +364,15 @@
 - **Gross Average Expectancy**: `+0.1007R` per trade
 - **Trade Exit Split**: TP: 4,010 (35.1%) | BE: 4,333 (37.9%) | SL: 3,077 (26.9%)
 - **True Win Rate (TP / (TP + SL))**: **56.58%**
-- **Median Stop Distance**: `0.470%` notional
+- **Backtest Stop Distance**: `0.470%` notional
+- **Actual LIVE Stop Distance**: `0.150%` notional
+- **LIVE Friction Drag (0.1144% Taker)**: **`0.7627R`** per trade
+- **LIVE Net Expectancy (0.1144% Taker)**: **`-0.6620R`** (95% CI: `[-0.6766, -0.6477]R`)
   > [!WARNING]
-  > **Stop Distance Discrepancy**: Model stop distance is `0.47%`. Live scalp stops typically operate at `0.35% - 0.45%`. A tighter live stop multiplies the fee friction in R terms (e.g. at 0.40% stop, 0.1144% friction = 0.286R/trade, whereas at 1.00% stop, friction = 0.1144R/trade).
-- **Break-even Exchange Cost**: `0.0473%` round trip. Any exchange fee above this threshold turns the model's net expectancy negative.
+  > **Stop Distance Discrepancy**: Backtest assumes `0.47%` stop distance, but live engine (`tradingEngine.ts`) uses `0.150%` stop. Because the live stop is significantly tighter, round-trip taker friction expands from `0.2433R` to `0.7627R` per trade. **The backtest numbers MUST be judged against the LIVE stop size (`0.150%`)**.
+- **Live Break-even Exchange Cost**: `0.0151%` round trip. Any exchange fee above this threshold turns the live strategy negative.
 
-### Net Expectancy Under Exchange Friction Scenarios
+### Net Expectancy Under Exchange Friction Scenarios (Backtest Stop)
 
 | Scenario | Round-Trip Cost % | Cost in R | Net Avg R / Trade | 10,000-Resample 95% Bootstrap CI | Expectancy Verdict |
 | :--- | :---: | :---: | :---: | :---: | :---: |
@@ -384,9 +405,9 @@
 | LONG | 5,703 | `+0.0924R` | `-0.1509R` | Sufficient |
 | SHORT | 5,717 | `+0.1089R` | `-0.1344R` | Sufficient |
 
-#### 6-Hour UTC Session Block Breakdown
+#### 6-Hour UTC Execution Window Breakdown
 
-| Session Block (UTC) | Sample Size (N) | Gross Avg R | Net Avg R (0.1144% Taker) | Sample Status |
+| Window (UTC) | Sample Size (N) | Gross Avg R | Net Avg R (0.1144% Taker) | Sample Status |
 | :--- | :---: | :---: | :---: | :---: |
 | 00:00-05:59 UTC (Asia Morn) | 2,822 | `+0.1068R` | `-0.1365R` | Sufficient |
 | 06:00-11:59 UTC (London Open) | 2,823 | `+0.0750R` | `-0.1683R` | Sufficient |
@@ -394,4 +415,3 @@
 | 18:00-23:59 UTC (US Close) | 2,763 | `+0.0856R` | `-0.1576R` | Sufficient |
 
 ---
-
