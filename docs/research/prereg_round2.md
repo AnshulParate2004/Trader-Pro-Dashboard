@@ -19,7 +19,7 @@ Prior to running any simulation code or loading evaluation data, this protocol i
 2. **Exposure-Matched Cash Control (H1 & H2):** Added an exposure-matched benchmark blending buy-and-hold with cash at the strategy's average exposure $\bar{w}$. Direct comparison to 100% buy-and-hold confounds reduced beta with alpha. Added the beta-adjusted residual alpha $t$-statistic ($\alpha_{\text{ann}}$ with Newey-West HAC standard errors, annualization 365).
 3. **Unified Pass Rule:** MaxDD is strictly descriptive. "Lower drawdown without a statistically significant Sharpe gain" is formally classified as **"risk reduction, not alpha"** and is **NOT a pass**. A hypothesis passes if and only if the Bonferroni block-bootstrap CI lower bound of $\Delta\text{Sharpe} > 0$.
 4. **Data Contamination Disclosure & Test Count Recomputation:** The `2024-01-01` to `2026-10-31` period is formally declared **NOT clean out-of-sample** because the previous Donchian 20/10 daily trend studies on BTC and ETH inspected the full history through October 2026. Counting the 2 earlier Donchian tests brings the cumulative macro family count to $M = 3 + 2 = 5$ tests, updating the Bonferroni significance hurdle to $\alpha_{\text{adj}} = 0.05 / 5 = 0.010$ ($99.00\%$ CI, bounds $[0.50\%, 99.50\%]$), evaluated alongside the baseline 3-test $98.33\%$ CI ($[0.833\%, 99.167\%]$).
-5. **Dual Cost Tiers & Cash Baseline:** All performance metrics must be reported under both **$14\text{ bps}$** (institutional VIP taker) and **$50\text{ bps}$** (retail taker + spread + slippage) round-trip friction. The risk-free rate is set to $r_f = 0.0\%$ and cash return to $r_{\text{cash}} = 0.0\%$.
+5. **Unified Cost Model & Cash Baseline:** All performance metrics must be reported under both **Tier 1 Base (7.0 bps per side / 14.0 bps round-trip, 0.0014)** and **Tier 2 Punishing (25.0 bps per side / 50.0 bps round-trip, 0.0050)** applied to rebalancing turnover. The risk-free rate is set to $r_f = 0.0\%$ and cash return to $r_{\text{cash}} = 0.0\%$.
 6. **H3 Benchmark Selection Bias & Overlapping Dates:** Documented the post-hoc selection bias inherent in comparing against $\max(\text{Sharpe}_{\text{BTC}}, \text{Sharpe}_{\text{ETH}})$ (winner's curse). Truncated multi-coin evaluation strictly to the BTC/ETH overlapping date window: `2020-01-01` to `2026-10-26` (2,491 daily bars).
 
 ---
@@ -180,8 +180,8 @@ $$\alpha_{\text{adj}} = \frac{0.05}{M} = \frac{0.05}{5} = \mathbf{0.010} \quad (
 | **Risk-Free Rate ($r_f$)** | $0.0\%$ | Standard crypto spot benchmark. |
 | **Cash Return ($r_{\text{cash}}$)** | $0.0\%$ | Unallocated balance earns zero yield. |
 | **Execution Price** | $open[t]$ (Next-day open) | Eliminates same-bar close execution bias. |
-| **Friction Tier 1** | $14\text{ bps}$ ($0.0014$) | Institutional VIP taker benchmark. |
-| **Friction Tier 2** | $50\text{ bps}$ ($0.0050$) | Retail taker + spread + rebalance slippage stress test. |
+| **Friction Tier 1 (Base)** | 7.0 bps per side / 14.0 bps round-trip (0.0014) | Institutional VIP taker benchmark. |
+| **Friction Tier 2 (Punishing)** | 25.0 bps per side / 50.0 bps round-trip (0.0050) | Retail taker + spread + rebalance slippage stress test. |
 | **Bootstrap Method** | Stationary Block Bootstrap | Preserves serial correlation and volatility clustering. |
 | **Bootstrap Block Length** | $20\text{ days}$ | Captures trailing monthly return dependency. |
 | **Bootstrap Resamples** | $10,000$ draws | High-precision tail percentile estimation. |
