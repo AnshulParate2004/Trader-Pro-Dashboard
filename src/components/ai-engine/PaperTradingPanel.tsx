@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { Paper1HAMetrics, Paper1HATrade } from "@/lib/paperTrading1HA";
-import { Shield, ChevronDown, ChevronUp, Layers, CheckCircle2, XCircle } from "lucide-react";
+import { Shield, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
 
 interface PaperTradingPanelProps {
   paperMetrics: Paper1HAMetrics | null;
@@ -20,6 +20,19 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
   setPaperCoinFilter,
 }) => {
   const [isOpen, setIsOpen] = useState(true);
+
+  const totalTrades = paperMetrics?.totalTrades ?? 1099;
+  const optCumulative = paperMetrics?.cumulativeNetR ?? 45.31;
+  const optAvgNet = paperMetrics?.avgNetR ?? 0.0412;
+  const optPf = paperMetrics?.netProfitFactor ?? 1.17;
+  const optCi = [-0.0052, 0.0856];
+
+  const strictCumulative = paperMetrics?.strictCumulativeNetR ?? -8.11;
+  const strictAvgNet = paperMetrics?.strictAvgNetR ?? -0.0074;
+  const strictPf = paperMetrics?.strictNetProfitFactor ?? 0.97;
+  const strictCi = [paperMetrics?.strictCiLower ?? -0.0503, paperMetrics?.strictCiUpper ?? 0.0351];
+  const inflationTotal = paperMetrics?.beFeeInflationTotalR ?? 53.42;
+  const inflationPerTrade = paperMetrics?.inflationPerTradeR ?? 0.0486;
 
   return (
     <section
@@ -41,11 +54,11 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
                 FROZEN PROTOCOL
               </span>
               <span className="text-[10px] font-mono font-bold bg-chrome-field text-chrome-dim px-2 py-0.5 rounded border border-chrome-line">
-                collection: paper_1h_a
+                collection: {paperMetrics?.isLiveDataSource ? "paper_1h_a (LIVE)" : "backtest_holdout_1h_a (SEALED OOS)"}
               </span>
             </div>
             <p className="font-body text-xs text-chrome-dim leading-relaxed mt-1">
-              <strong>Protocol:</strong> 1H Timeframe · 1:1 TP/SL · Breakeven trigger @ +0.30R locking exact round-trip fees · Top 20% ML conviction · Tested across <strong>BTC, ETH, SOL, BNB, XRP</strong> with Shark Exchange taker fee (0.040% + 18% GST + 0.010% slippage/side = 0.1144% round-trip).
+              <strong>Protocol:</strong> 1H Timeframe · 1:1 TP/SL · Breakeven trigger @ +0.30R locking exact round-trip fees · Top 20% ML conviction · Tested across <strong>BTC, ETH, SOL, BNB, XRP</strong> with Shark Exchange taker fee (0.1144% round-trip friction).
             </p>
           </div>
         </div>
@@ -61,59 +74,84 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
 
       {isOpen && (
         <>
-          {/* KPI Cards Row */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 font-mono text-xs">
-            <div className="bg-chrome-field/50 border border-chrome-line rounded-lg p-2.5 flex flex-col">
-              <span className="text-[10px] text-chrome-dim uppercase font-bold">Paper Trades Logged</span>
-              <span className="text-xl font-bold text-chrome-ink mt-1">
-                {paperMetrics?.totalTrades ?? 1099}
-              </span>
-              <span className="text-[9px] text-chrome-dim">5 Coins Pooled</span>
+          {/* Dual Accounting Comparison Banner */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-xs">
+            {/* Optimistic Accounting Panel */}
+            <div className="bg-amber-50/40 border border-amber-300/50 rounded-lg p-3 flex flex-col justify-between gap-2.5">
+              <div className="flex items-center justify-between border-b border-amber-200/60 pb-1.5">
+                <span className="text-[10px] uppercase font-bold text-amber-900 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
+                  Optimistic Accounting (Current Frozen Paper Logic)
+                </span>
+                <span className="text-[9px] text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">
+                  FEE REBATE ON BE
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <span className="text-[10px] text-chrome-dim block">Avg Net R</span>
+                  <span className="text-lg font-bold text-win font-mono">
+                    +{optAvgNet.toFixed(4)} R
+                  </span>
+                  <span className="text-[9px] text-chrome-dim block">CI [{optCi[0].toFixed(4)}, +{optCi[1].toFixed(4)}]</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-chrome-dim block">Cumulative Net</span>
+                  <span className="text-lg font-bold text-win font-mono">
+                    +{optCumulative.toFixed(2)} R
+                  </span>
+                  <span className="text-[9px] text-chrome-dim block">{totalTrades} Trades</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-chrome-dim block">Profit Factor</span>
+                  <span className="text-lg font-bold text-chrome-ink font-mono">
+                    {optPf.toFixed(2)}
+                  </span>
+                  <span className="text-[9px] text-chrome-dim block">TP/(TP+SL): 59.1%</span>
+                </div>
+              </div>
+              <p className="text-[10px] text-amber-800 leading-tight">
+                <strong>Note:</strong> Current paper formula credits back the round-trip fee friction on BE exits (<code className="bg-amber-100 px-1 py-0.2 rounded font-mono">grossR = cost_R_taker</code>), inflating reported net R.
+              </p>
             </div>
 
-            <div className="bg-chrome-field/50 border border-chrome-line rounded-lg p-2.5 flex flex-col">
-              <span className="text-[10px] text-chrome-dim uppercase font-bold">Cumulative Net R</span>
-              <span
-                className={`text-xl font-bold mt-1 ${
-                  (paperMetrics?.cumulativeNetR ?? 45.31) >= 0 ? "text-win" : "text-loss"
-                }`}
-              >
-                {(paperMetrics?.cumulativeNetR ?? 45.31) >= 0 ? "+" : ""}
-                {(paperMetrics?.cumulativeNetR ?? 45.31).toFixed(2)} R
-              </span>
-              <span className="text-[9px] text-chrome-dim">Taker After All Fees</span>
-            </div>
-
-            <div className="bg-chrome-field/50 border border-chrome-line rounded-lg p-2.5 flex flex-col">
-              <span className="text-[10px] text-chrome-dim uppercase font-bold">Avg Net R (Taker)</span>
-              <span className="text-xl font-bold text-chrome-ink mt-1">
-                +{(paperMetrics?.avgNetR ?? 0.0412).toFixed(4)} R
-              </span>
-              <span className="text-[9px] text-chrome-dim font-bold">95% CI [-0.0052, +0.0856]</span>
-            </div>
-
-            <div className="bg-chrome-field/50 border border-chrome-line rounded-lg p-2.5 flex flex-col">
-              <span className="text-[10px] text-chrome-dim uppercase font-bold">Net Profit Factor</span>
-              <span className="text-xl font-bold text-chrome-ink mt-1">
-                {paperMetrics?.netProfitFactor ?? 1.17}
-              </span>
-              <span className="text-[9px] text-chrome-dim">Net Win / Net Loss</span>
-            </div>
-
-            <div className="bg-chrome-field/50 border border-chrome-line rounded-lg p-2.5 flex flex-col">
-              <span className="text-[10px] text-chrome-dim uppercase font-bold">True Win Rate</span>
-              <span className="text-xl font-bold text-chrome-ink mt-1">
-                {paperMetrics?.trueWinRate ?? 59.1}%
-              </span>
-              <span className="text-[9px] text-chrome-dim">TP / (TP + SL)</span>
-            </div>
-
-            <div className="bg-chrome-field/50 border border-chrome-line rounded-lg p-2.5 flex flex-col">
-              <span className="text-[10px] text-chrome-dim uppercase font-bold">Max Drawdown</span>
-              <span className="text-xl font-bold text-accent mt-1">
-                {paperMetrics?.maxDrawdown ?? -27.5}%
-              </span>
-              <span className="text-[9px] text-chrome-dim">Peak-to-Trough Net</span>
+            {/* Strict-Adjusted Shadow Accounting Panel */}
+            <div className="bg-blue-50/40 border border-blue-300/50 rounded-lg p-3 flex flex-col justify-between gap-2.5">
+              <div className="flex items-center justify-between border-b border-blue-200/60 pb-1.5">
+                <span className="text-[10px] uppercase font-bold text-blue-900 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-blue-600 inline-block" />
+                  Strict-Adjusted Accounting (Shadow Metric)
+                </span>
+                <span className="text-[9px] text-blue-800 bg-blue-100 px-1.5 py-0.5 rounded font-bold">
+                  TRUE BE (0.00R GROSS)
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <span className="text-[10px] text-chrome-dim block">Strict Avg Net R</span>
+                  <span className={`text-lg font-bold font-mono ${strictAvgNet >= 0 ? "text-win" : "text-loss"}`}>
+                    {strictAvgNet >= 0 ? "+" : ""}{strictAvgNet.toFixed(4)} R
+                  </span>
+                  <span className="text-[9px] text-chrome-dim block">CI [{strictCi[0].toFixed(4)}, +{strictCi[1].toFixed(4)}]</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-chrome-dim block">Strict Cumulative</span>
+                  <span className={`text-lg font-bold font-mono ${strictCumulative >= 0 ? "text-win" : "text-loss"}`}>
+                    {strictCumulative >= 0 ? "+" : ""}{strictCumulative.toFixed(2)} R
+                  </span>
+                  <span className="text-[9px] text-chrome-dim block">Fees Deducted</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-chrome-dim block">Strict Profit Factor</span>
+                  <span className="text-lg font-bold text-chrome-ink font-mono">
+                    {strictPf.toFixed(2)}
+                  </span>
+                  <span className="text-[9px] text-chrome-dim block">Unbiased fills</span>
+                </div>
+              </div>
+              <p className="text-[10px] text-blue-800 leading-tight">
+                <strong>Shadow Metric:</strong> BE exits receive 0.00R gross with fees paid (-cost_R). Eliminates <span className="font-bold">+{inflationTotal.toFixed(2)} R</span> ({inflationPerTrade.toFixed(4)} R/trade) phantom gain across 522 BE exits.
+              </p>
             </div>
           </div>
 
@@ -123,10 +161,10 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
               <Shield className="w-4 h-4 text-accent shrink-0 mt-0.5" />
               <div className="flex flex-col gap-0.5">
                 <span className="font-bold text-chrome-ink uppercase tracking-wide">
-                  Pre-Registered Decision Rule Check (paper_rules.md):
+                  Pre-Registered Decision Rule Check (paper_rules.md & preregistration_multicoin_study.md):
                 </span>
                 <span className="text-chrome-dim font-body leading-relaxed text-[11px]">
-                  Positive edge requires: (1) Pooled Taker Avg Net R &gt; 0 [✔ <strong>+0.0412R</strong>], (2) 95% CI Lower Bound &ge; 0 [❌ <strong>-0.0052R</strong>], (3) At least 4 of 5 coins positive [❌ <strong>3 of 5 positive</strong>: BTC, ETH, XRP positive; SOL, BNB negative].
+                  Positive edge requires: (1) Pooled Taker Avg Net R &gt; 0 [Optimistic: ✔ <strong>+0.0412R</strong> | Strict Shadow: ❌ <strong>-0.0074R</strong>], (2) 95% CI Lower Bound &ge; 0 [❌ <strong>-0.0503R</strong>], (3) At least 4 of 5 coins positive [❌ <strong>3 of 5 positive</strong> under optimistic, <strong>2 of 5 positive</strong> under strict shadow].
                 </span>
               </div>
             </div>
@@ -145,39 +183,47 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
               <span className="text-[10px] font-mono text-chrome-dim">Zero tuning per coin · Identical parameters</span>
             </div>
             <div className="overflow-x-auto border border-chrome-line rounded-lg">
-              <table className="w-full min-w-[650px] text-left font-mono text-xs">
+              <table className="w-full min-w-[750px] text-left font-mono text-xs">
                 <thead className="bg-chrome-field border-b border-chrome-line text-chrome-dim text-[10px] uppercase">
                   <tr>
                     <th className="py-2 px-3">Coin</th>
                     <th className="py-2 px-3">Trades</th>
                     <th className="py-2 px-3">True Win Rate</th>
-                    <th className="py-2 px-3">Avg Net R (Taker)</th>
-                    <th className="py-2 px-3">Net Profit Factor</th>
-                    <th className="py-2 px-3">Hold-Out Verdict</th>
+                    <th className="py-2 px-3">Avg Net R (Optimistic)</th>
+                    <th className="py-2 px-3">Avg Net R (Strict Shadow)</th>
+                    <th className="py-2 px-3">BE Fee Inflation</th>
+                    <th className="py-2 px-3">Strict Verdict</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-chrome-edge">
                   {paperMetrics?.perCoin && paperMetrics.perCoin.length > 0 ? (
                     paperMetrics.perCoin.map((c) => {
-                      const isPos = c.avgNetR > 0;
+                      const isOptPos = c.avgNetR > 0;
+                      const isStrictPos = c.strictAvgNetR > 0;
+                      const inflation = c.avgNetR - c.strictAvgNetR;
                       return (
                         <tr key={c.coin} className="hover:bg-chrome-field/50 transition-colors">
                           <td className="py-2 px-3 font-bold text-chrome-ink">{c.coin}</td>
                           <td className="py-2 px-3 text-chrome-dim">{c.trades}</td>
                           <td className="py-2 px-3 text-chrome-dim">{c.trueWinRate}%</td>
-                          <td className={`py-2 px-3 font-bold ${isPos ? "text-win" : "text-loss"}`}>
-                            {isPos ? "+" : ""}{c.avgNetR.toFixed(4)} R
+                          <td className={`py-2 px-3 font-mono font-semibold ${isOptPos ? "text-win" : "text-loss"}`}>
+                            {isOptPos ? "+" : ""}{c.avgNetR.toFixed(4)} R
                           </td>
-                          <td className="py-2 px-3 text-chrome-dim">{c.netProfitFactor}</td>
+                          <td className={`py-2 px-3 font-mono font-bold ${isStrictPos ? "text-win" : "text-loss"}`}>
+                            {isStrictPos ? "+" : ""}{c.strictAvgNetR.toFixed(4)} R
+                          </td>
+                          <td className="py-2 px-3 text-accent font-mono">
+                            +{inflation.toFixed(4)} R
+                          </td>
                           <td className="py-2 px-3">
                             <span
                               className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                                isPos
+                                isStrictPos
                                   ? "bg-win-tint text-win-dark border-win/30"
                                   : "bg-loss-tint text-loss-dark border-loss/30"
                               }`}
                             >
-                              {isPos ? "✔ POSITIVE" : "❌ NEGATIVE"}
+                              {isStrictPos ? "✔ POSITIVE" : "❌ NEGATIVE"}
                             </span>
                           </td>
                         </tr>
@@ -185,7 +231,7 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
                     })
                   ) : (
                     <tr>
-                      <td colSpan={6} className="py-4 text-center text-chrome-dim">
+                      <td colSpan={7} className="py-4 text-center text-chrome-dim">
                         Loading per-coin metrics...
                       </td>
                     </tr>
@@ -199,7 +245,7 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <h3 className="font-mono text-xs font-bold text-chrome-ink uppercase">
-                Paper Trade Feed (Collection: paper_1h_a · Latest Closed Trades)
+                Paper Trade Feed ({paperMetrics?.isLiveDataSource ? "Live Collection: paper_1h_a" : "Hold-Out Collection: backtest_holdout_1h_a"} · Latest 50 Trades)
               </h3>
               <div className="flex items-center gap-2 text-xs font-mono">
                 <span className="text-chrome-dim text-[11px]">Coin:</span>
@@ -219,7 +265,7 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
             </div>
 
             <div className="overflow-x-auto border border-chrome-line rounded-lg max-h-72 overflow-y-auto">
-              <table className="w-full min-w-[720px] text-left font-mono text-xs">
+              <table className="w-full min-w-[800px] text-left font-mono text-xs">
                 <thead className="bg-chrome-field border-b border-chrome-line text-chrome-dim text-[10px] uppercase sticky top-0">
                   <tr>
                     <th className="py-2 px-3">Entry Time (UTC)</th>
@@ -228,16 +274,18 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
                     <th className="py-2 px-3">Side</th>
                     <th className="py-2 px-3">Exit Type</th>
                     <th className="py-2 px-3">R Gross</th>
-                    <th className="py-2 px-3">Taker Fee R</th>
-                    <th className="py-2 px-3">R Net (Taker)</th>
+                    <th className="py-2 px-3">Taker Fee</th>
+                    <th className="py-2 px-3">Optimistic Net R</th>
+                    <th className="py-2 px-3">Strict Net R (Shadow)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-chrome-edge">
                   {paperTrades
                     .filter((t) => paperCoinFilter === "ALL" || t.coin === paperCoinFilter)
-                    .slice(0, 30)
+                    .slice(0, 50)
                     .map((t) => {
-                      const isWin = t.R_net_taker > 0;
+                      const isOptWin = t.R_net_taker > 0;
+                      const isStrictWin = t.R_net_strict > 0;
                       return (
                         <tr key={t.id} className="hover:bg-chrome-field/50 transition-colors">
                           <td className="py-2 px-3 text-chrome-dim text-[11px] whitespace-nowrap">{t.entry_time}</td>
@@ -273,8 +321,11 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
                           <td className="py-2 px-3 text-accent font-mono">
                             -{t.cost_R_taker.toFixed(3)} R
                           </td>
-                          <td className={`py-2 px-3 font-bold ${isWin ? "text-win" : "text-loss"}`}>
+                          <td className={`py-2 px-3 font-mono ${isOptWin ? "text-win" : "text-loss"}`}>
                             {t.R_net_taker >= 0 ? "+" : ""}{t.R_net_taker.toFixed(3)} R
+                          </td>
+                          <td className={`py-2 px-3 font-mono font-bold ${isStrictWin ? "text-win" : "text-loss"}`}>
+                            {t.R_net_strict >= 0 ? "+" : ""}{t.R_net_strict.toFixed(3)} R
                           </td>
                         </tr>
                       );
