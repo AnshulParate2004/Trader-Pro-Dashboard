@@ -38,6 +38,11 @@ export const ModelCard: React.FC<ModelCardProps> = ({
               <span className="text-[10px] font-mono font-bold bg-accent-tint text-chrome-green-ink px-2 py-0.5 rounded border border-accent/30">
                 {currentModel ? currentModel.timeframe.toUpperCase() : "MULTI-TIMEFRAME"}
               </span>
+              {currentModel && currentModel.statusBadge.includes("RETIRED") && (
+                <span className="text-[10px] font-mono font-bold bg-rose-50 text-rose-800 px-2 py-0.5 rounded border border-rose-300">
+                  RETIRED
+                </span>
+              )}
             </div>
             <p className="font-body text-xs text-chrome-dim max-w-2xl leading-relaxed mt-0.5">
               {currentModel

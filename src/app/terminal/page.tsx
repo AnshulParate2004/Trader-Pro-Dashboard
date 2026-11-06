@@ -551,7 +551,7 @@ export default function TerminalPage() {
             >
               {TOP_MODELS.map((m) => (
                 <option key={m.id} value={m.id}>
-                  #{m.rank}: {m.name}
+                  #{m.rank}: {m.name} {m.statusBadge.includes("RETIRED") ? "[RETIRED]" : ""}
                 </option>
               ))}
             </select>
@@ -877,9 +877,15 @@ export default function TerminalPage() {
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Selected Model #{activeModel.rank}
               </span>
-              <span className="text-[9px] font-mono font-black bg-emerald-100/90 text-emerald-900 border border-emerald-300 px-2 py-0.5 rounded-full shadow-2xs">
-                ACTIVE MODEL
-              </span>
+              {activeModel.statusBadge.includes("RETIRED") ? (
+                <span className="text-[9px] font-mono font-black bg-rose-100 text-rose-900 border border-rose-300 px-2 py-0.5 rounded-full shadow-2xs">
+                  RETIRED (NEGATIVE NET EXPECTANCY)
+                </span>
+              ) : (
+                <span className="text-[9px] font-mono font-black bg-emerald-100/90 text-emerald-900 border border-emerald-300 px-2 py-0.5 rounded-full shadow-2xs">
+                  ACTIVE MODEL
+                </span>
+              )}
             </div>
             <div className="font-mono text-xs font-black text-gray-950">
               {activeModel.name}
