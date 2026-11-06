@@ -105,6 +105,17 @@ body {
   color: rgb(0 125 51 / var(--tw-text-opacity, 1));
 }
 
+/* Clean browser autofill styling matching chrome light theme */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #111111 !important;
+  caret-color: #007d33 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 /* Accessible keyboard focus rings matching portfolio accent */
 *:focus-visible {
   outline: 2px solid #007d33 !important;

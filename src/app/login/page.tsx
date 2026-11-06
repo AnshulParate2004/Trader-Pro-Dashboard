@@ -66,28 +66,34 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-screen flex flex-col bg-[#0b0f17] text-white font-sans selection:bg-emerald-500/30">
+    <div className="min-h-screen w-screen flex flex-col bg-chrome-bg text-chrome-ink font-body selection:bg-accent-tint selection:text-chrome-ink">
       
-      {/* Top Header */}
-      <header className="h-14 border-b border-gray-800/80 px-6 flex items-center justify-between bg-[#0e131f]/90 backdrop-blur-md">
+      {/* Top Header matching Portfolio & Terminal */}
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-chrome-line px-4 sm:px-8 py-3.5 flex items-center justify-between select-none shrink-0">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-7 h-7 rounded bg-emerald-500 flex items-center justify-center text-gray-950 font-mono text-xs font-black shadow-md">
+          <span className="size-6 rounded-full bg-accent text-white text-[11px] font-bold flex items-center justify-center shrink-0">
             TP
-          </div>
-          <span className="font-mono text-sm font-extrabold tracking-tight text-white group-hover:text-emerald-400 transition-colors">
-            TRADER-PRO <span className="text-emerald-400 font-mono">QUANT</span>
           </span>
+          <div className="flex flex-col sm:flex-row sm:items-baseline gap-0 sm:gap-2">
+            <span className="font-brand text-lg font-medium tracking-tight text-chrome-ink group-hover:text-accent transition-colors">
+              Trader-Pro
+            </span>
+            <span className="font-mono text-xs lowercase text-chrome-dim hidden sm:inline">
+              btc strategy research &amp; paper-trading
+            </span>
+          </div>
         </Link>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Link
             href="/terminal"
-            className="text-xs font-mono text-gray-400 hover:text-white transition-colors"
+            className="flex items-center gap-1 font-mono text-xs text-chrome-dim hover:text-chrome-ink bg-white border border-chrome-line px-2.5 py-1.5 rounded transition-all shadow-xs hover:border-chrome-ink"
           >
-            Terminal Preview
+            <span>Terminal Preview</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </Link>
-          <div className="flex items-center gap-1.5 font-mono text-[11px] text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <div className="flex items-center gap-1.5 font-mono text-[11px] text-chrome-green-ink bg-win-tint border border-win/30 px-2.5 py-1 rounded">
+            <span className="size-1.5 rounded-full bg-chrome-green animate-pulse" />
             <span>SECURE GATEWAY</span>
           </div>
         </div>
@@ -95,39 +101,39 @@ export default function LoginPage() {
 
       {/* Main Login Workspace */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6">
-        <div className="w-full max-w-md flex flex-col gap-5">
+        <div className="w-full max-w-md flex flex-col gap-4">
           
           {/* Card Container */}
-          <div className="bg-[#121826] border border-gray-800 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+          <div className="bg-white border border-chrome-line rounded-xl p-6 sm:p-8 shadow-card relative overflow-hidden">
             
-            {/* Subtle glow effect */}
-            <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            {/* Subtle green ambient tint */}
+            <div className="absolute top-0 right-0 w-48 h-48 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
 
             {/* Header / Title */}
             <div className="flex flex-col gap-2 text-center items-center mb-6">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-gray-950 shadow-lg shadow-emerald-500/20 mb-1">
-                <Shield className="w-6 h-6 text-gray-950" />
+              <div className="size-12 rounded-xl bg-win-tint border border-win/30 flex items-center justify-center text-accent shadow-xs mb-1">
+                <Shield className="w-6 h-6" />
               </div>
-              <h1 className="text-2xl font-black tracking-tight text-white font-sans">
+              <h1 className="font-brand text-2xl font-medium tracking-tight text-chrome-ink">
                 Trader-Pro Sign In
               </h1>
-              <p className="text-xs text-gray-400 font-sans max-w-xs">
-                Enter your authorized credentials to access the live quantitative execution terminal & AI models.
+              <p className="text-xs text-chrome-dim font-sans max-w-xs">
+                Enter your authorized credentials to access the live quantitative execution terminal &amp; AI models.
               </p>
             </div>
 
             {/* Error Message */}
             {errorMsg && (
-              <div className="mb-4 p-3 rounded-lg bg-rose-950/60 border border-rose-500/50 text-rose-300 text-xs font-mono flex items-center gap-2 animate-fade-in">
-                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+              <div className="mb-4 p-3 rounded-lg bg-loss-tint border border-loss/30 text-loss-dark text-xs font-mono flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-loss" />
                 <span>{errorMsg}</span>
               </div>
             )}
 
             {/* Success Message */}
             {successMsg && (
-              <div className="mb-4 p-3 rounded-lg bg-emerald-950/60 border border-emerald-500/50 text-emerald-300 text-xs font-mono flex items-center gap-2 animate-fade-in">
-                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+              <div className="mb-4 p-3 rounded-lg bg-win-tint border border-win/30 text-win-dark text-xs font-mono flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-accent" />
                 <span>{successMsg}</span>
               </div>
             )}
@@ -137,39 +143,41 @@ export default function LoginPage() {
               
               {/* Email Input */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-mono font-semibold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-gray-400" /> Authorized Email
+                <label className="text-[11px] font-mono font-semibold text-chrome-dim uppercase tracking-wider flex items-center gap-1.5">
+                  <Mail className="w-3.5 h-3.5 text-chrome-icon" /> Authorized Email
                 </label>
                 <div className="relative">
                   <input
                     type="email"
                     required
+                    autoComplete="username"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="anshulnparate@gmail.com"
-                    className="w-full bg-[#0d131f] border border-gray-700 rounded-lg px-3.5 py-2.5 text-sm font-mono text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                    className="w-full bg-chrome-field border border-chrome-line rounded-lg px-3.5 py-2.5 text-sm font-mono text-chrome-ink placeholder-chrome-mute focus:outline-none focus:border-accent focus:bg-white focus:ring-1 focus:ring-accent transition-all"
                   />
                 </div>
               </div>
 
               {/* Password Input */}
               <div className="flex flex-col gap-1.5">
-                <label className="text-[11px] font-mono font-semibold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-gray-400" /> Password
+                <label className="text-[11px] font-mono font-semibold text-chrome-dim uppercase tracking-wider flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-chrome-icon" /> Password
                 </label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
                     required
+                    autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-[#0d131f] border border-gray-700 rounded-lg px-3.5 py-2.5 text-sm font-mono text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all pr-10"
+                    className="w-full bg-chrome-field border border-chrome-line rounded-lg px-3.5 py-2.5 text-sm font-mono text-chrome-ink placeholder-chrome-mute focus:outline-none focus:border-accent focus:bg-white focus:ring-1 focus:ring-accent transition-all pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-chrome-dim hover:text-chrome-ink transition-colors cursor-pointer"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -180,7 +188,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full mt-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:scale-[0.99] text-gray-950 font-mono text-sm font-extrabold py-3 rounded-lg flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-50"
+                className="w-full mt-2 bg-accent hover:bg-accent-hover active:scale-[0.99] text-white font-mono text-sm font-bold py-3 rounded-lg flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <>
@@ -197,9 +205,9 @@ export default function LoginPage() {
             </form>
 
             {/* Footer Notice */}
-            <div className="mt-6 pt-5 border-t border-gray-800/80 flex items-center justify-between text-[11px] font-mono text-gray-500">
+            <div className="mt-6 pt-5 border-t border-chrome-line/60 flex items-center justify-between text-[11px] font-mono text-chrome-dim">
               <span className="flex items-center gap-1">
-                <Zap className="w-3.5 h-3.5 text-emerald-500" /> MongoDB Atlas Sync
+                <Zap className="w-3.5 h-3.5 text-accent" /> MongoDB Atlas Sync
               </span>
               <span>Shark Exchange (0.040%)</span>
             </div>
@@ -207,11 +215,11 @@ export default function LoginPage() {
           </div>
 
           {/* Quick links below card */}
-          <div className="flex items-center justify-between text-xs font-mono text-gray-500 px-2">
-            <Link href="/" className="hover:text-gray-300 transition-colors">
+          <div className="flex items-center justify-between text-xs font-mono text-chrome-dim px-2">
+            <Link href="/" className="hover:text-chrome-ink transition-colors">
               ← Return to Home
             </Link>
-            <Link href="/ai-engine" className="hover:text-emerald-400 transition-colors">
+            <Link href="/ai-engine" className="hover:text-accent transition-colors">
               View AI Engine →
             </Link>
           </div>
