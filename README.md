@@ -62,10 +62,11 @@ Generated across 7 production models using 10,000-resample bootstrap 95% confide
    - Positive across 2024 (`+0.1694R`), 2025 (`+0.3832R`), and 2026 (`+0.3411R`).
 4. **Honest Decision Rule**: Because sample size was 65 trades ($< 150$), 4H-B is formally classified in the Research Results table as **"No demonstrated edge (N < 150 trades)"** and is **NOT** wired into live background cron.
 
-### Model Quality & Noise Analysis (`notebooks/model_quality_report.md`)
-- **Permutation Importance**: Tested against a synthetic Gaussian noise benchmark. 8 redundant features (`ret_12`, `atr_pct`, `range_pct`, `rsi14`, `ema_dist_20`, `ema_dist_50`, `ema_20_50`, `taker_ratio`) were identified below the noise floor.
-- **Derivatives Features**: Adding funding rates and open interest did not improve OOS AUC on 4H candles (`0.8922` vs `0.8923`), and were excluded to prevent overfitting.
-- **Algorithm Comparison**: LightGBM (`0.8923` AUC) outperformed L2 Logistic Regression (`0.8584` AUC) and a rule-based trend baseline (`0.3676` AUC).
+### Model Quality & Noise Analysis (`notebooks/model_quality_report.md` & `notebooks/leakage_audit.md`)
+- **Leakage Audit**: A previous report showing `0.8923` AUC was audited in [`notebooks/leakage_audit.md`](notebooks/leakage_audit.md) and identified as **INVALID** due to backward lookback leakage in the target formula (`rolling(6)` on `shift(-1)`).
+- **Audited Model AUC**: Under a strict 5-fold purged walk-forward cross-validation with an embargo equal to the trade horizon, the honest out-of-sample LightGBM AUC is **`0.5126`** (matching the production model card benchmarks of `0.514 - 0.524`), with a shuffled-label noise control of `0.5027` and lagged-feature control of `0.4987`.
+- **Rule Baseline**: The rule-based trend baseline achieved **`0.5082`** AUC under the honest target (the previous `0.3676` was an artifact of the inverted leaky target).
+- **Derivatives Features**: Adding funding rates and open interest does not improve out-of-sample AUC on 4H candles (`0.5118` vs `0.5126`), and were excluded from live models.
 
 ---
 
