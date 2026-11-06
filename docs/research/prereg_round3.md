@@ -1,11 +1,47 @@
 # Pre-Registration Document: Cross-Sectional & Macro Systematic Quantitative Research (Round 3)
 
-> **Document Type:** Institutional Research Pre-Registration  
+> **Document Type:** Institutional Research Pre-Registration (Amended — Version 2)  
 > **Status:** PRE-REGISTERED & FROZEN (Committed prior to downloading multi-coin data or executing any strategy code)  
 > **Repository:** Trader-Pro / Trader-Pro-Dashboard  
 > **Branch:** `feat/cost-aware-engine`  
+> **Initial Commit:** `5322da3` (*prereg round3, before any results*)  
+> **Amendment 1 Commit:** `prereg round3 amendment 1, before any results`  
 > **Date:** November 2026  
-> **Primary Rule:** Zero parameter tuning, zero model searches, zero direction prediction via black-box machine learning. All signals, dynamic universe rules, friction tiers, and statistical screening gates are codified and frozen in this document prior to data access.
+> **Primary Rule:** Zero parameter tuning, zero model searches, zero direction prediction via black-box machine learning. All signals, dynamic universe rules, friction tiers, screening gates, and runtime anti-tampering verification are codified and frozen in this document prior to data access.
+
+---
+
+## Amendment 1 Change Log (Pre-Execution Methodological Audit)
+
+Prior to downloading data or executing any evaluation code, Round 3 pre-registration is amended to incorporate seven rigorous institutional standards:
+
+1. **Threshold Provenance & Prior Knowledge Disclosure:**
+   - Full disclosure of the historical origin of every threshold across H1, H2, and H3:
+     - *H1 ($-0.150\%$ and $+0.300\%$ 3-day funding):* **Directly derived from prior inspection of BTC funding data** in `run_derivatives_study.py` and `evaluate_final.py` (reflecting liquidation tails on BTC).
+     - *H2 ($+5\%$ price, $+10\%$ OI change):* **Directly influenced by prior inspection of BTC open interest distributions** in `metrics_BTCUSDT_1h.parquet` (where 5-day $10\%$ surges represent $>2\sigma$ positioning expansions).
+     - *H3 (14-day momentum, Top/Bottom 4):* Sourced from academic crypto factor literature (Liu, Tsyvinski & Wu, 2022) with quintile sorting ($4 / 20 = 20\%$).
+2. **Explicit Funding Cashflow Accounting:**
+   - Realized net return for all three hypotheses explicitly includes **all 8-hour funding cashflows paid or received during the holding period**:
+     $$\text{Net Return} = \text{Price Return} + \text{Funding Cashflow} - \text{Friction}$$
+     - *H1 (Contrarian Funding):* Longs on extreme negative funding and Shorts on extreme positive funding **receive positive funding yield**.
+     - *H2 (OI + Trend):* Breakout longs in high-funding regimes **pay funding drag**, reducing net return.
+     - *H3 (Cross-Sectional Momentum L/S):* Captures the net carrying cost between long winners and short losers.
+3. **Altcoin OI History Truncation & Adjusted H2 Gate:**
+   - Altcoin daily open interest on Binance Data Vision starts around **mid-to-late 2021** (unlike BTC which begins Sep 2020).
+   - Therefore, the 2020–2021 Bull Market check for H2 covers only the available historical period (e.g. `2021-06-01` to `2021-12-31`). H2's screening gate requires full-period net significance, 2022 Bear Market positive alpha, and positive alpha in the available 2021 bull window.
+4. **Harmonized Significance Standard ($99.75\% \iff |t| \ge 3.0$):**
+   - The screening confidence interval and regression $t$-statistic threshold are locked to the same statistical standard:
+     $$\mathbf{99.75\% \text{ Bootstrap CI Lower Bound } > 0} \iff \mathbf{|t_{\text{HAC}}| \ge 3.0}$$
+     The unadjusted $|t| \ge 2.0$ legacy hurdle is formally retired.
+5. **Confirmed Project-Wide Test Count ($M = 20$):**
+   - After formally removing Family D (carry), the project-wide cumulative macro/derivatives hypothesis count is confirmed at **$M = 20$ tests**:
+     $$M = 2 \text{ (Donchian)} + 3 \text{ (Round 2)} + 8 \text{ (BTC Deriv G0-G3)} + 4 \text{ (BTC Final A3/B1)} + 3 \text{ (Round 3)} = \mathbf{20}$$
+     $$\alpha_{\text{screening}} = \frac{0.05}{20} = 0.0025 \implies \mathbf{99.75\% \text{ CI }} [0.125\%, 99.875\%]$$
+6. **Forward Anti-Tampering Runtime Architecture:**
+   - Any rule carried forward into paper testing must have its code hashed via dynamic runtime file reading (`hashlib.sha256(open(__file__, "rb").read()).hexdigest()`). Hardcoded hash string constants (the 1H-A flaw) are **strictly forbidden**.
+   - Every forward paper signal must log `signal_time` and `data_publish_time` to prove $T_{\text{publish}} \le T_{\text{signal}}$.
+7. **Exchange Tradability Gate & Research-Only Classification:**
+   - The 20-coin universe is based on Binance perpetuals. Unless the user provides the verified list of tradable perpetuals on their specific exchange, the universe is formally classified as **`RESEARCH-ONLY`**. No forward rule may be wired to execution without exchange whitelist confirmation.
 
 ---
 
@@ -25,11 +61,14 @@ To prevent survivorship and selection bias, the universe is **not fixed to today
   $$\text{Volume}_{i, t-1} = \sum_{k=1}^{90} \text{quote\_volume}_{i, t-k}$$
 - **Data Integrity:** Sourced strictly from data published prior to $open[t]$. If a contract was listed less than 90 days prior, it is excluded until 90 days of continuous history accumulate.
 - **Survivorship Mitigation:** Any coin delisted or suspended in historical periods drops out dynamically as its volume evaporates.
+- **Tradability Status:** Unless confirmed against the user's live exchange tradable instrument manifest, this 20-coin universe is formally marked **`RESEARCH-ONLY`**.
 
 ---
 
 ### Hypothesis 1 (H1 — Family A): Contrarian Funding-Rate Extremes
 - **Economic Mechanism:** Perpetual funding rates reflect aggregate speculative leverage. When funding reaches extreme positive rates, long positioning is overcrowded and vulnerable to cascading liquidation flushes. Conversely, extreme negative funding reflects excessive short crowding vulnerable to short squeezes.
+- **Threshold Provenance (Disclosure):**
+  - The thresholds ($-0.150\%$ and $+0.300\%$ 3-day cumulative funding) **were directly derived from prior historical observation of BTC funding distributions** in `run_derivatives_study.py` and `evaluate_final.py`. They correspond to $>3\times$ baseline funding rates observed during historical BTC liquidation cascades (Nov 2021, May 2021, Nov 2022). They are not independent theoretical constants.
 - **Exact Fixed Signal (Zero Search):**
   - **Rebalance Cadence:** Evaluated daily at 00:00 UTC.
   - **Metric:** Trailing 3-day (9 settlement intervals) cumulative funding rate:
@@ -41,12 +80,16 @@ To prevent survivorship and selection bias, the universe is **not fixed to today
   - Filled at $open[t]$ (next-bar open).
   - Fixed holding period: **Exactly $D = 3\text{ calendar days}$ (72 hours)**. Exit executed at $open[t+3]$.
   - Zero intrabar stops or ratchets (eliminates execution simulator bias).
-- **Portfolio Sizing:** Equal-weighted across all triggered coins on day $t$, capped at $1.0\times$ portfolio notional. Unallocated capital is held in cash ($0.0\%$ return).
+- **Portfolio Sizing & Funding Cashflows:**
+  - Equal-weighted across all triggered coins on day $t$, capped at $1.0\times$ portfolio notional. Unallocated capital is held in cash ($0.0\%$ return).
+  - **Funding Accounting:** Strategy receives all positive funding cashflows collected when entering Long on negative funding or Short on positive funding.
 
 ---
 
 ### Hypothesis 2 (H2 — Family B): Open-Interest Change + Price Direction
 - **Economic Mechanism:** Breakouts accompanied by substantial open interest expansion represent fresh institutional capital committing to a new macro directional trend, distinguishing sustained momentum from low-volume liquidity traps or short-covering bounces.
+- **Threshold Provenance (Disclosure):**
+  - The $+5\%$ price and $+10\%$ open interest surge thresholds **were directly influenced by prior observation of BTC derivatives metrics** in `metrics_BTCUSDT_1h.parquet`. A $10\%$ multi-day OI expansion represents a $>2\sigma$ positioning shock on BTC.
 - **Exact Fixed Signal (Zero Search):**
   - **Rebalance Cadence:** Evaluated daily at 00:00 UTC.
   - **Price Metric:** 5-day cumulative price return:
@@ -60,12 +103,16 @@ To prevent survivorship and selection bias, the universe is **not fixed to today
   - Filled at $open[t]$ (next-bar open).
   - Fixed holding period: **Exactly $D = 5\text{ calendar days}$ (120 hours)**. Exit executed at $open[t+5]$.
   - Zero intrabar stops or ratchets.
-- **Portfolio Sizing:** Equal-weighted across all triggered coins on day $t$, capped at $1.0\times$ portfolio notional. Unallocated capital held in cash ($0.0\%$).
+- **Portfolio Sizing & Funding Drag:**
+  - Equal-weighted across all triggered coins on day $t$, capped at $1.0\times$ portfolio notional.
+  - **Funding Accounting:** Any funding rate payments incurred during the 5-day holding period (e.g. longs paying positive funding) are strictly deducted from net return.
 
 ---
 
 ### Hypothesis 3 (H3 — Family C): Cross-Sectional Momentum (Dollar-Neutral Spread)
 - **Economic Mechanism:** Cross-sectional momentum (relative winners outperforming relative losers over multi-week horizons) is an established structural asset pricing phenomenon driven by gradual institutional capital reallocation. Constructing the strategy as a dollar-neutral long/short spread neutralizes directional market beta ($\beta \approx 0$).
+- **Threshold Provenance (Disclosure):**
+  - The 14-day lookback is sourced from academic cryptocurrency cross-sectional momentum literature (Liu, Tsyvinski & Wu, 2022). Top 4 and Bottom 4 represent the top and bottom quintiles ($20\%$) of the 20-coin universe.
 - **Exact Fixed Signal (Zero Search):**
   - **Rebalance Cadence:** Bi-weekly (every 14 calendar days on alternating Mondays at 00:00 UTC).
   - **Metric:** Trailing 14-day cumulative return across the eligible Top 20 dynamic universe:
@@ -75,9 +122,9 @@ To prevent survivorship and selection bias, the universe is **not fixed to today
 - **Execution & Holding Period:**
   - Net market exposure = $0.0\%$ (dollar-neutral), gross exposure = $1.0\times$.
   - Fixed holding period: **Exactly $D = 14\text{ calendar days}$**, rebalanced at open of every 14th day.
+  - **Funding Accounting:** The net spread funding cashflow ($\sum \text{Funding}_{\text{Shorts}} - \sum \text{Funding}_{\text{Longs}}$) is continuously credited/debited to portfolio return.
 - **Effective Sample Size ($N_{\text{eff}}$) Disclosure:**
-  - In preliminary Phase 1 modeling, the residual correlation across 4 altcoins was measured at $\bar{\rho}_{\text{residual}} = 0.2756$, suggesting $N_{\text{eff}} \approx 2.73$ for an 8-coin basket.
-  - **`[EXPLICIT ASSUMPTION]`**: This $N_{\text{eff}} \approx 2.73$ figure is an **assumption** based on the 4 locally available coins (`ETH`, `BNB`, `SOL`, `XRP`) relative to BTC. The true effective sample size will be empirically calculated from the full cross-sectional covariance matrix once all historical coin series are downloaded.
+  - **`[EXPLICIT ASSUMPTION]`**: The preliminary $N_{\text{eff}} \approx 2.73$ figure is an **assumed placeholder** derived from residual correlation on 4 local altcoins relative to BTC. The true effective sample size will be empirically calculated from the full cross-sectional covariance matrix once all historical coin series are downloaded.
 
 ---
 
@@ -126,14 +173,21 @@ Historical data (January 1, 2020 through November 6, 2026) is classified strictl
 
 ---
 
-### Hurdle 2: Beta-Adjusted Residual Alpha Gate (Dual-Regime Consistency)
+### Hurdle 2: Harmonized Beta-Adjusted Residual Alpha Standard ($|t| \ge 3.0$)
 Apparent historical returns must not represent unhedged systematic market beta. Daily strategy net returns are regressed against market buy-and-hold returns using returns-based OLS with Newey-West HAC standard errors (20-day lag bandwidth):
 $$r_{\text{strat}, t} = \alpha + \beta r_{\text{mkt}, t} + \epsilon_t$$
 
-- **Full Period:** Annualized residual alpha $\alpha_{\text{ann}} = \alpha \times 365$ must achieve $t_{\text{HAC}} \ge 2.0$.
-- **Dual-Regime Invariance:** In addition, residual alpha $\alpha_{\text{ann}}$ must be **strictly positive ($> 0.0$) in BOTH distinct historical market regimes**:
-  1. **Regime 1 (2020–2021 Crypto Bull Market):** `2020-01-01` to `2021-12-31`.
-  2. **Regime 2 (2022 Crypto Bear Market):** `2022-01-01` to `2022-12-31`.
+- **Harmonized Significance Gate:** The $t$-statistic threshold is locked to the $99.75\%$ confidence level:
+  $$\mathbf{|t_{\text{HAC}}| \ge 3.0}$$
+  The strategy must produce statistically significant annualized residual alpha $\alpha_{\text{ann}} = \alpha \times 365$ with $|t_{\text{HAC}}| \ge 3.0$.
+
+---
+
+### Hurdle 3: Regime Invariance Gate (Bull & Bear Consistency)
+In addition to full-period significance, annualized residual alpha $\alpha_{\text{ann}}$ must be **strictly positive ($> 0.0$) in BOTH distinct historical market regimes**:
+1. **Regime 1 (2020–2021 Crypto Bull Market):** `2020-01-01` to `2021-12-31`.
+   - *Special Rule for H2 (OI + Trend):* Because altcoin open interest history begins around mid-2021 on Binance Data Vision, H2's Regime 1 check covers strictly the **available 2021 Bull Window** (`2021-06-01` to `2021-12-31`, or earliest date where $\ge 10$ coins have valid history).
+2. **Regime 2 (2022 Crypto Bear Market):** `2022-01-01` to `2022-12-31` (full 12 months for all hypotheses).
 
 > **Explicit Methodological Caution:**  
 > Surviving two historical regimes is an inherently **weak check** (a regime represents only 1–2 cycles; past survival does not imply invariance to future regime shifts). Historical screening decides **only** which candidate rules qualify to advance to real-time paper trading. It **never** constitutes proof of live profitability.
@@ -149,15 +203,16 @@ To ensure complete scientific integrity and eliminate all survivorship and looka
    - If $K = 2$ rules: $\alpha_{\text{forward}} = \frac{0.05}{2} = \mathbf{0.025} \implies \mathbf{97.50\% \text{ CI }} [1.25\%, 98.75\%]$.
    - If $K = 1$ rule: $\alpha_{\text{forward}} = \mathbf{0.050} \implies \mathbf{95.00\% \text{ CI }} [2.50\%, 97.50\%]$.
 3. **Fixed Quarterly Review Cadence:** Strategy health and performance metrics are reviewed strictly on pre-declared calendar quarter-ends:
-   - **Q1:** March 31
-   - **Q2:** June 30
-   - **Q3:** September 30
-   - **Q4:** December 31
+   - **Q1:** March 31 | **Q2:** June 30 | **Q3:** September 30 | **Q4:** December 31
 4. **Minimum Independent Observations Gate:** No pass/fail decision may be rendered until a minimum of **$N_{\text{indep}} \ge 100$ independent observations** (or at least 12 continuous calendar months of forward data) have accumulated.
 5. **Strict Prohibition of Early Stopping:** No early termination on good short-term results. Positive runs over 2–3 months are statistically noisy and cannot truncate the forward observation period.
 6. **One-Year Live Money Bar:**  
    > [!IMPORTANT]  
    > **Mandatory Capital Rule:** No forward result in the first 12 months can justify live capital deployment. All execution remains 100% paper trading for a minimum of one full calendar year.
+7. **Runtime Anti-Tampering & Publish-Time Architecture:**
+   - Signal code for forward-deployed rules must reside in committed script files.
+   - **Dynamic Runtime Hashing:** At execution time, the script must calculate its own SHA-256 hash directly from the physical source file on disk (`hashlib.sha256(open(__file__, "rb").read()).hexdigest()`) and assert a match against the pre-registered manifest. Hardcoded hash string constants are prohibited.
+   - **Data Publish-Time Logging:** Every forward signal recorded in the database must log `signal_time` alongside `data_publish_time` (the exchange's published settlement timestamp or candle close), asserting $T_{\text{publish}} \le T_{\text{signal}}$.
 
 ---
 
@@ -167,7 +222,7 @@ Every candidate rule must be evaluated alongside three pre-registered null bench
 
 1. **Shuffled-Signal Null (Cross-Sectional Permutation):**
    - On each day $t$, permute the cross-sectional signals/rankings randomly across the dynamic universe while keeping the return distribution identical.
-   - Preserves asset volatility and market beta while destroying any predictive signal-to-return coupling. The candidate strategy must statistically outperform the shuffled null ($p < 0.01$).
+   - Preserves asset volatility and market beta while destroying any predictive signal-to-return coupling. The candidate strategy must statistically outperform the shuffled null ($p < 0.0025$).
 2. **Random-Entry Null (Monte Carlo Benchmark):**
    - Execute random trade entries across eligible assets matching the candidate rule's exact trade frequency and holding duration ($D$), evaluated across 1,000 independent random seeds.
 3. **Noise-Null Simulator Invariant:**
@@ -181,15 +236,18 @@ Every candidate rule must be evaluated alongside three pre-registered null bench
 | Parameter / Invariant | Pre-Registered Specification | Rationale |
 | :--- | :--- | :--- |
 | **Candidate Hypotheses** | Exactly 3 (H1: Contrarian Funding, H2: OI + Trend, H3: Cross-Sectional Mom) | Strictly non-directional / macro systematic. |
-| **Universe Selection** | Dynamic Top 20 by trailing 90-day quote volume | Strictly point-in-time; eliminates survivorship bias. |
+| **Universe Selection** | Dynamic Top 20 by trailing 90-day quote volume | Strictly point-in-time past data; eliminates survivorship bias. |
+| **Tradability Status** | `RESEARCH-ONLY` until user provides exchange tradable list | Prevents wiring untradable altcoins to execution. |
 | **Holding Horizons ($D$)** | H1: $3\text{ days}$; H2: $5\text{ days}$; H3: $14\text{ days}$ | Multi-day macro holding; zero intraday scalping. |
 | **Execution Price** | $open[t]$ (Next-bar open) | Same-bar close fills strictly forbidden. |
-| **Point-in-Time Data Gate** | $T_{\text{publish}} \le open[t]$ for funding settlements and OI | Eliminates lookahead in derivatives data. |
+| **Funding Accounting** | Included in all net returns (paid/received) | Captures true perpetual carrying cost/yield. |
 | **Reporting Units** | Net return in bps per trade, daily Sharpe, turnover | **R units explicitly prohibited for daily rules.** |
 | **Base Cost Tier** | $7.0\text{ bps}$ per side / $14.0\text{ bps}$ round-trip | VIP institutional taker rate on Binance Futures. |
 | **Punishing Cost Tier** | $25.0\text{ bps}$ per side / $50.0\text{ bps}$ round-trip | Realistic retail taker + spread + slippage stress test. |
 | **Bootstrap Method** | Stationary Block Bootstrap ($L = 20\text{ days}$, $B = 10,000$) | Preserves return autocorrelation and volatility regimes. |
-| **Historical Screening Gate** | $99.75\%$ CI lower bound $> 0.0$ at punishing cost tier ($M = 20$) | Strict family-wise multiple testing control. |
+| **Historical Screening Gate** | $99.75\%$ CI lower bound $> 0.0$ at punishing tier ($M = 20$) | Strict family-wise multiple testing control. |
+| **Significance Standard** | Harmonized $99.75\% \iff |t_{\text{HAC}}| \ge 3.0$ | Consistent significance standard across all gates. |
 | **Regime Invariance Gate** | $\alpha_{\text{ann}} > 0.0$ in both 2020–2021 Bull and 2022 Bear | Rejects regime-fragile rules before paper trading. |
 | **Forward Test Rules** | Max 2 rules, $N_{\text{indep}} \ge 100$, no early stopping | True out-of-sample forward paper test. |
+| **Runtime Integrity** | Dynamic source file SHA-256 hash + publish-time logging | Prevents code tampering and lookahead in live execution. |
 | **Live Money Constraint** | 100% paper trading for minimum 12 months | Prevents premature capital allocation on short runs. |
