@@ -173,9 +173,9 @@ async function main() {
     }
 
     if (!activeTrade) {
-      const htf1hClosed = candles1h.filter(c => c.closeTime <= currentBar.openTime);
-      const htf4hClosed = candles4h.filter(c => c.closeTime <= currentBar.openTime);
-      const htf1dClosed = candles1d.filter(c => c.closeTime <= currentBar.openTime);
+      const htf1hClosed = candles1h.filter(c => (c.closeTime ?? 0) <= currentBar.openTime);
+      const htf4hClosed = candles4h.filter(c => (c.closeTime ?? 0) <= currentBar.openTime);
+      const htf1dClosed = candles1d.filter(c => (c.closeTime ?? 0) <= currentBar.openTime);
 
       const prediction = await getModelPrediction(
         "15m-sniper-030",

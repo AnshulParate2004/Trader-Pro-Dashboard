@@ -69,6 +69,7 @@ export default function AiEnginePage() {
   // Table View Tabs & Interactive Filtering / Pagination
   const [tableTab, setTableTab] = useState<"live" | "historical">("live");
   const [liveSideFilter, setLiveSideFilter] = useState<"ALL" | "LONG" | "SHORT">("ALL");
+  const [liveLimit, setLiveLimit] = useState<number>(100);
 
   const [historicalTrades, setHistoricalTrades] = useState<any[]>([]);
   const [totalHistoricalCount, setTotalHistoricalCount] = useState<number>(0);
@@ -143,11 +144,12 @@ export default function AiEnginePage() {
   });
 
   // Fetch engine data and trade logs for selected model
-  const fetchData = async (modelIdToFetch?: string, feeOverride?: number) => {
+  const fetchData = async (modelIdToFetch?: string, feeOverride?: number, limitOverride?: number) => {
     try {
       const activeM = modelIdToFetch !== undefined ? modelIdToFetch : selectedModelId;
       const activeFee = feeOverride !== undefined ? feeOverride : (config.tradingFeePercent || 0.016);
-      const res = await fetch(`/api/trades?modelId=${activeM}&fee=${activeFee}`);
+      const activeLimit = limitOverride !== undefined ? limitOverride : liveLimit;
+      const res = await fetch(`/api/trades?modelId=${activeM}&fee=${activeFee}&limit=${activeLimit}`);
       if (!res.ok) throw new Error("Failed to fetch engine data");
       const data = await res.json();
       if (data.success) {
@@ -1224,9 +1226,27 @@ export default function AiEnginePage() {
                       <option value="SHORT">🔴 SHORT ({trades.filter((t) => t.direction === "SHORT").length})</option>
                     </select>
                   </div>
+                  <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-300 rounded-lg px-2.5 py-1">
+                    <span className="text-[11px] text-gray-500 font-medium">Rows:</span>
+                    <select
+                      value={liveLimit}
+                      onChange={(e) => {
+                        const newL = Number(e.target.value);
+                        setLiveLimit(newL);
+                        fetchData(selectedModelId, undefined, newL);
+                      }}
+                      aria-label="Filter number of live trades displayed"
+                      className="bg-transparent font-bold text-gray-900 outline-none cursor-pointer text-xs"
+                    >
+                      <option value={50}>50 trades</option>
+                      <option value={100}>100 trades</option>
+                      <option value={200}>200 trades</option>
+                      <option value={500}>500 trades</option>
+                    </select>
+                  </div>
                 </div>
                 <div className="text-[11px] text-gray-500">
-                  Showing <strong>{filteredLiveTrades.length}</strong> of <strong>{trades.length}</strong> live executions today
+                  Showing <strong>{filteredLiveTrades.length}</strong> of <strong>{metrics?.totalTrades || trades.length}</strong> live executions
                 </div>
               </div>
             )}

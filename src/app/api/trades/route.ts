@@ -12,8 +12,11 @@ export async function GET(req: Request) {
     const modelId = searchParams.get("modelId") || undefined;
     const feeParam = searchParams.get("fee");
     const feeOverride = feeParam ? parseFloat(feeParam) : undefined;
+    const limitParam = searchParams.get("limit");
+    const parsedLimit = limitParam ? (limitParam === "all" ? 0 : parseInt(limitParam, 10)) : 200;
+    const limit = isNaN(parsedLimit) ? 200 : parsedLimit;
 
-    const trades = await getTradeLogs(50, modelId, feeOverride);
+    const trades = await getTradeLogs(limit, modelId, feeOverride);
     const metrics = await computePerformanceMetrics(modelId, feeOverride);
     const mongoStatus = isMongoConfigured();
 

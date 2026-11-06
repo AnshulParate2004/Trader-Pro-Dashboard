@@ -179,9 +179,9 @@ async function runReplay() {
     // 2. If no position is open, evaluate model on closed candles up to bar i-1 to enter at bar i open
     if (!activeTrade) {
       // Find HTF candles strictly closed before currentBar.openTime
-      const htf1hClosed = candles1h.filter(c => c.closeTime <= currentBar.openTime);
-      const htf4hClosed = candles4h.filter(c => c.closeTime <= currentBar.openTime);
-      const htf1dClosed = candles1d.filter(c => c.closeTime <= currentBar.openTime);
+      const htf1hClosed = candles1h.filter(c => (c.closeTime ?? 0) <= currentBar.openTime);
+      const htf4hClosed = candles4h.filter(c => (c.closeTime ?? 0) <= currentBar.openTime);
+      const htf1dClosed = candles1d.filter(c => (c.closeTime ?? 0) <= currentBar.openTime);
 
       const prediction = await getModelPrediction(
         "15m-sniper-030",

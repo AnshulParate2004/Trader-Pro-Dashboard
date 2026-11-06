@@ -130,7 +130,7 @@ export async function updateEngineConfig(updates: Partial<EngineConfig>): Promis
 }
 
 // Get Trade Logs (optionally filtered by specific AI model and dynamic fee override)
-export async function getTradeLogs(limit: number = 50, modelId?: string, feeOverride?: number): Promise<TradeOrder[]> {
+export async function getTradeLogs(limit: number = 200, modelId?: string, feeOverride?: number): Promise<TradeOrder[]> {
   const config = await getEngineConfig();
   const feeRate = feeOverride !== undefined && !isNaN(feeOverride) ? feeOverride : (config.tradingFeePercent || 0.040);
   const gstRate = (config.gstPercent || 18.0) / 100;
@@ -143,12 +143,15 @@ export async function getTradeLogs(limit: number = 50, modelId?: string, feeOver
       if (modelId && modelId !== "all") {
         query.modelId = modelId;
       }
-      const trades = await db
+      let cursor = db
         .collection("trade_logs")
         .find(query)
-        .sort({ openedAt: -1 })
-        .limit(limit)
-        .toArray();
+        .sort({ openedAt: -1 });
+
+      if (limit > 0) {
+        cursor = cursor.limit(limit);
+      }
+      const trades = await cursor.toArray();
 
       if (Array.isArray(trades)) {
         return trades.map((t: any) => {
