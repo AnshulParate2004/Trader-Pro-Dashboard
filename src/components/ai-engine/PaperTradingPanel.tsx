@@ -74,17 +74,17 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
 
       {isOpen && (
         <>
-          {/* Dual Accounting Comparison Banner */}
+          {/* Dual Execution Fills Comparison Banner */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-xs">
-            {/* Optimistic Accounting Panel */}
+            {/* Optimistic Fills Panel */}
             <div className="bg-amber-50/40 border border-amber-300/50 rounded-lg p-3 flex flex-col justify-between gap-2.5">
               <div className="flex items-center justify-between border-b border-amber-200/60 pb-1.5">
                 <span className="text-[10px] uppercase font-bold text-amber-900 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />
-                  Optimistic Accounting (Current Frozen Paper Logic)
+                  Optimistic Fills (Current Frozen Paper Logic)
                 </span>
-                <span className="text-[9px] text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">
-                  FEE REBATE ON BE
+                <span className="text-[9px] text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded font-bold">
+                  EXACT STOP FILL
                 </span>
               </div>
               <div className="grid grid-cols-3 gap-2">
@@ -111,46 +111,46 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
                 </div>
               </div>
               <p className="text-[10px] text-amber-800 leading-tight">
-                <strong>Note:</strong> Current paper formula credits back the round-trip fee friction on BE exits (<code className="bg-amber-100 px-1 py-0.2 rounded font-mono">grossR = cost_R_taker</code>), inflating reported net R.
+                <strong>Execution Assumptions:</strong> Stop is moved to <code className="bg-amber-100 px-1 py-0.2 rounded font-mono">entry + cost_R_taker</code>. Assumes 100% fill at exact stop price with zero slippage (gross +cost_R, net 0.00R), signal-close entry, and TP checked before SL.
               </p>
             </div>
 
-            {/* Strict-Adjusted Shadow Accounting Panel */}
+            {/* Pessimistic Fills Shadow Panel */}
             <div className="bg-blue-50/40 border border-blue-300/50 rounded-lg p-3 flex flex-col justify-between gap-2.5">
               <div className="flex items-center justify-between border-b border-blue-200/60 pb-1.5">
                 <span className="text-[10px] uppercase font-bold text-blue-900 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-blue-600 inline-block" />
-                  Strict-Adjusted Accounting (Shadow Metric)
+                  Pessimistic Fills (Shadow Metric)
                 </span>
                 <span className="text-[9px] text-blue-800 bg-blue-100 px-1.5 py-0.5 rounded font-bold">
-                  TRUE BE (0.00R GROSS)
+                  ENTRY EXIT (0.00R GROSS)
                 </span>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <span className="text-[10px] text-chrome-dim block">Strict Avg Net R</span>
+                  <span className="text-[10px] text-chrome-dim block">Pessimistic Avg Net R</span>
                   <span className={`text-lg font-bold font-mono ${strictAvgNet >= 0 ? "text-win" : "text-loss"}`}>
                     {strictAvgNet >= 0 ? "+" : ""}{strictAvgNet.toFixed(4)} R
                   </span>
                   <span className="text-[9px] text-chrome-dim block">CI [{strictCi[0].toFixed(4)}, +{strictCi[1].toFixed(4)}]</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-chrome-dim block">Strict Cumulative</span>
+                  <span className="text-[10px] text-chrome-dim block">Pessimistic Cumulative</span>
                   <span className={`text-lg font-bold font-mono ${strictCumulative >= 0 ? "text-win" : "text-loss"}`}>
                     {strictCumulative >= 0 ? "+" : ""}{strictCumulative.toFixed(2)} R
                   </span>
-                  <span className="text-[9px] text-chrome-dim block">Fees Deducted</span>
+                  <span className="text-[9px] text-chrome-dim block">Fees Paid</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-chrome-dim block">Strict Profit Factor</span>
+                  <span className="text-[10px] text-chrome-dim block">Pessimistic PF</span>
                   <span className="text-lg font-bold text-chrome-ink font-mono">
                     {strictPf.toFixed(2)}
                   </span>
-                  <span className="text-[9px] text-chrome-dim block">Unbiased fills</span>
+                  <span className="text-[9px] text-chrome-dim block">Conservative fills</span>
                 </div>
               </div>
               <p className="text-[10px] text-blue-800 leading-tight">
-                <strong>Shadow Metric:</strong> BE exits receive 0.00R gross with fees paid (-cost_R). Eliminates <span className="font-bold">+{inflationTotal.toFixed(2)} R</span> ({inflationPerTrade.toFixed(4)} R/trade) phantom gain across 522 BE exits.
+                <strong>Execution Assumptions:</strong> BE stop fills at unadjusted entry price (0.00R gross), paying full round-trip friction (-cost_R). Accounts for slippage risk, eliminating <span className="font-bold">+{inflationTotal.toFixed(2)} R</span> ({inflationPerTrade.toFixed(4)} R/trade) fill optimism across 522 BE exits.
               </p>
             </div>
           </div>
@@ -164,7 +164,7 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
                   Pre-Registered Decision Rule Check (paper_rules.md & preregistration_multicoin_study.md):
                 </span>
                 <span className="text-chrome-dim font-body leading-relaxed text-[11px]">
-                  Positive edge requires: (1) Pooled Taker Avg Net R &gt; 0 [Optimistic: ✔ <strong>+0.0412R</strong> | Strict Shadow: ❌ <strong>-0.0074R</strong>], (2) 95% CI Lower Bound &ge; 0 [❌ <strong>-0.0503R</strong>], (3) At least 4 of 5 coins positive [❌ <strong>3 of 5 positive</strong> under optimistic, <strong>2 of 5 positive</strong> under strict shadow].
+                  Positive edge requires: (1) Pooled Taker Avg Net R &gt; 0 [Optimistic Fills: ✔ <strong>+0.0412R</strong> | Pessimistic Fills: ❌ <strong>-0.0074R</strong>], (2) 95% CI Lower Bound &ge; 0 [❌ <strong>-0.0503R</strong>], (3) At least 4 of 5 coins positive [❌ <strong>3 of 5 positive</strong> under optimistic fills, <strong>2 of 5 positive</strong> under pessimistic fills].
                 </span>
               </div>
             </div>
@@ -189,10 +189,10 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
                     <th className="py-2 px-3">Coin</th>
                     <th className="py-2 px-3">Trades</th>
                     <th className="py-2 px-3">True Win Rate</th>
-                    <th className="py-2 px-3">Avg Net R (Optimistic)</th>
-                    <th className="py-2 px-3">Avg Net R (Strict Shadow)</th>
-                    <th className="py-2 px-3">BE Fee Inflation</th>
-                    <th className="py-2 px-3">Strict Verdict</th>
+                    <th className="py-2 px-3">Avg Net R (Optimistic Fills)</th>
+                    <th className="py-2 px-3">Avg Net R (Pessimistic Fills)</th>
+                    <th className="py-2 px-3">Fill Optimism Gap</th>
+                    <th className="py-2 px-3">Pessimistic Verdict</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-chrome-edge">
@@ -275,8 +275,8 @@ export const PaperTradingPanel: React.FC<PaperTradingPanelProps> = ({
                     <th className="py-2 px-3">Exit Type</th>
                     <th className="py-2 px-3">R Gross</th>
                     <th className="py-2 px-3">Taker Fee</th>
-                    <th className="py-2 px-3">Optimistic Net R</th>
-                    <th className="py-2 px-3">Strict Net R (Shadow)</th>
+                    <th className="py-2 px-3">Net R (Optimistic Fills)</th>
+                    <th className="py-2 px-3">Net R (Pessimistic Fills)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-chrome-edge">
