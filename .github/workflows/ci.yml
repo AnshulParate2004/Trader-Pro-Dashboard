@@ -32,6 +32,10 @@ jobs:
 
       - name: Next.js Production Build
         run: npm run build
+        env:
+          AUTH_SECRET: "ci_build_verification_auth_secret_minimum_32_chars"
+          AUTH_PASSWORD_HASH: "$2b$10$ci_build_dummy_hash_for_type_checking"
+          CRON_SECRET: "ci_build_cron_secret"
 
       - name: Security Vulnerability Audit
-        run: npm audit --audit-level=critical || true
+        run: npm audit --audit-level=critical

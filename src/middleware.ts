@@ -5,10 +5,17 @@ import { jwtVerify } from "jose/jwt/verify";
 const AUTH_COOKIE_NAME = "trader_pro_session";
 
 function getAuthSecret(): Uint8Array {
-  const secret =
-    process.env.AUTH_SECRET ||
-    process.env.JWT_SECRET ||
-    "trader_pro_quant_jwt_session_secret_min_32_chars_2026";
+  const secret = process.env.AUTH_SECRET || process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "CRITICAL SECURITY CONFIGURATION ERROR: AUTH_SECRET environment variable is missing in production."
+      );
+    }
+    throw new Error(
+      "AUTH_SECRET is required. Please define AUTH_SECRET in your .env.local file for local development."
+    );
+  }
   return new TextEncoder().encode(secret);
 }
 
@@ -42,6 +49,12 @@ export async function middleware(req: NextRequest) {
     const authHeader = req.headers.get("authorization");
     const cronSecretHeader = req.headers.get("x-cron-secret");
     const configuredSecret = process.env.CRON_SECRET;
+
+    if (!configuredSecret && process.env.NODE_ENV === "production") {
+      throw new Error(
+        "CRITICAL SECURITY CONFIGURATION ERROR: CRON_SECRET environment variable is missing in production."
+      );
+    }
 
     // Check if matching secret provided in Authorization or x-cron-secret header
     const hasValidCronSecret =

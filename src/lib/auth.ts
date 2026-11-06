@@ -14,10 +14,17 @@ export interface AuthUser {
 export const AUTH_COOKIE_NAME = "trader_pro_session";
 
 function getAuthSecret(): Uint8Array {
-  const secret =
-    process.env.AUTH_SECRET ||
-    process.env.JWT_SECRET ||
-    "trader_pro_quant_jwt_session_secret_min_32_chars_2026";
+  const secret = process.env.AUTH_SECRET || process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "CRITICAL SECURITY CONFIGURATION ERROR: AUTH_SECRET environment variable is missing in production."
+      );
+    }
+    throw new Error(
+      "AUTH_SECRET is required. Please define AUTH_SECRET in your .env.local file for local development."
+    );
+  }
   return new TextEncoder().encode(secret);
 }
 
@@ -82,8 +89,14 @@ export async function verifyCredentials(email?: string, password?: string): Prom
     return inputPass === plainFromEnv;
   }
 
-  // 3. Secure pre-hashed fallback for local dev only (hashed with bcrypt, no plaintext stored)
-  // Default password: TraderPro@Secure2026!
-  const defaultDevHash = "$2b$10$L6AcQBwsZaud5kBC2NhfqetafvE1P9091AXmt/FAeCBwL1fIDexs2";
-  return bcrypt.compareSync(inputPass, defaultDevHash);
+  // In production, require either AUTH_PASSWORD_HASH or AUTH_PASSWORD to be defined
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "CRITICAL SECURITY CONFIGURATION ERROR: AUTH_PASSWORD_HASH (or AUTH_PASSWORD) environment variable is missing in production."
+    );
+  }
+
+  throw new Error(
+    "AUTH_PASSWORD_HASH or AUTH_PASSWORD is required. Please define AUTH_PASSWORD_HASH in .env.local for local development."
+  );
 }
