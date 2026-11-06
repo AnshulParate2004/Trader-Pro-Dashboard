@@ -159,3 +159,28 @@ Before any new strategy, signal, or timeframe may be committed, backtested, or p
    - *Pessimistic Fills:* $-0.0074\text{R}$ (honest entry fill with fees paid).
 3. **Future Research:** Strictly confined to low-turnover, macro regimes (Daily/Weekly trend following and delta-neutral funding harvest) where holding periods span days to weeks and fee friction drops to $< 2\%$ of gross edge.
 4. **Daily Macro Benchmarks (Donchian 20/10 Tool Tests on BTC & ETH):** Falsification tests confirmed that while simple trend rules provide drawdown dampening (-53.9% on BTC, -65.6% on ETH) by holding ~50% cash, their apparent alpha is not statistically significant ($t_{\text{HAC}} = 1.25$ on BTC, $0.89$ on ETH). They serve as robust execution baselines, not claims of independent edge.
+
+---
+
+## 5. Execution-Cost Findings & Fixed-1%-Stop Discrepancy
+
+### Stop% and Friction Invariant Table (0.1144% Taker Round-Trip)
+
+| Dataset / Timeframe | Sample Count ($N$) | p10 Stop% | Median Stop% | $\text{cost\_R}$ at Median | p90 Stop% | $\text{cost\_R}$ at p90 |
+|---|---:|---:|---:|---:|---:|---:|
+| **Stored MongoDB `trade_logs` (Live Scalp)** | 75 closed trades | 0.1144% | **0.2287%** | **0.5002R** | 0.4126% | **0.2773R** |
+| **Historical 15M Live ATR Rule** ($\min(1.0\text{ATR}, 5\%)$) | 239,138 bars | 0.1651% | **0.3506%** | **0.3263R** | 0.7099% | **0.1612R** |
+| **Historical 1H Live ATR Rule** ($\min(1.0\text{ATR}, 5\%)$) | 59,774 bars | 0.3868% | **0.7414%** | **0.1543R** | 1.4035% | **0.0815R** |
+| **Historical 4H Live ATR Rule** ($\min(1.0\text{ATR}, 5\%)$) | 14,933 bars | 0.9241% | **1.5437%** | **0.0741R** | 2.7698% | **0.0413R** |
+| *Old 15M Backtest CSV (`trades_main.csv`)* | 11,548 trades | 0.4615% | 0.9419% | 0.1215R | 1.0000% | 0.1144R |
+| *Old 1H Backtest CSV (`trades_main.csv`)* | 2,624 trades | 1.0000% | 1.0000% | 0.1144R | 1.0000% | 0.1144R |
+| *Old 4H Backtest CSV (`trades_main.csv`)* | 598 trades | 1.0000% | 1.0000% | 0.1144R | 1.0000% | 0.1144R |
+
+### The Fixed-1%-Stop Discrepancy
+Historical backtests (`src/models/*/trades_main.csv`) artificially assumed a fixed stop distance of $\approx 1.00\%$, yielding an assumed fee drag of only $\approx 0.11\text{R}$ per trade. In reality, actual live trade execution and live ATR on 15M produced stops clustering between $0.23\%$ and $0.35\%$, resulting in real fee drag of **$0.33\text{R}$ to $0.50\text{R}$ per trade**—a **$3.0\times$ to $4.4\times$ friction explosion**.
+
+### Required Stop Distance for Cost Viability
+- **Gate $\text{cost\_R} \le 0.10$**: Mandates stop distance $\ge \frac{0.1144\%}{0.10} = \mathbf{1.1440\%}$.
+- **Gate $\text{cost\_R} \le 0.08$**: Mandates stop distance $\ge \frac{0.1144\%}{0.08} = \mathbf{1.4300\%}$.
+
+At 15M, only **`0.97%`** of historical signals meet the 0.08 threshold (**`99.03%` rejected**), and even the surviving ~1% of signals produced negative strict net returns ($-0.236\text{R}$, 95% CI upper bound $-0.020\text{R}$). Fast scalping is mathematically unviable under realistic exchange fees.
