@@ -5,13 +5,14 @@ import {
   computePerformanceMetrics,
 } from "@/lib/tradingEngine";
 import { isMongoConfigured } from "@/lib/mongodb";
+import { TAKER_BASE_FEE_PERCENT } from "@/lib/feeModel";
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const modelId = searchParams.get("modelId") || undefined;
     const feeParam = searchParams.get("fee");
-    const feeOverride = feeParam !== null && !isNaN(parseFloat(feeParam)) ? parseFloat(feeParam) : 0.040;
+    const feeOverride = feeParam !== null && !isNaN(parseFloat(feeParam)) ? parseFloat(feeParam) : TAKER_BASE_FEE_PERCENT;
     const limitParam = searchParams.get("limit");
     const parsedLimit = limitParam ? (limitParam === "all" ? 0 : parseInt(limitParam, 10)) : 200;
     const limit = isNaN(parsedLimit) ? 200 : parsedLimit;

@@ -15,15 +15,18 @@ import {
   TAKER_BASE_FEE_PERCENT,
   MAKER_BASE_FEE_PERCENT,
   GST_RATE_PERCENT,
+  TAKER_SLIPPAGE_RATE,
+  MAKER_SLIPPAGE_RATE,
 } from "./feeModel";
+import { evaluateRollingKillSwitch } from "./riskEngine";
 
-// Shark Exchange Fee Calculations (0.040% Taker, 0.016% Maker, 18% Indian GST, 0.01% Slippage)
+// Shark Exchange Fee Calculations (Using unified fee model constants)
 export function calculateSharkExchangeFees(
   entrySizeINR: number,
   exitSizeINR: number,
   orderType: "TAKER" | "MAKER" = "TAKER",
   feePercentOverride?: number,
-  slippagePercentOverride: number = 0.010
+  slippagePercentOverride?: number
 ): {
   baseFeeRate: number;
   entryFeeINR: number;
@@ -32,10 +35,12 @@ export function calculateSharkExchangeFees(
   slippageINR: number;
   totalFeeWithGST_INR: number;
 } {
-  const baseRate = feePercentOverride ?? (orderType === "TAKER" ? 0.040 : 0.016);
+  const baseRate = feePercentOverride ?? (orderType === "TAKER" ? TAKER_BASE_FEE_PERCENT : MAKER_BASE_FEE_PERCENT);
   const baseRateDecimal = baseRate / 100;
-  const gstRate = 0.18; // 18% GST
-  const slipRateDecimal = (orderType === "TAKER" ? slippagePercentOverride : 0.005) / 100;
+  const gstRate = GST_RATE_PERCENT / 100;
+  const slipRateDecimal = slippagePercentOverride !== undefined
+    ? slippagePercentOverride / 100
+    : (orderType === "TAKER" ? TAKER_SLIPPAGE_RATE : MAKER_SLIPPAGE_RATE);
 
   const rawEntryFee = entrySizeINR * baseRateDecimal;
   const rawExitFee = exitSizeINR * baseRateDecimal;
@@ -67,9 +72,9 @@ let memoryConfig: EngineConfig = {
   autoTradingEnabled: true,
   currency: "INR",
   accountBalanceINR: INITIAL_BALANCE_INR,
-  tradingFeePercent: 0.040, // Shark Exchange Taker Fee (0.040%)
-  makerFeePercent: 0.016,   // Shark Exchange Maker Fee (0.016%)
-  gstPercent: 18.0,         // 18% GST
+  tradingFeePercent: TAKER_BASE_FEE_PERCENT,
+  makerFeePercent: MAKER_BASE_FEE_PERCENT,
+  gstPercent: GST_RATE_PERCENT,
   riskPerTradePercent: 1.0, // 1% risk = ₹10 on ₹1,000
   ratchetEnabled: true,
   maxConcurrentTrades: 1,
@@ -93,11 +98,14 @@ export async function getEngineConfig(): Promise<EngineConfig> {
       if (config) {
         return {
           autoTradingEnabled: Boolean(config.autoTradingEnabled),
+          pauseReason: config.pauseReason,
+          pausedAt: config.pausedAt,
+          killSwitchTriggered: Boolean(config.killSwitchTriggered),
           currency: "INR",
           accountBalanceINR: Number(config.accountBalanceINR || INITIAL_BALANCE_INR),
-          tradingFeePercent: Number(config.tradingFeePercent || 0.040),
-          makerFeePercent: Number(config.makerFeePercent || 0.016),
-          gstPercent: Number(config.gstPercent || 18.0),
+          tradingFeePercent: Number(config.tradingFeePercent || TAKER_BASE_FEE_PERCENT),
+          makerFeePercent: Number(config.makerFeePercent || MAKER_BASE_FEE_PERCENT),
+          gstPercent: Number(config.gstPercent || GST_RATE_PERCENT),
           riskPerTradePercent: Number(config.riskPerTradePercent || 1.0),
           ratchetEnabled: config.ratchetEnabled !== false,
           maxConcurrentTrades: Number(config.maxConcurrentTrades || 2),
@@ -141,8 +149,8 @@ export async function updateEngineConfig(updates: Partial<EngineConfig>): Promis
 // Get Trade Logs (optionally filtered by specific AI model and dynamic fee override)
 export async function getTradeLogs(limit: number = 200, modelId?: string, feeOverride?: number): Promise<TradeOrder[]> {
   const config = await getEngineConfig();
-  const feeRate = feeOverride !== undefined && !isNaN(feeOverride) ? feeOverride : (config.tradingFeePercent || 0.040);
-  const gstRate = (config.gstPercent || 18.0) / 100;
+  const feeRate = feeOverride !== undefined && !isNaN(feeOverride) ? feeOverride : (config.tradingFeePercent || TAKER_BASE_FEE_PERCENT);
+  const gstRate = (config.gstPercent || GST_RATE_PERCENT) / 100;
   const effectiveFeeRate = (feeRate / 100) * (1 + gstRate);
 
   const db = await getDb();

@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ChevronUp,
   ShieldCheck,
+  AlertTriangle,
 } from "lucide-react";
 import {
   TradeOrder,
@@ -432,6 +433,31 @@ export default function AiEnginePage() {
 
       {/* 2. Main Content Body with Exact Hierarchy */}
       <main className="flex-1 w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6">
+
+        {/* Rolling Kill Switch Emergency Red Banner */}
+        {(config.killSwitchTriggered || (!config.autoTradingEnabled && config.pauseReason)) && (
+          <div className="p-4 sm:p-5 rounded-xl bg-rose-50 border-2 border-rose-500 text-rose-950 font-sans shadow-md animate-fade-in flex items-start gap-3.5">
+            <div className="w-9 h-9 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+              <AlertTriangle className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 flex flex-col gap-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-mono text-[11px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-rose-600 text-white">
+                  KILL SWITCH ACTIVATED
+                </span>
+                <span className="font-mono text-xs text-rose-700 font-bold">
+                  Autonomous AI Scalp Execution Paused
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm font-semibold text-rose-900 leading-relaxed mt-0.5">
+                {config.pauseReason || "Autonomous execution halted: Rolling 100-trade net expectancy fell below -0.05R."}
+              </p>
+              <div className="text-[11px] font-mono text-rose-700">
+                Capital preservation safeguard triggered. Review model performance and execution logs before re-enabling.
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* AI Action/Standby Status Toast */}
         {aiStatusMsg && (

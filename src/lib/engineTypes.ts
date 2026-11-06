@@ -161,6 +161,9 @@ export interface TradeOrder {
 
 export interface EngineConfig {
   autoTradingEnabled: boolean;
+  pauseReason?: string;
+  pausedAt?: number;
+  killSwitchTriggered?: boolean;
   currency: "INR";
   accountBalanceINR: number; // Artificial ₹1,000 starting capital
   tradingFeePercent: number; // Shark Exchange Taker: 0.040%
