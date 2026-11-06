@@ -29,7 +29,7 @@ export const FeeModeToggle: React.FC<FeeModeToggleProps> = ({
                 : "bg-blue-50 text-chrome-dim border-blue-200"
             }`}
           >
-            Active: {isTaker ? "Taker (Realistic Default)" : "Maker (Optimistic Scenario)"}
+            Active: {isTaker ? `Taker (${tradingFeePercent.toFixed(3)}% Realistic Default)` : `Maker (${tradingFeePercent.toFixed(3)}% Optimistic Scenario)`}
           </span>
         </div>
         <span className="font-mono text-xs text-chrome-dim">

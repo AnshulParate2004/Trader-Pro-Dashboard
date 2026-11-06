@@ -11,7 +11,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const modelId = searchParams.get("modelId") || undefined;
     const feeParam = searchParams.get("fee");
-    const feeOverride = feeParam ? parseFloat(feeParam) : 0.040;
+    const feeOverride = feeParam !== null && !isNaN(parseFloat(feeParam)) ? parseFloat(feeParam) : 0.040;
     const limitParam = searchParams.get("limit");
     const parsedLimit = limitParam ? (limitParam === "all" ? 0 : parseInt(limitParam, 10)) : 200;
     const limit = isNaN(parsedLimit) ? 200 : parsedLimit;

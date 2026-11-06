@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import UserAuthPill from "@/components/UserAuthPill";
 import {
@@ -77,6 +77,23 @@ export default function AiEnginePage() {
   const [histOutcomeFilter, setHistOutcomeFilter] = useState<string>("ALL");
   const [histTotalPages, setHistTotalPages] = useState<number>(1);
 
+  // Synchronized runtime refs to prevent stale closure data in intervals and background cycles
+  const activeFeeRef = useRef<number>(config.tradingFeePercent || 0.040);
+  const selectedModelIdRef = useRef<string>(selectedModelId);
+  const liveLimitRef = useRef<number>(liveLimit);
+
+  useEffect(() => {
+    activeFeeRef.current = config.tradingFeePercent || 0.040;
+  }, [config.tradingFeePercent]);
+
+  useEffect(() => {
+    selectedModelIdRef.current = selectedModelId;
+  }, [selectedModelId]);
+
+  useEffect(() => {
+    liveLimitRef.current = liveLimit;
+  }, [liveLimit]);
+
   const fetchHistoricalTrades = async (
     modelIdToFetch?: string,
     page: number = histPage,
@@ -143,10 +160,10 @@ export default function AiEnginePage() {
   // Fetch engine data and trade logs for selected model
   const fetchData = async (modelIdToFetch?: string, feeOverride?: number, limitOverride?: number) => {
     try {
-      const activeM = modelIdToFetch !== undefined ? modelIdToFetch : selectedModelId;
-      const activeFee = feeOverride !== undefined ? feeOverride : (config.tradingFeePercent || 0.040);
-      const activeLimit = limitOverride !== undefined ? limitOverride : liveLimit;
-      const res = await fetch(`/api/trades?modelId=${activeM}&fee=${activeFee}&limit=${activeLimit}`);
+      const activeM = modelIdToFetch !== undefined ? modelIdToFetch : selectedModelIdRef.current;
+      const activeFee = feeOverride !== undefined ? feeOverride : activeFeeRef.current;
+      const activeLimit = limitOverride !== undefined ? limitOverride : liveLimitRef.current;
+      const res = await fetch(`/api/trades?modelId=${encodeURIComponent(activeM)}&fee=${activeFee}&limit=${activeLimit}`);
       if (!res.ok) throw new Error("Failed to fetch engine data");
       const data = await res.json();
       if (data.success) {
@@ -181,15 +198,15 @@ export default function AiEnginePage() {
   };
 
   useEffect(() => {
-    fetchData(selectedModelId);
+    fetchData(selectedModelId, config.tradingFeePercent);
     fetchHistoricalTrades(selectedModelId);
     fetchPaperData();
     const interval = setInterval(() => {
-      fetchData(selectedModelId);
+      fetchData(selectedModelIdRef.current, activeFeeRef.current, liveLimitRef.current);
       fetchPaperData();
     }, 4000);
     return () => clearInterval(interval);
-  }, [selectedModelId]);
+  }, [selectedModelId, config.tradingFeePercent]);
 
   // Autonomous Background AI Market Evaluation Loop
   useEffect(() => {
@@ -197,17 +214,18 @@ export default function AiEnginePage() {
     const aiInterval = setInterval(async () => {
       try {
         await fetch("/api/cron/scalp");
-        fetchData(selectedModelId);
+        fetchData(selectedModelIdRef.current, activeFeeRef.current);
       } catch (err) {
         // background market tick
       }
     }, 15000);
     return () => clearInterval(aiInterval);
-  }, [config.autoTradingEnabled, selectedModelId]);
+  }, [config.autoTradingEnabled, selectedModelId, config.tradingFeePercent]);
 
   // Handle Model Selection Change
   const handleModelChange = async (newModelId: string) => {
     setSelectedModelId(newModelId);
+    selectedModelIdRef.current = newModelId;
     if (newModelId !== "all") {
       try {
         await fetch("/api/engine", {
@@ -220,15 +238,19 @@ export default function AiEnginePage() {
       }
     }
     setHistPage(1);
-    fetchData(newModelId);
+    fetchData(newModelId, activeFeeRef.current);
     fetchHistoricalTrades(newModelId, 1, histLimit, histSideFilter, histOutcomeFilter);
   };
 
   // Update Fee Percentage (Shark Exchange presets)
   const handleFeeChange = async (newFee: number) => {
-    const updated = { ...config, tradingFeePercent: newFee };
-    setConfig(updated);
-    fetchData(selectedModelId, newFee);
+    // 1. Immediately synchronously update ref so all ongoing/incoming polls read this exact fee
+    activeFeeRef.current = newFee;
+    // 2. Update config state to trigger component re-render
+    setConfig((prev) => ({ ...prev, tradingFeePercent: newFee }));
+    // 3. Immediately re-fetch trades and metrics using the newly selected fee
+    fetchData(selectedModelIdRef.current, newFee);
+    // 4. Persist to backend engine configuration
     try {
       await fetch("/api/engine", {
         method: "POST",
@@ -577,7 +599,8 @@ export default function AiEnginePage() {
           liveLimit={liveLimit}
           onLiveLimitChange={(newL) => {
             setLiveLimit(newL);
-            fetchData(selectedModelId, undefined, newL);
+            liveLimitRef.current = newL;
+            fetchData(selectedModelIdRef.current, activeFeeRef.current, newL);
           }}
           historicalTrades={historicalTrades}
           totalHistoricalCount={totalHistoricalCount}
@@ -593,6 +616,8 @@ export default function AiEnginePage() {
           handleHistOutcomeChange={handleHistOutcomeChange}
           handleCloseTrade={handleCloseTrade}
           totalLiveCount={metrics?.totalTrades || trades.length}
+          isTaker={isTaker}
+          feePercent={currentFeePercent}
         />
 
         {/* Phase 2 Baseline: Setup 1H-A Multi-Coin Paper Trading Validation Panel */}

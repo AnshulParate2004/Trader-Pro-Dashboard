@@ -45,7 +45,7 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
                   : "bg-blue-50 text-chrome-dim border-blue-200"
               }`}
             >
-              Fee Mode: {isTaker ? `Taker (${feePercent.toFixed(3)}% + 18% GST + Slip)` : "Maker (0.016% Optimistic)"}
+              Fee Mode: {isTaker ? `Taker (${feePercent.toFixed(3)}% + 18% GST + Slip)` : `Maker (${feePercent.toFixed(3)}% Optimistic)`}
             </span>
 
             <span className="font-mono text-[11px] text-chrome-dim">

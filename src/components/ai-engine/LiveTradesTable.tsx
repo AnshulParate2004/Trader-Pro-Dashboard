@@ -35,6 +35,8 @@ interface LiveTradesTableProps {
   handleHistOutcomeChange: (newOutcome: string) => void;
   handleCloseTrade: (tradeId: string, entryPrice: number, dir: "LONG" | "SHORT") => void;
   totalLiveCount?: number;
+  isTaker?: boolean;
+  feePercent?: number;
 }
 
 export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
@@ -60,6 +62,8 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   handleHistOutcomeChange,
   handleCloseTrade,
   totalLiveCount,
+  isTaker = true,
+  feePercent = 0.040,
 }) => {
   return (
     <section
@@ -95,7 +99,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
 
         <div className="text-xs text-chrome-dim font-mono">
           {tableTab === "live"
-            ? "Live Shark Exchange trades (0.040% Taker + 18% GST)"
+            ? `Live Shark Exchange trades (${feePercent.toFixed(3)}% ${isTaker ? "Taker" : "Maker"} + 18% GST)`
             : "Verified out-of-sample backtest logs (Point-in-Time execution)"}
         </div>
       </div>

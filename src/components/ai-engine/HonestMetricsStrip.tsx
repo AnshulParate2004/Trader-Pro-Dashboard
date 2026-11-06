@@ -49,7 +49,7 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
                 : "bg-blue-50 text-chrome-dim border-blue-200"
             }`}
           >
-            Mode: {isTaker ? `Taker (${feePercent.toFixed(3)}% + GST + Slippage)` : "Maker (0.016% Optimistic)"}
+            Mode: {isTaker ? `Taker (${feePercent.toFixed(3)}% + GST + Slippage)` : `Maker (${feePercent.toFixed(3)}% Optimistic)`}
           </span>
         </div>
         <span className="font-mono text-xs text-chrome-dim">
