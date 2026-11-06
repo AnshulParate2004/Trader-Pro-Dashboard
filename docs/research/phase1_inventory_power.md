@@ -29,7 +29,7 @@ Prior to codifying Round 3 hypotheses, Phase 1 is updated with six essential eco
    - Formally eliminated Family D from Round 3 consideration for three structural reasons:
      1. Already evaluated on BTC in `evaluate_final.py` (Strategy A3, trailing 30-day funding mean on 2025–2026 data).
      2. Thin real yields: Net annualized funding yields in mature competitive markets have compressed to single digits ($5\% - 8\%$).
-     3. Fee drag and Indian tax friction: Cash-and-carry requires rebalancing between spot and perpetuals, incurring 1% TDS on spot transfers, non-deductible trading losses under Section 115BBH (30% flat tax on gains with zero loss deduction), and double leg fees, rendering retail delta-neutral carry structurally unviable.
+     3. Fee friction and potential regulatory/tax considerations (to confirm with a tax professional: e.g. 1% TDS on spot transfers, non-deductible trading losses under Section 115BBH): Cash-and-carry requires rebalancing between spot and perpetuals, compounding exchange fees and regulatory friction, rendering retail delta-neutral carry structurally unviable.
    - Round 3 is strictly confined to the remaining **3 non-directional / macro rule families**: (a) Funding-rate extremes as a contrarian signal, (b) Open-interest change plus price direction, and (c) Cross-sectional momentum over 7–30 days.
 5. **Bifurcated Multiple-Testing Rules (Historical Screening vs Forward Test):**
    - **Historical Screening:** Evaluated against the **project-wide cumulative test count** ($M = 21$ across macro/derivatives tests, requiring a **$99.76\%$ block-bootstrap CI** $[0.119\%, 99.881\%]$).
