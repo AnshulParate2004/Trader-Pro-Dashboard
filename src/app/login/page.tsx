@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Shield,
@@ -18,7 +17,6 @@ import {
 import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
-  const router = useRouter();
   const { user, login } = useAuth();
 
   const [email, setEmail] = useState("anshulnparate@gmail.com");
@@ -28,12 +26,24 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // If already logged in, redirect to Terminal
+  // Helper to determine safe redirect target from ?from= query parameter
+  const getRedirectTarget = () => {
+    if (typeof window === "undefined") return "/terminal";
+    const params = new URLSearchParams(window.location.search);
+    const from = params.get("from");
+    if (from && from.startsWith("/") && !from.startsWith("//")) {
+      return from;
+    }
+    return "/terminal";
+  };
+
+  // If already logged in, redirect immediately
   useEffect(() => {
     if (user) {
-      router.push("/terminal");
+      const target = getRedirectTarget();
+      window.location.replace(target);
     }
-  }, [user, router]);
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,10 +53,12 @@ export default function LoginPage() {
 
     const res = await login(email, password);
     if (res.success) {
-      setSuccessMsg("✔ Authentication verified. Redirecting to Terminal...");
+      const target = getRedirectTarget();
+      const targetLabel = target.includes("ai-engine") ? "AI Engine" : "Terminal";
+      setSuccessMsg(`✔ Authentication verified. Redirecting to ${targetLabel}...`);
       setTimeout(() => {
-        router.push("/terminal");
-      }, 700);
+        window.location.replace(target);
+      }, 350);
     } else {
       setErrorMsg(res.error || "Authentication failed. Check your credentials.");
       setIsSubmitting(false);

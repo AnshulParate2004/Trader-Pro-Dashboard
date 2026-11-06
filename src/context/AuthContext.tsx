@@ -74,6 +74,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setUser(null);
     localStorage.removeItem("trader_pro_user");
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
   };
 
   return (
