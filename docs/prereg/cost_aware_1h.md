@@ -103,3 +103,22 @@ To declare statistical edge, the strategy must satisfy **ALL** of the following:
 3. **Superiority over Noise:** Real strategy Net R must exceed the **95th percentile of the 50-series noise-null distribution**.
 
 **Default Verdict:** If any of the above conditions is not met, the official outcome is **"NO EDGE"**. Every negative number will be reported as-is without promotional language.
+
+
+---
+
+## 4. Errata (Post-Implementation Protocol Notes)
+
+1. **Evaluation Script Signal Source (Donchian Breakout vs. 1H-A Model):**
+   The empirical simulation script (`analysis/evaluate_cost_aware_1h.py`) generates signals using raw 20-period Donchian channel breakouts (`close > rolling_high_20` / `close < rolling_low_20`), rather than loading the binary 1H-A LightGBM model artifact (`src/models/1h/final_model_BTCUSDT_1h.joblib`) or applying the frozen expanding-window conviction threshold (`FROZEN_CONVICTION_THRESHOLD = 0.582`).
+
+2. **Infeasibility of 50 bps Friction Tier by Construction:**
+   Under the pre-registered cost gate rule ($\text{cost\_R} = \frac{\text{round\_trip\_cost\_pct}}{\text{stop\_pct}} \le 0.08$), a 50 bps ($0.5000\%$) friction tier requires an initial stop distance of at least $\frac{0.0050}{0.08} = 6.25\%$. Because the execution engine caps stop distances at $5.0\%$ of entry price (`min(1.0 * ATR14, 0.05 * Price)`), any trade evaluated at 50 bps will have $\text{cost\_R} \ge \frac{0.0050}{0.0500} = 0.10 > 0.08$. Consequently, $100\%$ of trades are skipped at 50 bps ($n = 0$), making this tier infeasible by construction.
+
+3. **Mode B vs. Mode A Friction Schedule Divergence:**
+   Mode B fee friction ($0.0525\%$) differs from Mode A friction ($0.1144\%$ and $0.5000\%$). Mode B assumes a maker fee schedule ($0.018\%$ base fee $+ 18\%$ GST $+ 0.005\%$ maker slippage per side $= 0.05248\% \approx 0.0525\%$ round-trip), whereas Mode A assumes taker market execution ($0.040\%$ base fee $+ 18\%$ GST $+ 0.010\%$ taker slippage per side $= 0.1144\%$ round-trip).
+
+4. **Optimism in Mode B Fill Assumptions:**
+   The Mode B simulation assumption is optimistic in two ways:
+   - Fills are assumed to execute immediately whenever the price touches the limit price (`low <= limit_price` for longs, `high >= limit_price` for shorts) without simulating limit queue priority or partial fills.
+   - It assumes maker fees ($0.018\%$) apply to both entry and exit, whereas stop-loss exits in live market conditions trigger as market/taker orders subject to standard taker fees and slippage.
