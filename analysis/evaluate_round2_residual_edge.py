@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Pre-Registered Evaluation Engine: Round 2 Macro Overlays & Residual Edge Analysis
-Specification: docs/prereg/round2_residual_edge.md (including Amendments 1 & 2)
+Specification: docs/prereg/round2_residual_edge.md (including Amendments 1, 2, and 3)
 Protocol Version: 1.0 (Strict One-Run Protocol, No Post-Hoc Parameter Tuning)
 
 Strategies evaluated (M = 4 active tests):
@@ -34,11 +34,11 @@ TARGET_VOL = 0.40
 MAX_LEVERAGE = 1.0
 ANNUALIZATION_FACTOR = 365.0
 
-# Pre-registered friction schedules (Amendment 2: one-way cost per |dw| = friction/2)
+# Pre-registered friction schedules (Amendment 3: primary 50 bps round trip / 25 bps per unit one-way turnover)
 FRICTION_TIERS = {
-    "primary_25bps": 0.002500,     # 25 bps round-trip -> 12.5 bps per |dw|
-    "sensitivity_12_5bps": 0.001250, # 12.5 bps round-trip -> 6.25 bps per |dw|
-    "tds_stress_50bps": 0.005000,    # 50 bps round-trip -> 25 bps per |dw|
+    "primary_50bps": 0.005000,      # 50 bps round-trip -> 25 bps per unit turnover (0.0025)
+    "sensitivity_25bps": 0.002500,  # 25 bps round-trip -> 12.5 bps per unit turnover (0.00125)
+    "tds_stress_100bps": 0.010000,  # 100 bps round-trip -> 50 bps per unit turnover (0.0050)
 }
 
 BONFERRONI_M = 4
@@ -140,7 +140,7 @@ def simulate_strategy_returns(
     warmup_bars: int = WARMUP_BARS,
 ) -> pd.DataFrame:
     """
-    Simulates close-to-close returns following Amendment 2:
+    Simulates close-to-close returns following Amendment 2 & 3:
     - Weight decided at close of day t earns close-to-close return of day t+1:
       R_{gross, t+1} = w_t * (close_{t+1} / close_t - 1)
     - Rebalance cost per unit of one-way turnover:
@@ -150,13 +150,13 @@ def simulate_strategy_returns(
     - The first warmup_bars are strictly excluded from returned metrics.
     """
     n = len(close_series)
-    if n <= warmup_bars + 1:
-        raise ValueError(f"Series length {n} is insufficient for warmup {warmup_bars} + 1 return.")
+    if n <= warmup_bars:
+        raise ValueError(f"Series length {n} must exceed warmup_bars {warmup_bars}.")
 
-    # Underlying asset close-to-close return
+    # Underlying asset close-to-close return: close_t / close_{t-1} - 1
     asset_ret = close_series.pct_change()
 
-    # Strategy gross return earned at t: w_{t-1} * asset_ret_t
+    # Strategy gross return earned at day t: w_{t-1} * asset_ret_t
     gross_ret = weights.shift(1) * asset_ret
 
     # One-way turnover at close of day t: |w_t - w_{t-1}|
@@ -205,7 +205,7 @@ def compute_performance_metrics(
     """
     n_days = len(net_returns)
     if n_days == 0:
-        return {"cagr": 0.0, "ann_vol": 0.0, "sharpe": 0.0, "max_dd": 0.0}
+        return {"cagr": 0.0, "ann_vol": 0.0, "sharpe": 0.0, "max_dd": 0.0, "n_bars": 0}
 
     cum_prod = float((1.0 + net_returns).prod())
     cagr = (cum_prod ** (annualization / n_days)) - 1.0 if cum_prod > 0 else -1.0
@@ -315,7 +315,7 @@ def evaluate_overlay_pair(
     close_series: pd.Series,
     strategy_name: str,
     asset_name: str,
-    friction_tier: str = "primary_25bps",
+    friction_tier: str = "primary_50bps",
     seed: int = 42,
 ) -> Dict:
     """
