@@ -15,6 +15,7 @@ export interface HistoricalTrade {
   returnPct: number;
   exitReason: "TAKE_PROFIT" | "STOP_LOSS" | "BREAKEVEN_RATCHET" | "TIME_EXPIRY";
   symbol?: string;
+  rawSymbol?: string;
   entry_price?: number;
   exit_price?: number;
   probability?: number;
@@ -69,7 +70,8 @@ export async function GET(req: Request) {
               outcomeR: d.outcomeR ?? d.net_r,
               returnPct: d.returnPct ?? Number(((d.net_r ?? 0) * 3.0).toFixed(2)),
               exitReason: d.exitReason,
-              symbol: d.symbol,
+              symbol: toDisplaySymbol(d.symbol),
+              rawSymbol: toRawSymbol(d.symbol),
               entry_price: d.entry_price,
               exit_price: d.exit_price,
               probability: d.probability,
@@ -103,7 +105,10 @@ export async function GET(req: Request) {
         let filtered = raw;
 
         if (symbolParam && symbolParam !== "ALL") {
-          filtered = filtered.filter((t: any) => t.symbol === symbolParam);
+          filtered = filtered.filter((t: any) => 
+            symbolsMatch(t.symbol, symbolParam) || 
+            symbolsMatch(t.rawSymbol || "", symbolParam)
+          );
         }
         if (modelParam === "1h-commodities-rf" && symbolParam === "ALL") {
           filtered = filtered.filter((t: any) => t.modelId === "1h-commodities-rf" || ["GC=F", "SI=F", "CL=F"].includes(t.symbol));
@@ -129,7 +134,8 @@ export async function GET(req: Request) {
           outcomeR: d.outcomeR ?? d.net_r,
           returnPct: d.returnPct ?? Number(((d.net_r ?? 0) * 3.0).toFixed(2)),
           exitReason: d.exitReason,
-          symbol: d.symbol,
+          symbol: toDisplaySymbol(d.symbol),
+          rawSymbol: toRawSymbol(d.symbol),
           entry_price: d.entry_price,
           exit_price: d.exit_price,
           probability: d.probability,

@@ -1,4 +1,4 @@
-import { toDisplaySymbol } from "@/lib/symbolMapper";
+import { toDisplaySymbol, symbolsMatch } from "@/lib/symbolMapper";
 import fs from "fs";
 import path from "path";
 import { NextResponse } from "next/server";
@@ -52,7 +52,7 @@ function map4HSwingToTradeOrder(t: PaperTrade4HSwingRecord | any, feePercent: nu
     gross_r,
     cost_r,
     net_r,
-    direction: t.side,
+    direction: (t.side || t.direction || "LONG") as any,
     orderType: feePercent <= 0.020 ? "MAKER" : "TAKER",
     modelId: "4h-swing-meta-017",
     modelName: "4H Swing Meta (+0.17R)",
@@ -103,7 +103,7 @@ function map1HCommodityToTradeOrder(t: PaperTrade1HCommodityRecord | any, feePer
   const exitFeeINR = Number((totalFeeINR / 2).toFixed(4));
   const slippageINR = Number((posSize * 0.0002).toFixed(4));
 
-  const rawSym = t.symbol;
+  const rawSym = t.symbol || t.coin;
   const displaySym = toDisplaySymbol(rawSym);
 
   return {
@@ -113,7 +113,7 @@ function map1HCommodityToTradeOrder(t: PaperTrade1HCommodityRecord | any, feePer
     gross_r,
     cost_r,
     net_r,
-    direction: t.side,
+    direction: (t.side || t.direction || "LONG") as any,
     orderType: feePercent <= 0.020 ? "MAKER" : "TAKER",
     modelId: "1h-commodities-rf",
     modelName: "1H Macro Commodities (+0.151R)",
@@ -283,9 +283,18 @@ export async function GET(req: Request) {
         trades = [...swingTrades, ...commTrades];
       }
 
+      const assetParam = searchParams.get("asset") || searchParams.get("symbol");
+      if (assetParam && assetParam !== "ALL") {
+        trades = trades.filter((t) => 
+          symbolsMatch(t.symbol, assetParam) || 
+          symbolsMatch(t.rawSymbol || "", assetParam)
+        );
+      }
+
       // Sort by openedAt descending
       trades.sort((a, b) => (b.openedAt || 0) - (a.openedAt || 0));
 
+      // Apply limit only after asset filtering
       if (limit > 0) {
         trades = trades.slice(0, limit);
       }

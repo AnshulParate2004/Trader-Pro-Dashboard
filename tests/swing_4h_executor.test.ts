@@ -363,9 +363,9 @@ describe("4H Swing Meta-Labeling Engine Unit Tests", () => {
       // Verify trade structure and multi-asset coverage (Crypto + Commodities)
       const symbols = new Set(data.trades.map((t: any) => t.symbol));
       assert.ok(symbols.has("BTCUSDT"));
-      assert.ok(symbols.has("GC=F"));
-      assert.ok(symbols.has("SI=F"));
-      assert.ok(symbols.has("CL=F"));
+      assert.ok(symbols.has("XAUUSDT") || symbols.has("GC=F"));
+      assert.ok(symbols.has("XAGUSDT") || symbols.has("SI=F"));
+      assert.ok(symbols.has("CLUSDT") || symbols.has("CL=F"));
 
       // Verify symbol filter (e.g. Gold)
       const reqGold = new Request("http://localhost:3000/api/history?symbol=GC=F&limit=200");
@@ -374,7 +374,7 @@ describe("4H Swing Meta-Labeling Engine Unit Tests", () => {
       assert.equal(dataGold.success, true);
       assert.equal(dataGold.symbol, "GC=F");
       assert.ok(dataGold.totalHistoricalTrades > 0);
-      assert.ok(dataGold.trades.every((t: any) => t.symbol === "GC=F"));
+      assert.ok(dataGold.trades.every((t: any) => t.symbol === "XAUUSDT" || t.symbol === "GC=F" || t.rawSymbol === "GC=F"));
     });
 
     test("GET /api/trades defaults to 4H Swing Meta model", async () => {

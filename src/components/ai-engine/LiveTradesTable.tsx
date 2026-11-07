@@ -96,6 +96,31 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
 
   const totalLogPages = Math.max(1, Math.ceil(filteredLogs.length / logLimit));
   const paginatedLogs = filteredLogs.slice((logPage - 1) * logLimit, logPage * logLimit);
+  // Prediction Feed View Mode: "snapshot" (7 latest assets) vs "feed" (all chronological bars)
+  const [feedViewMode, setFeedViewMode] = React.useState<"snapshot" | "feed">("snapshot");
+
+  const snapshotLogs = React.useMemo(() => {
+    const symbolOrder = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "DOTUSDT", "XAUUSDT", "XAGUSDT", "CLUSDT"];
+    const latestBySymbol = new Map<string, any>();
+    for (const log of (livePredictionLogs || [])) {
+      const disp = toDisplaySymbol(log.symbol || "");
+      latestBySymbol.set(disp, log);
+    }
+    const result: any[] = [];
+    for (const sym of symbolOrder) {
+      if (latestBySymbol.has(sym)) {
+        result.push(latestBySymbol.get(sym));
+      }
+    }
+    latestBySymbol.forEach((log, sym) => {
+      if (!symbolOrder.includes(sym)) {
+        result.push(log);
+      }
+    });
+    return result;
+  }, [livePredictionLogs]);
+
+  const displayedLogs = feedViewMode === "snapshot" ? snapshotLogs : paginatedLogs;
   // Compute running balance curve starting from ₹7,000 portfolio baseline
   const BASE_CAPITAL = 7000.00;
   const balanceMap = React.useMemo(() => {
@@ -504,14 +529,38 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
               <div className="flex items-center gap-2.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_#3b82f6]" />
                 <div>
-                  <div className="font-mono text-xs font-black text-chrome-ink flex items-center gap-2">
+                  <div className="font-mono text-xs font-black text-chrome-ink flex flex-wrap items-center gap-2">
                     <span>LIVE PREDICTION &amp; REGIME EVALUATION FEED</span>
                     <span className="text-[10px] font-bold bg-blue-100 text-blue-900 border border-blue-300 px-2 py-0.5 rounded-full">
                       UNSEEN WINDOW: OCT 21 – NOV 7, 2026
                     </span>
+                    <div className="flex bg-chrome-line/50 p-0.5 rounded font-mono text-[11px]">
+                      <button
+                        onClick={() => setFeedViewMode("snapshot")}
+                        className={`px-2.5 py-0.5 rounded font-bold transition-all cursor-pointer ${
+                          feedViewMode === "snapshot"
+                            ? "bg-white text-chrome-ink shadow-2xs"
+                            : "text-chrome-dim hover:text-chrome-ink"
+                        }`}
+                      >
+                        ⚡ Latest Snapshot (7 Assets)
+                      </button>
+                      <button
+                        onClick={() => setFeedViewMode("feed")}
+                        className={`px-2.5 py-0.5 rounded font-bold transition-all cursor-pointer ${
+                          feedViewMode === "feed"
+                            ? "bg-white text-chrome-ink shadow-2xs"
+                            : "text-chrome-dim hover:text-chrome-ink"
+                        }`}
+                      >
+                        📜 Hourly Audit Ledger ({filteredLogs.length})
+                      </button>
+                    </div>
                   </div>
                   <div className="text-[11px] text-chrome-dim font-sans mt-0.5">
-                    Sequential bar-by-bar audit ({filteredLogs.length.toLocaleString()} bars analyzed · Zero lookahead · Strict t-1 lag)
+                    {feedViewMode === "snapshot"
+                      ? "Displaying the latest synchronized hourly bar across all 7 assets with live prices and 200 SMA regime"
+                      : `Sequential bar-by-bar audit (${filteredLogs.length.toLocaleString()} bars analyzed · Zero lookahead · Strict t-1 lag)`}
                   </div>
                 </div>
               </div>
@@ -589,8 +638,8 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-chrome-edge bg-white">
-                  {paginatedLogs.length > 0 ? (
-                    paginatedLogs.map((log: any) => {
+                  {displayedLogs.length > 0 ? (
+                    displayedLogs.map((log: any) => {
                       const isExecuted = log.decision === "EXECUTED_TRADE";
                       const isBearish = log.decision === "CASH_PROTECTED_BEARISH";
                       const isAboveSma = log.price >= log.sma_200;
@@ -744,7 +793,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                       <td className="py-2.5 px-3 text-chrome-dim text-[11px] whitespace-nowrap">
                         {t.exitTime}
                       </td>
-                      <td className="py-2.5 px-3 font-bold text-chrome-ink">{t.symbol || "BTCUSDT"}</td>
+                      <td className="py-2.5 px-3 font-bold text-chrome-ink">{toDisplaySymbol(t.symbol || "BTCUSDT")}</td>
                       <td className="py-2.5 px-3">
                         <span
                           className={`px-2 py-0.5 rounded font-bold text-[10px] ${

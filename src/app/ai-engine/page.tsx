@@ -84,6 +84,7 @@ export default function AiEnginePage() {
   const activeFeeRef = useRef<number>(config.tradingFeePercent || 0.040);
   const selectedModelIdRef = useRef<string>(selectedModelId);
   const liveLimitRef = useRef<number>(liveLimit);
+  const selectedAssetRef = useRef<string>(selectedAsset);
 
   useEffect(() => {
     activeFeeRef.current = config.tradingFeePercent || 0.040;
@@ -96,6 +97,10 @@ export default function AiEnginePage() {
   useEffect(() => {
     liveLimitRef.current = liveLimit;
   }, [liveLimit]);
+
+  useEffect(() => {
+    selectedAssetRef.current = selectedAsset;
+  }, [selectedAsset]);
 
   const fetchHistoricalTrades = async (
     modelIdToFetch?: string,
@@ -159,9 +164,11 @@ export default function AiEnginePage() {
 
   const handleAssetChange = (newAsset: string) => {
     setSelectedAsset(newAsset);
+    selectedAssetRef.current = newAsset;
     setHistSymbolFilter(newAsset);
     setLiveSymbolFilter(newAsset);
     setHistPage(1);
+    fetchData(selectedModelId, activeFeeRef.current, liveLimitRef.current, newAsset);
     fetchHistoricalTrades(selectedModelId, 1, histLimit, histSideFilter, histOutcomeFilter, newAsset);
   };
 
@@ -179,12 +186,22 @@ export default function AiEnginePage() {
   });
 
   // Fetch engine data and trade logs for selected model
-  const fetchData = async (modelIdToFetch?: string, feeOverride?: number, limitOverride?: number) => {
+  const fetchData = async (
+    modelIdToFetch?: string,
+    feeOverride?: number,
+    limitOverride?: number,
+    assetOverride?: string
+  ) => {
     try {
       const activeM = modelIdToFetch !== undefined ? modelIdToFetch : selectedModelIdRef.current;
       const activeFee = feeOverride !== undefined ? feeOverride : activeFeeRef.current;
       const activeLimit = limitOverride !== undefined ? limitOverride : liveLimitRef.current;
-      const res = await fetch(`/api/trades?modelId=${encodeURIComponent(activeM)}&fee=${activeFee}&limit=${activeLimit}`);
+      const activeAsset = assetOverride !== undefined ? assetOverride : selectedAssetRef.current;
+      let url = `/api/trades?modelId=${encodeURIComponent(activeM)}&fee=${activeFee}&limit=${activeLimit}`;
+      if (activeAsset && activeAsset !== "ALL") {
+        url += `&asset=${encodeURIComponent(activeAsset)}`;
+      }
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch engine data");
       const data = await res.json();
       if (data.success) {
@@ -206,13 +223,13 @@ export default function AiEnginePage() {
 
 
   useEffect(() => {
-    fetchData(selectedModelId, config.tradingFeePercent);
+    fetchData(selectedModelId, config.tradingFeePercent, liveLimit, selectedAsset);
     fetchHistoricalTrades(selectedModelId);
-        const interval = setInterval(() => {
-      fetchData(selectedModelIdRef.current, activeFeeRef.current, liveLimitRef.current);
-          }, 4000);
+    const interval = setInterval(() => {
+      fetchData(selectedModelIdRef.current, activeFeeRef.current, liveLimitRef.current, selectedAssetRef.current);
+    }, 4000);
     return () => clearInterval(interval);
-  }, [selectedModelId, config.tradingFeePercent]);
+  }, [selectedModelId, config.tradingFeePercent, selectedAsset]);
 
   // Autonomous Background AI Market Evaluation Loop
   useEffect(() => {
