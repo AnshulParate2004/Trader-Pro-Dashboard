@@ -225,3 +225,34 @@ A strategy counts as having a statistically valid, useful quantitative edge if a
      SHA256: 9CF157E6B2DF7C5F4B59F0CD768FECF8CE9478C7D92DA9C2DDB2726D0EE917BD
      ```
    - This script is sealed and frozen prior to any execution on real market data.
+
+
+---
+
+## 12. Amendment 4 (2026-11-07)
+
+1. **Bootstrap Resampling Protocol (Circular Block Bootstrap):**
+   - The bootstrap methodology is formally confirmed as a **Circular Block Bootstrap** with fixed block length $L = 20$ calendar days and $B = 1,000$ resamples (not geometric/stationary bootstrap). Blocks wrap around the ends of the paired return series to preserve exact sample length.
+
+2. **Verdict Classification Rules:**
+   - **Insufficient Drawdown Regime:** If baseline buy-and-hold maximum drawdown over the evaluation window is strictly under $20\%$ ($|\text{MaxDD}_{\text{B\&H}}| < 0.20$), the drawdown reduction condition is formally declared **"NOT_TESTABLE"** and the overall verdict is classified as **"INCONCLUSIVE"**.
+   - **Alpha Without Drawdown Benefit:** If the Bonferroni block bootstrap confidence interval of residual alpha strictly excludes zero ($\text{CI}_{\text{lower}} > 0$) but the strategy achieves equal or worse peak-to-trough drawdown than buy-and-hold ($\text{MaxDD}_{\text{strategy}} \le \text{MaxDD}_{\text{B\&H}}$), the verdict is formally classified as **"alpha without drawdown benefit"** (neither "Independent Residual Edge" nor "Risk Reduction").
+   - **Independent Residual Edge Confirmed:** Requires BOTH:
+     1. Lower peak-to-trough drawdown than buy-and-hold ($\text{MaxDD}_{\text{strategy}} > \text{MaxDD}_{\text{B\&H}}$ where $|\text{MaxDD}_{\text{B\&H}}| \ge 0.20$).
+     2. Bootstrap alpha $\text{CI}_{\text{lower}} > 0$.
+   - **Risk Reduction / Beta Scaling:** Lower drawdown than buy-and-hold, but alpha CI covers zero.
+   - **No Edge:** Equal/worse drawdown and alpha CI covers zero.
+
+3. **Stage X Reporting Protocol (Descriptive Only):**
+   - Stage X (exploratory historical run up to `2026-10-31`) output consists strictly of descriptive fields: returns, drawdowns, Sharpe ratios, turnover, beta, $R^2$, and point/HAC estimates.
+   - Stage X output files contain **no verdict field** (`verdict` key is omitted).
+
+4. **Symmetric Initial Entry Cost Accounting:**
+   - Initial entry cost is charged symmetrically at the first evaluated bar ($t = \text{warmup}$) for ALL strategies, including the buy-and-hold baseline:
+     $$\text{Cost}_{\text{entry}} = w_{\text{initial}} \times \frac{\text{friction}}{2}$$
+   - For buy-and-hold ($w = 1.0$) under primary 50 bps, this incurs exactly 25 bps ($0.0025$) at initial entry, eliminating any free-entry advantage for passive holding.
+
+5. **Evaluator Module Freezing & Architectural Modularization:**
+   - The data loading logic is separated into an independent module ([`analysis/load_round2_data.py`](file:///D:/Projects_Main/Trade-Pro/Trader-Pro-Dashboard/analysis/load_round2_data.py)).
+   - The evaluator module ([`analysis/evaluate_round2_residual_edge.py`](file:///D:/Projects_Main/Trade-Pro/Trader-Pro-Dashboard/analysis/evaluate_round2_residual_edge.py)) remains frozen and sealed except for incorporating these specific amendments.
+   - The new cryptographic SHA-256 of the committed evaluator script is recorded upon implementation.
