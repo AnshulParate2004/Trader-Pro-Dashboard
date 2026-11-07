@@ -70,7 +70,7 @@ def load_daily_series(
     df = pd.read_parquet(selected_path)
     
     # Standardize date and close columns
-    date_col = next((c for c in df.columns if c.lower() in ("date", "time", "timestamp", "opentime")), None)
+    date_col = next((c for c in df.columns if c.lower() in ("date", "time", "timestamp", "opentime", "open_time")), None)
     close_col = next((c for c in df.columns if c.lower() in ("close", "close_price")), None)
     
     if not date_col or not close_col:

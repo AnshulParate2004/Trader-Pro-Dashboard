@@ -44,6 +44,8 @@ def run_stage_x_evaluations(data_root: str = None) -> List[Dict]:
 
         # Explicit assertion before execution
         last_date = series.index.max().strftime("%Y-%m-%d")
+        first_date = series.index.min().strftime("%Y-%m-%d")
+        print(f"Asset: {symbol} | First Date: {first_date} | Last Date Used: {last_date} | Total Bars: {len(series)}")
         assert last_date <= STAGE_X_MAX_DATE, (
             f"FATAL: {symbol} data ends at {last_date}, exceeding Stage X boundary {STAGE_X_MAX_DATE}!"
         )
@@ -58,6 +60,7 @@ def run_stage_x_evaluations(data_root: str = None) -> List[Dict]:
                     is_stage_x=True,  # Guarantees no verdict field
                 )
                 assert "verdict" not in res, "Stage X results must NEVER contain a verdict field!"
+                assert "drawdown_condition" not in res, "Stage X results must NEVER contain drawdown_condition!"
                 results.append(res)
 
     return results
@@ -109,12 +112,41 @@ def save_stage_x_reports(results: List[Dict], output_dir: str = "analysis/result
     with open(md_file, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
 
-    print(f"Stage X descriptive reports successfully saved to {out_path}.")
+    json_path_resolved = json_file.resolve()
+    md_path_resolved = md_file.resolve()
+    print(f"JSON Report written to: {json_path_resolved}")
+    print(f"Markdown Report written to: {md_path_resolved}")
 
 
 def main():
-    print("Stage X execution script configured.")
-    print("Execution is sealed until explicitly authorized.")
+    data_root = os.environ.get("DATA_ROOT")
+    print("================================================================================")
+    print("STAGE X: ROUND 2 MACRO OVERLAYS HISTORICAL EXPLORATORY EVALUATION")
+    print(f"Execution Timestamp: {pd.Timestamp.now(tz='UTC').isoformat()}")
+    print(f"Configured DATA_ROOT: {data_root or 'Default'}")
+    print(f"Stage X Boundary Date: {STAGE_X_MAX_DATE}")
+    print("================================================================================\n")
+
+    results = run_stage_x_evaluations(data_root=data_root)
+    save_stage_x_reports(results, output_dir="analysis/results")
+
+    print("\n--- Verification: Checking Absence of 'verdict' Key ---")
+    has_verdict = any("verdict" in r for r in results)
+    print(f"Contains 'verdict' key in any evaluation: {has_verdict}")
+    if has_verdict:
+        raise ValueError("FATAL: 'verdict' key found in Stage X results!")
+    print("CONFIRMED: Zero 'verdict' keys present across all evaluations.\n")
+
+    print("--- Detailed Evaluation Summary ---")
+    for r in results:
+        ci_str = f"[{r['alpha_ann_ci_9875_lower']*100:.2f}%, {r['alpha_ann_ci_9875_upper']*100:.2f}%]"
+        print(
+            f"Asset: {r['asset']:<8} | Strat: {r['strategy']:<16} | Tier: {r['friction_tier']:<20} | "
+            f"Net CAGR: {r['strategy_cagr']*100:>6.2f}% | MaxDD: {r['strategy_max_dd']*100:>6.2f}% | "
+            f"Sharpe: {r['strategy_sharpe']:>5.2f} | Alpha: {r['alpha_ann_point']*100:>6.2f}% | "
+            f"Alpha 98.75% CI: {ci_str}"
+        )
+    print("================================================================================")
 
 
 if __name__ == "__main__":
