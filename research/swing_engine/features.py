@@ -107,6 +107,53 @@ def compute_volume_zscore(
     return zscore.fillna(0.0)
 
 
+
+def compute_elastic_stretch_ratio(
+    close: pd.Series,
+    ema_20: pd.Series,
+    atr_14: pd.Series,
+) -> pd.Series:
+    """
+    1. Rubber Band / Elastic Stretch Ratio (feat_elastic_stretch_ratio):
+    ElasticStretch = |P_t - EMA_20(P)| / ATR_14(P)
+    Rejects breakout entries when price has over-extended beyond mean reversion limits (> 2.5 x ATR).
+    Strictly lagged t-1.
+    """
+    stretch = (close - ema_20).abs() / (atr_14 + 1e-8)
+    return stretch.fillna(0.0)
+
+
+def compute_fib_golden_zone_depth(
+    close: pd.Series,
+    swing_high: pd.Series,
+    swing_low: pd.Series,
+) -> pd.Series:
+    """
+    2. Fibonacci Dynamic Confluence Depth (feat_fib_golden_zone_depth):
+    FibDepth = (P_t - Low_swing) / (High_swing - Low_swing)
+    Quantifies pullback proximity to the 0.500-0.618 golden zone before entry expansion.
+    Strictly lagged t-1.
+    """
+    diff = (swing_high - swing_low).replace(0, np.nan)
+    depth = (close - swing_low) / (diff + 1e-8)
+    return depth.fillna(0.5).clip(0.0, 1.0)
+
+
+def compute_donchian_breakout_velocity(
+    close: pd.Series,
+    donchian_upper_20: pd.Series,
+    atr_14: pd.Series,
+) -> pd.Series:
+    """
+    3. Donchian Breakout Velocity (feat_donchian_breakout_velocity):
+    BreakoutVelocity = (P_t - DonchianUpper_20) / ATR_14(P)
+    Separates explosive structural momentum from weak boundary-touch false breakouts.
+    Strictly lagged t-1.
+    """
+    velocity = (close - donchian_upper_20) / (atr_14 + 1e-8)
+    return velocity.fillna(0.0)
+
+
 def build_swing_features(
     df_asset: pd.DataFrame,
     df_btc: Optional[pd.DataFrame] = None,
