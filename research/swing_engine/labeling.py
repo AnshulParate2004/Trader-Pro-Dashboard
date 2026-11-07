@@ -56,6 +56,7 @@ def evaluate_single_trade_barriers(
     lower_barrier_r: float = LOWER_BARRIER_R,
     time_barrier_bars: int = TIME_BARRIER_BARS,
     round_trip_friction_pct: float = ROUND_TRIP_FRICTION_PCT,
+    enable_be_ratchet: bool = False,
 ) -> Dict[str, Union[float, int, str]]:
     """
     Simulates a single trade against upper, lower, and time barriers.
@@ -98,11 +99,11 @@ def evaluate_single_trade_barriers(
         if direction == 1:
             hit_target = bar_high >= target_price
             hit_stop = bar_low <= stop_price
-            hit_be_trigger = bar_high >= be_trigger_price
+            hit_be_trigger = bar_high >= be_trigger_price if enable_be_ratchet else False
         else:
             hit_target = bar_low <= target_price
             hit_stop = bar_high >= stop_price
-            hit_be_trigger = bar_low <= be_trigger_price
+            hit_be_trigger = bar_low <= be_trigger_price if enable_be_ratchet else False
 
         # Simultaneous Touch Invariant: Stop takes precedence over Target
         if hit_stop and hit_target:
@@ -131,8 +132,8 @@ def evaluate_single_trade_barriers(
             gross_r = upper_barrier_r
             break
 
-        # Check BE ratchet arming
-        if hit_be_trigger and not be_activated:
+        # Check BE ratchet arming if enabled
+        if enable_be_ratchet and hit_be_trigger and not be_activated:
             be_activated = True
             stop_price = entry_price  # Move SL to breakeven
 

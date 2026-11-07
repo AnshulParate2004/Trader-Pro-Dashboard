@@ -92,6 +92,7 @@ def test_triple_barrier_target_hit():
         lower_barrier_r=1.0,
         time_barrier_bars=12,
         round_trip_friction_pct=0.0010,
+        enable_be_ratchet=True,
     )
 
     assert res["exit_type"] == "TARGET"
@@ -133,6 +134,7 @@ def test_triple_barrier_breakeven_must_be_labeled_zero():
         lower_barrier_r=1.0,
         time_barrier_bars=12,
         round_trip_friction_pct=0.0010,
+        enable_be_ratchet=True,
     )
 
     assert res["exit_type"] == "BE_STOP"
@@ -172,6 +174,7 @@ def test_triple_barrier_simultaneous_touch_collision():
         lower_barrier_r=1.0,
         time_barrier_bars=12,
         round_trip_friction_pct=0.0010,
+        enable_be_ratchet=True,
     )
 
     assert res["exit_type"] == "STOP"
@@ -229,3 +232,89 @@ def test_relative_strength_calculation():
     # After bar 7, RS must be strictly positive
     valid_rs = rs.dropna()
     assert (valid_rs.iloc[10:] > 0).all()
+
+
+def test_candidate_signals_zero_lookahead():
+    """
+    CRITICAL: Verifies Step 2 & 5.
+    Breakout trigger uses strictly bar t-1 high and past bars;
+    modifying future prices (bars > t) must NOT alter candidate signals at or before t.
+    """
+    from research.swing_engine.signals import generate_candidate_signals
+
+    n = 250
+    dates = pd.date_range("2026-01-01", periods=n, freq="4h", tz="UTC")
+    # Create an upward price series with multiple breakout opportunities
+    np.random.seed(42)
+    closes = 100.0 + np.cumsum(np.random.normal(0.5, 1.0, n))
+    highs = closes + 1.0
+    lows = closes - 1.0
+    opens = closes - 0.2
+
+    df1 = pd.DataFrame(
+        {
+            "open_time": dates,
+            "open": opens,
+            "high": highs,
+            "low": lows,
+            "close": closes,
+            "volume": [1000.0] * n,
+        }
+    )
+
+    sigs1 = generate_candidate_signals(df1, symbol="TEST", donchian_period=20, sma_period=50)
+    assert not sigs1.empty, "Should generate candidate signals"
+
+    # Select a signal around the middle of the dataset
+    mid_signal = sigs1.iloc[len(sigs1) // 2]
+    mid_idx = int(mid_signal["entry_idx"])
+
+    # Mutate all future data past mid_idx
+    df2 = df1.copy()
+    df2.loc[mid_idx + 1 :, "close"] = 99999.0
+    df2.loc[mid_idx + 1 :, "high"] = 100000.0
+    df2.loc[mid_idx + 1 :, "low"] = 99998.0
+
+    sigs2 = generate_candidate_signals(df2, symbol="TEST", donchian_period=20, sma_period=50)
+
+    # Signals up to mid_idx must be 100% identical between df1 and df2
+    sigs1_sub = sigs1[sigs1["entry_idx"] <= mid_idx].reset_index(drop=True)
+    sigs2_sub = sigs2[sigs2["entry_idx"] <= mid_idx].reset_index(drop=True)
+
+    pd.testing.assert_frame_equal(sigs1_sub, sigs2_sub)
+
+
+def test_purging_logic_no_overlapping_labels():
+    """
+    CRITICAL: Verifies Step 3 & 5.
+    Purging removes all training trades whose 12-bar holding horizon touches or extends into test set.
+    """
+    from research.swing_engine.train import purge_training_set
+
+    # Create dummy training trades near the boundary
+    test_start = pd.to_datetime("2024-01-01 00:00:00", utc=True)
+
+    # 12 bars on 4H is 48 hours. Any trade opened at or after 2023-12-30 00:00:00 UTC touches test_start.
+    times = [
+        pd.to_datetime("2023-12-28 12:00:00", utc=True),  # Safe (exits before 2023-12-30 12:00:00)
+        pd.to_datetime("2023-12-29 16:00:00", utc=True),  # Safe (exits 2023-12-31 16:00:00 < 2024-01-01)
+        pd.to_datetime("2023-12-30 04:00:00", utc=True),  # OVERLAPPING (exits 2024-01-01 04:00:00 >= test_start)
+        pd.to_datetime("2023-12-31 20:00:00", utc=True),  # OVERLAPPING
+    ]
+
+    df_train = pd.DataFrame(
+        {
+            "open_time": times,
+            "entry_price": [100.0, 101.0, 102.0, 103.0],
+            "label_y": [1, 0, 1, 0],
+        }
+    )
+
+    purged = purge_training_set(df_train, test_start_time=test_start, embargo_bars=12, bar_interval_hours=4)
+
+    # Max open_time in purged set + 48 hours must be strictly < test_start
+    max_train_time = purged["open_time"].max()
+    max_exit_time = max_train_time + pd.Timedelta(hours=48)
+    assert max_exit_time <= test_start, f"Purging leak: Max exit time {max_exit_time} exceeds test start {test_start}"
+    assert len(purged) == 2, f"Expected 2 purged trades, got {len(purged)}"
+

@@ -10,9 +10,17 @@ from pathlib import Path
 from typing import List, Optional
 
 
+# Base repository directory
+_PACKAGE_DIR = Path(__file__).resolve().parent
+_REPO_DIR = _PACKAGE_DIR.parent.parent
+_WORKSPACE_DIR = _REPO_DIR.parent
+
 # Search candidates for data root in priority order
 CANDIDATE_DATA_PATHS = [
     Path("data"),
+    _REPO_DIR / "data",
+    _REPO_DIR / "notebooks" / "data",
+    _WORKSPACE_DIR / "Trader-Pro" / "notebooks" / "data",
     Path("../data"),
     Path("notebooks/data"),
     Path("../notebooks/data"),
