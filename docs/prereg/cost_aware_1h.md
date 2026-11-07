@@ -139,3 +139,16 @@ To declare statistical edge, the strategy must satisfy **ALL** of the following:
 
 3. **Sub-Hour Exit Testing Window (5m Candle Resolution):**
    Active trades must be tested for exits strictly against price data occurring after `entry_run_time`. In live paper trading, the executor evaluates sub-hour 5-minute candles (`5m` klines) whose timestamps satisfy `candle.openTime >= trade.entry_time` (or intraday tick extremes after entry), preventing past intraday price extremes from falsely triggering exits on trades entered mid-hour.
+
+
+---
+
+## 6. Amendment 2 (2026-11-07)
+
+1. **Re-Evaluation Bug (Past Candle Ratchet Contamination):**
+   - *Problem:* In prior versions, active trades re-evaluated the entire recent 5m candle buffer on every cron execution (`candle.openTime >= entryTimestamp`). When a trade achieved the breakeven ratchet trigger in candle $k$, updating its stop loss to entry price (`stop_loss = intended_price`), subsequent cron runs re-evaluated earlier candles $1 \dots k-1$. If an earlier candle dipped below entry price (which is common and valid prior to reaching BE), this past historical dip falsely triggered a breakeven exit ($0.0\text{R}$) on the subsequent run.
+   - *Fix:* The trade document must persist `last_evaluated_candle_time` (Unix millisecond timestamp of the latest evaluated candle). Each execution run strictly filters and evaluates only candles satisfying $\text{candle.openTime} > \text{last\_evaluated\_candle\_time}$. Upon evaluating each candle, `last_evaluated_candle_time` is updated.
+
+2. **Silent Fallback Bug (Unverified 1H Fallback on Missing 5M Data):**
+   - *Problem:* When 5m Binance klines could not be fetched, the executor silently fell back to evaluating the entire 1H `liveCandle`, whose open time pre-dated mid-hour entries and could falsely trigger stops.
+   - *Fix:* If the 5m candle fetch fails, the executor must NOT evaluate or close the active trade against coarse 1H candles. It must preserve trade state, abort the active trade evaluation loop for that run, and log a `NO_5M_DATA` action.
