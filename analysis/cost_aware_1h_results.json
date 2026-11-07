@@ -217,5 +217,5 @@
     "p50": 0.0,
     "p95": 0.0
   },
-  "real_percentile_vs_noise_null": 100.0
+  "real_percentile_vs_noise_null": "not testable (n=0)"
 }

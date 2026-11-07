@@ -184,14 +184,16 @@ export function calculate14ATR(closedCandles: Candle[]): number {
 export async function runPaper1HCostExecutor(options?: {
   enableMakerLimit?: boolean;
   frictionPct?: number;
+  dryRun?: boolean;
 }): Promise<{
   status: string;
   actions: string[];
   lastProcessedOpenTime?: number;
 }> {
   const actions: string[] = [];
-  const db = await getDb();
-  if (!db) {
+  const isDryRun = options?.dryRun === true;
+  const db = isDryRun ? null : await getDb();
+  if (!db && !isDryRun) {
     return { status: "DB_UNAVAILABLE", actions: ["MongoDB not connected"] };
   }
 
@@ -226,7 +228,7 @@ export async function runPaper1HCostExecutor(options?: {
 
   // 2. Manage pending Mode B limit orders if enabled
   if (useMaker) {
-    const pendingOrders = await db.collection("paper_1h_cost_pending").find({ status: "PENDING_MAKER" }).toArray();
+    const pendingOrders = (!isDryRun && db) ? await db.collection("paper_1h_cost_pending").find({ status: "PENDING_MAKER" }).toArray() : [];
     for (const p of pendingOrders) {
       const barsElapsed = Math.floor((lastClosed.openTime - p.placed_bar_time) / (3600 * 1000));
       const filled = checkMakerLimitFill(p.limit_price, p.side, lastClosed);
@@ -256,8 +258,10 @@ export async function runPaper1HCostExecutor(options?: {
           take_profit: p.take_profit,
           be_trigger: p.be_trigger,
         };
-        await db.collection("paper_1h_cost_active").insertOne(activeTrade);
-        await db.collection("paper_1h_cost_pending").deleteOne({ id: p.id });
+        if (!isDryRun && db) {
+          await db.collection("paper_1h_cost_active").insertOne(activeTrade);
+          await db.collection("paper_1h_cost_pending").deleteOne({ id: p.id });
+        }
         actions.push(`[MODE B MAKER FILLED] ${p.id} filled @ $${fillPrice.toFixed(2)} | Slip: ${slippageBps} bps`);
       } else if (barsElapsed >= MAKER_LIMIT_EXPIRY_BARS) {
         // Expired without fill -> log missed trade
@@ -273,15 +277,17 @@ export async function runPaper1HCostExecutor(options?: {
           probability: p.probability,
           logged_at: new Date().toISOString(),
         };
-        await db.collection("paper_1h_cost_missed").insertOne(missedRecord);
-        await db.collection("paper_1h_cost_pending").deleteOne({ id: p.id });
+        if (!isDryRun && db) {
+          await db.collection("paper_1h_cost_missed").insertOne(missedRecord);
+          await db.collection("paper_1h_cost_pending").deleteOne({ id: p.id });
+        }
         actions.push(`[MODE B MISSED] ${p.id} cancelled after ${barsElapsed} bars unfilled @ $${p.limit_price.toFixed(2)}`);
       }
     }
   }
 
   // 3. Manage active paper trades (Strict Fills: SL evaluated before TP)
-  const activeTrades = await db.collection("paper_1h_cost_active").find({ status: "ACTIVE" }).toArray();
+  const activeTrades = (!isDryRun && db) ? await db.collection("paper_1h_cost_active").find({ status: "ACTIVE" }).toArray() : [];
   for (const t of activeTrades) {
     let closed = false;
     let exitType: "TP" | "BE" | "SL" = "SL";
@@ -294,10 +300,12 @@ export async function runPaper1HCostExecutor(options?: {
 
     // Check ratchet activation
     if (!t.be_activated && hitBE) {
-      await db.collection("paper_1h_cost_active").updateOne(
-        { id: t.id },
-        { $set: { be_activated: true, stop_loss: t.intended_price } }
-      );
+      if (!isDryRun && db) {
+        await db.collection("paper_1h_cost_active").updateOne(
+          { id: t.id },
+          { $set: { be_activated: true, stop_loss: t.intended_price } }
+        );
+      }
       t.be_activated = true;
       t.stop_loss = t.intended_price;
       actions.push(`[COST-1H BTC] ${t.id} triggered BE ratchet @ $${t.intended_price.toFixed(2)}`);
@@ -344,14 +352,16 @@ export async function runPaper1HCostExecutor(options?: {
         be_trigger: t.be_trigger,
       };
 
-      await db.collection("paper_1h_cost").insertOne(closedRecord);
-      await db.collection("paper_1h_cost_active").deleteOne({ id: t.id });
+      if (!isDryRun && db) {
+        await db.collection("paper_1h_cost").insertOne(closedRecord);
+        await db.collection("paper_1h_cost_active").deleteOne({ id: t.id });
+      }
       actions.push(`[COST-1H BTC CLOSED] ${t.id} ${exitType} @ $${exitPrice.toFixed(2)} | Net R: ${netR >= 0 ? "+" : ""}${netR}R`);
     }
   }
 
   // 4. Idempotency Check
-  const alreadyProcessed = await db.collection("paper_1h_cost_runs").findOne({ openTime: lastClosed.openTime });
+  const alreadyProcessed = (!isDryRun && db) ? await db.collection("paper_1h_cost_runs").findOne({ openTime: lastClosed.openTime }) : null;
   if (alreadyProcessed) {
     return {
       status: "IDEMPOTENT_ALREADY_PROCESSED",
@@ -402,12 +412,14 @@ export async function runPaper1HCostExecutor(options?: {
         probability: signalProb,
         logged_at: new Date().toISOString(),
       };
-      await db.collection("paper_1h_cost_skipped").insertOne(skippedRecord);
+      if (!isDryRun && db) {
+        await db.collection("paper_1h_cost_skipped").insertOne(skippedRecord);
+      }
       actions.push(`[COST-1H BTC SKIPPED] Signal ${side} skipped: cost_R (${gateResult.cost_R.toFixed(4)}) > ${MAX_COST_R_THRESHOLD}`);
     } else {
       // Check concurrent active positions
-      const existingActive = await db.collection("paper_1h_cost_active").countDocuments();
-      const existingPending = await db.collection("paper_1h_cost_pending").countDocuments();
+      const existingActive = (!isDryRun && db) ? await db.collection("paper_1h_cost_active").countDocuments() : 0;
+      const existingPending = (!isDryRun && db) ? await db.collection("paper_1h_cost_pending").countDocuments() : 0;
 
       if (existingActive === 0 && existingPending === 0) {
         const intendedPrice = lastClosed.close;
@@ -418,22 +430,24 @@ export async function runPaper1HCostExecutor(options?: {
 
         if (useMaker) {
           // Mode B: Post-only maker limit order placed at signal close
-          await db.collection("paper_1h_cost_pending").insertOne({
-            id: tradeId,
-            coin: "BTCUSDT",
-            side,
-            signal_time: new Date(lastClosed.openTime).toISOString(),
-            placed_bar_time: lastClosed.openTime,
-            intended_price: intendedPrice,
-            limit_price: intendedPrice,
-            stop_distance_pct: slDistPct,
-            cost_R: gateResult.cost_R,
-            probability: signalProb,
-            status: "PENDING_MAKER",
-            stop_loss: stopLoss,
-            take_profit: takeProfit,
-            be_trigger: beTrigger,
-          });
+          if (!isDryRun && db) {
+            await db.collection("paper_1h_cost_pending").insertOne({
+              id: tradeId,
+              coin: "BTCUSDT",
+              side,
+              signal_time: new Date(lastClosed.openTime).toISOString(),
+              placed_bar_time: lastClosed.openTime,
+              intended_price: intendedPrice,
+              limit_price: intendedPrice,
+              stop_distance_pct: slDistPct,
+              cost_R: gateResult.cost_R,
+              probability: signalProb,
+              status: "PENDING_MAKER",
+              stop_loss: stopLoss,
+              take_profit: takeProfit,
+              be_trigger: beTrigger,
+            });
+          }
           actions.push(`[MODE B LIMIT PLACED] ${side} limit @ $${intendedPrice.toFixed(2)} | Cost R: ${gateResult.cost_R.toFixed(4)}R`);
         } else {
           // Mode A: Taker market fill at next-bar open (live candle open)
@@ -462,7 +476,9 @@ export async function runPaper1HCostExecutor(options?: {
             R_net: 0,
           };
 
-          await db.collection("paper_1h_cost_active").insertOne(activeTrade);
+          if (!isDryRun && db) {
+            await db.collection("paper_1h_cost_active").insertOne(activeTrade);
+          }
           actions.push(`[COST-1H BTC ENTERED] Mode A ${side} @ $${fillPrice.toFixed(2)} (intended: $${intendedPrice.toFixed(2)}, slip: ${slippageBps} bps) | Cost R: ${gateResult.cost_R.toFixed(4)}R`);
         }
       }
@@ -470,12 +486,14 @@ export async function runPaper1HCostExecutor(options?: {
   }
 
   // Record idempotency run
-  await db.collection("paper_1h_cost_runs").insertOne({
-    openTime: lastClosed.openTime,
-    candleCloseTime: lastClosed.closeTime,
-    processedAt: now,
-    isoTime: new Date(lastClosed.openTime).toISOString(),
-  });
+  if (!isDryRun && db) {
+    await db.collection("paper_1h_cost_runs").insertOne({
+      openTime: lastClosed.openTime,
+      candleCloseTime: lastClosed.closeTime,
+      processedAt: now,
+      isoTime: new Date(lastClosed.openTime).toISOString(),
+    });
+  }
 
   return {
     status: "SUCCESS",
