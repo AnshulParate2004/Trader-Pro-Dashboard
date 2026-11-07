@@ -184,3 +184,42 @@ Historical backtests (`src/models/*/trades_main.csv`) artificially assumed a fix
 - **Gate $\text{cost\_R} \le 0.08$**: Mandates stop distance $\ge \frac{0.1144\%}{0.08} = \mathbf{1.4300\%}$.
 
 At 15M, only **`0.97%`** of historical signals meet the 0.08 threshold (**`99.03%` rejected**), and even the surviving ~1% of signals produced negative strict net returns ($-0.236\text{R}$, 95% CI upper bound $-0.020\text{R}$). Fast scalping is mathematically unviable under realistic exchange fees.
+
+
+---
+
+## 6. High-Frequency Foundation Model Benchmark (Chronos vs HAR-RV vs GARCH vs EWMA)
+
+A comprehensive benchmark was conducted on 2,496 daily BTC bars across 2,730 total origins (2,190 Dev, 540 Holdout) using Garman-Klass daily realized volatility as the target:
+1. **Directional Accuracy:** Zero directional alpha across all models (Chronos-Base 50.6% Dev / 51.2% Holdout; Chronos-Small 49.7% Dev / 50.4% Holdout; Linear Regression 50.2% Dev). `Baseline_ZeroReturn` beat all models on Return MAE.
+2. **Fixed HAR-RV (Expanding Window $\ge 500$ days):** Fixed the 128-bar rolling window bug (which previously caused QLIKE to blow up to 816). Expanding window HAR-RV achieved QLIKE $0.5792$ in Dev (beating EWMA $0.5841$, $p=0.0435$), but failed in Holdout (QLIKE $0.6012$ vs EWMA $0.5984$, $p=0.1479$, CI includes 0).
+3. **Foundation Models vs EWMA(0.94):** Chronos-Base (QLIKE $0.6953$ Dev, $0.7108$ Holdout) and Chronos-Small (QLIKE $0.7205$ Dev, $0.7421$ Holdout) failed to beat EWMA(0.94) in either window ($p > 0.97$).
+4. **Primary Decision Rule:** No model beat EWMA(0.94) with $p < 0.05$ and a CI excluding zero in both Dev and Holdout.
+5. **Decision:** **Use EWMA(0.94)**. Foundation models add massive compute and latency overhead with negative excess predictive value.
+
+---
+
+## 7. 15M Scalping Engine Final Falsification (Frozen Settings, Strict-Fill Simulator)
+
+The frozen 15M engine (`BTCUSDT_15m`, `final_model_BTCUSDT_15m.joblib`, $2.0\text{ ATR}$ TP, $1.0\text{ ATR}$ SL, 24-bar horizon) was re-tested under realistic exchange execution invariants:
+- **Execution:** Next-bar open entry ($P_{\text{entry}} = O_{t+1}$).
+- **Priority:** Intra-bar worst-case priority (stop-loss checked **before** target within the same bar).
+- **Cost Tier:** 50 bps round-trip friction ($0.50\%$). Live stop distance: $\text{stop\_pct} = 1.0\text{ ATR} / P_{\text{entry}}$. Cost in R: $\text{cost\_R} = 0.0050 / \text{stop\_pct}$.
+- **Partitioning:** Only trades entered after `2026-10-31 23:59:59 UTC` count as out-of-sample (OOS). Everything earlier is exploratory.
+
+### Results Table
+
+| Metric | Noise-Null Control (50 Random Walks) | Pure ML Exploratory ($\le \text{2026-10-31}$) | Pure ML OOS ($> \text{2026-10-31}$) | Meta-Labeling Exploratory | Meta-Labeling OOS ($> \text{2026-10-31}$) |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Trades ($N$)** | 3,600 / sim | 2,105 trades | 6 trades | 12,653 trades | 37 trades |
+| **Gross R / trade** | $+0.0509\text{R}$ | $+0.1664\text{R}$ | $-0.5000\text{R}$ | $+0.0065\text{R}$ | $-0.0270\text{R}$ |
+| **Mean Cost R** | $1.1478\text{R}$ | $1.1427\text{R}$ | $1.8819\text{R}$ | $1.6789\text{R}$ | $2.3654\text{R}$ |
+| **Net R / trade** | **$-1.0970\text{R}$** | **$-0.9763\text{R}$** | **$-2.3819\text{R}$** | **$-1.6724\text{R}$** | **$-2.3924\text{R}$** |
+| **95% Bootstrap CI ($L=20$)** | $[\pm 0.025]$ | `[-1.0995, -0.8465]` | `[-3.0931, -1.7549]` | `[-1.7606, -1.5868]` | `[-3.1799, -1.6204]` |
+| **Share Trades $\text{cost\_R} > 0.15$** | 100.0% | **99.71%** | **100.00%** | **99.98%** | **100.00%** |
+| **Below Noise Null?** | N/A | No | **Yes ($-2.38 < -1.10$)** | **Yes ($-1.67 < -1.10$)** | **Yes ($-2.39 < -1.10$)** |
+| **Residual Alpha vs BTC** | N/A | $-1.31$ ($t = -18.03, p=0.000$) | $-0.0066$ ($t = -1.52, p=0.129$) | $-9.22$ ($t = -77.21, p=0.000$) | $-0.0275$ ($t = -4.05, p=0.000$) |
+| **Verdict** | Baseline | **no edge** | **no edge** | **no edge** | **no edge** |
+
+### Definitive Invariant
+Under a 50 bps round-trip friction and strict-fill execution, 15-minute stops ($0.15\% - 0.45\%$) require paying $1.0\text{R}$ to $3.3\text{R}$ per trade in transaction costs alone. Over $99.7\%$ of trades violate $\text{cost\_R} \le 0.15$. Out-of-sample performance drops below the noise-null random-walk baseline. The engine possesses **no edge**.
