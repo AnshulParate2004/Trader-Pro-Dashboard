@@ -582,7 +582,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                             </span>
                           </td>
                           <td className="py-2.5 px-3 text-chrome-dim text-[11px] tabular-nums whitespace-nowrap">
-                            ${log.donchian_low?.toFixed(1)} – ${log.donchian_high?.toFixed(1)}
+                            ${(log.donchian_low ?? log.donchian_low_20)?.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })} – ${(log.donchian_high ?? log.donchian_high_20)?.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
                           </td>
                           <td className="py-2.5 px-3 whitespace-nowrap">
                             <div className="flex items-center gap-1.5">
