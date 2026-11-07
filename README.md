@@ -1,25 +1,45 @@
 # Trader-Pro Quant: Autonomous Strategy Execution & Research Platform
 
-Trader-Pro is a full-stack quantitative trading platform and paper-execution engine designed for cryptocurrency perpetual futures (BTCUSDT). Built with Next.js 14 App Router, TypeScript, TailwindCSS, MongoDB Atlas, and LightGBM machine learning evaluators.
+> [!WARNING]
+> **Pivoting to 4H / Daily Swing Meta-Labeling Architecture**  
+> **Intraday 5m/15m paper trading is deprecated due to fee-drag exceeding stop size ($\text{cost\_R} > 0.45\text{R}$). The repository is focused on 4H/1D macro regime filtering and volatility-targeted swing engines.**
+
+Trader-Pro is an institutional-grade quantitative trading platform, research laboratory, and execution environment designed for cryptocurrency perpetual futures (BTCUSDT, ETHUSDT, SOLUSDT). Built with Next.js 14 App Router, TypeScript, TailwindCSS, MongoDB Atlas, and Python/LightGBM econometrics evaluators.
 
 ---
 
-## Current Status
+## 1. Development Status & Active Branches
 
-> [!IMPORTANT]
-> **No Demonstrated Edge | Paper-Only Execution**
-> Following an exhaustive institutional audit of feature engineering lookahead leakage, execution simulator bias, fee friction drag, and hold-out contamination, **no quantitative strategy in this repository has demonstrated a statistically verified positive net alpha edge**.
-> - **Live Real-Money Trading:** **DISABLED.** All engines operate strictly in paper-trading simulation mode.
-> - **Setup 1H-A Forward Run:** **1,099 closed trades** recorded in `paper_1h_a`.
-> - **Exact 1H-A Paper Execution Today:** The forward runner (`/api/cron/paper-1h-a`) executes on hourly snapshot closes using handcrafted momentum/breakout heuristics (neither LightGBM nor joblib models are loaded at runtime; `FROZEN_1H_A_MODEL_HASH` is a static metadata string). Intrahour TP/SL touches are missed by the hourly close evaluation, and funding rates are not modelled. See [`paper_rules.md`](paper_rules.md) for full execution audit details.
-> - **Shadow Metric Architecture:** The dashboard surfaces dual execution accounting side-by-side:
->   - *Optimistic Paper Accounting:* $+0.0412\text{R}$ (assumes zero-slippage stop fills at entry + fee offset).
->   - *Strict-Fill Shadow Metric:* $-0.0074\text{R}$ (honest entry fills with full round-trip friction and realistic stops).
-> - **Research Reference & Invariants:** All quantitative guidelines and mandatory validation gates are canonized in [`docs/LESSONS.md`](docs/LESSONS.md).
+| Branch | Status | Primary Purpose / Scope |
+| :--- | :---: | :--- |
+| `feat/daily-4h-swing-engine` | **ACTIVE** | **Primary R&D Branch**: 4H / Daily swing meta-labeling pipeline, triple-barrier labeling, leak-free feature extraction, and EWMA volatility-targeted position sizing. |
+| `feat/round2-residual-edge` | **SEALED** | Canonical Round 2 Macro Overlays (200-SMA trend filter, EWMA vol target), HAC-adjusted residual edge regression, Stage X historical exploration. |
+| `feat/cost-aware-1h` | **MAINTENANCE** | Cost-aware 1H execution engine with $\text{cost\_R} \le 0.08$ gating, runtime fill slippage, sub-hour 5m stream evaluation, and live-price cron guards. |
+| `feat/timesfm-benchmark` | **ARCHIVED** | Rigorous evaluation of Google TimesFM and Amazon Chronos foundation models against classic EWMA volatility baselines on 2024–2026 data. |
+| `main` | **STABLE** | Production dashboard, verified security infrastructure, historical paper trade audits, and performance visualization. |
 
 ---
 
-## 1. Exchange Friction & Fee Architecture
+## 2. Paper Trading Executors
+
+The repository maintains strict separation between frozen historical runners and active experimental engines:
+
+1. **Frozen Setup 1H-A (`/api/cron/paper-1h-a`)**:
+   - Implemented in [`src/lib/paperExecutor1HA.ts`](src/lib/paperExecutor1HA.ts).
+   - **PERMANENTLY FROZEN**: Evaluates hourly close snapshots against fixed momentum/breakout heuristics.
+   - **Cryptographic Invariant**: File SHA-256 must permanently equal `C1DE3359D29A4B4C6BFB3662A65C2ABF5DD4001052BDF6CAA1A7AA50FB8B33A8`.
+   - Recorded 1,099+ forward paper trades.
+2. **Cost-Aware 1H Engine (`/api/cron/paper-1h-cost`)**:
+   - Implemented in [`src/lib/paperExecutor1HCost.ts`](src/lib/paperExecutor1HCost.ts) and [`src/app/api/cron/paper-1h-cost/route.ts`](src/app/api/cron/paper-1h-cost/route.ts).
+   - Enforces mathematical identity $\text{cost\_R} = \frac{\text{Round-Trip Friction Pct}}{\text{Stop Distance Pct}} \le 0.08$.
+   - Executes live price entry, sequential 5m candle stream evaluation, exit candle close-time tracking, and `NO_LIVE_PRICE` safety aborts.
+3. **Legacy Scalp Engine (`/api/cron/scalp`)**:
+   - Implemented in [`src/lib/tradingEngine.ts`](src/lib/tradingEngine.ts).
+   - **FORMALLY RETIRED**: 5m and 15m scalpers are halted for new entries due to negative net expectancy at live stop size. Existing trade records are preserved for quantitative research.
+
+---
+
+## 3. Exchange Friction & Fee Architecture
 
 All performance metrics and research verdicts are evaluated under **real-world exchange friction** rather than idealized zero-fee backtests. 
 
@@ -32,9 +52,11 @@ Friction parameters are unified in [`src/lib/feeModel.ts`](src/lib/feeModel.ts):
 
 $$\text{cost\_R} = \frac{\text{Round-Trip Friction Pct}}{\text{Stop Distance Pct}}$$
 
+On narrow 5m/15m stops (0.25% to 0.40%), friction consumes $0.28\text{R}$ to $0.45\text{R}$ of risk capital on every round trip. On 4H/Daily swing stops (2.0% to 5.0%), friction drops to a negligible **$0.02\text{R}$ to $0.05\text{R}$**.
+
 ---
 
-## 2. Risk Engine & Execution Safeguards
+## 4. Risk Engine & Execution Safeguards
 
 Automated execution safeguards are codified in [`src/lib/riskEngine.ts`](src/lib/riskEngine.ts):
 
@@ -49,40 +71,19 @@ Automated execution safeguards are codified in [`src/lib/riskEngine.ts`](src/lib
 
 ---
 
-## 3. Empirical Research Findings & Honest Verdicts
+## 5. Documentation Suite
 
-### Comprehensive Edge Report (`analysis/EDGE_REPORT.md` & `analysis/SIMULATOR_BIAS_REPORT.md`)
-> [!IMPORTANT]
-> **SIMULATOR BIAS AUDIT NOTICE**: All historical backtest metrics below were generated with the earlier simulator, which credited an artificial $+0.05\text{R}$ on breakeven and armed ratchets in the same candle (yielding $+0.11\text{R}$ to $+0.13\text{R}$ on pure synthetic noise). Furthermore, model metadata inspection revealed that the production models were trained on data extending through **October 26, 2026** (`trained_until: 2026-10-26`), meaning all purported "hold-out" evaluations through October 2026 were **in-sample / not out-of-sample**. Under unbiased execution (Middle / Strict modes), **no setup keeps a positive net lower bound**.
-
-| Model / Cadence | Trades (N) | Gross Avg R | True Win Rate | Net Avg R (Old Biased) | Net Avg R (Strict Unbiased) | Status & Audit Verdict |
-| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
-| **15m BTC Scalper** | 11,548 | `+0.0940R` | 55.6% | **`-0.0275R`** | **`-0.5670R`** | In-sample · SIMULATOR-BIASED, superseded |
-| **5m BTC Scalper** | 11,420 | `+0.1007R` | 56.6% | **`-0.1426R`** | **`-0.6500R`** | In-sample · Fee Churn (Retired) |
-| **1h Trend Setup** | 2,624 | `+0.1021R` | 56.2% | **`-0.0123R`** | **`-0.2928R`** | In-sample · SIMULATOR-BIASED, superseded |
-| **4h Baseline** | 598 | `+0.1525R` | 59.0% | **`+0.0381R`** | **`-0.1078R`** | In-sample · SIMULATOR-BIASED, superseded |
-| **Multi-Model Scalp** | 6,538 | `+0.1622R` | 62.0% | **`+0.0352R`** | **`-0.4850R`** | In-sample · SIMULATOR-BIASED, superseded |
-
-### Setup 4H-B Research Protocol & Verdict (`notebooks/`)
-1. **Pre-Registration**: Documented in [`notebooks/prereg_4H-B.md`](notebooks/prereg_4H-B.md).
-2. **In-Sample DEV Walk-Forward**: Evaluated on bars before `2024-05-01 UTC`. Produced only 38 DEV trades, failing the pre-registered minimum sample size requirement of 150 trades ($0 / 108$ passed).
-3. **Purported Hold-Out Window (`2024-05-01` to `2026-10-31`)**:
-   - Trades: 65, Gross: `+0.3423R`, Net (Old Biased): `+0.2814R`
-   - **Audit Verdict**: **In-sample / not out-of-sample**. The final model was trained until `2026-10-26`, contaminating the window. Under strict unbiased execution, net return drops to **`-0.1013R`** (95% CI `[-0.1963, -0.0033]R`). Window permanently burned.
-
-### Model Quality & Noise Analysis (`notebooks/model_quality_report.md` & `notebooks/leakage_audit.md`)
-- **Leakage Audit**: A previous report showing `0.8923` AUC was audited in [`notebooks/leakage_audit.md`](notebooks/leakage_audit.md) and identified as **INVALID** due to backward lookback leakage in the target formula (`rolling(6)` on `shift(-1)`).
-- **Audited Model AUC**: Under a strict 5-fold purged walk-forward cross-validation with an embargo equal to the trade horizon, the honest out-of-sample LightGBM AUC is **`0.5126`** (matching the production model card benchmarks of `0.514 - 0.524`), with a shuffled-label noise control of `0.5027` and lagged-feature control of `0.4987`.
-- **Rule Baseline**: The rule-based trend baseline achieved **`0.5082`** AUC under the honest target (the previous `0.3676` was an artifact of the inverted leaky target).
-- **Derivatives Features**: Adding funding rates and open interest does not improve out-of-sample AUC on 4H candles (`0.5118` vs `0.5126`), and were excluded from live models.
+- [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md): Exhaustive breakdown of historical notebook training bugs (leaks, label distortion, global lookahead, optimistic fills).
+- [`docs/RESEARCH_FINDINGS.md`](docs/RESEARCH_FINDINGS.md): Empirical results from Foundation Models (TimesFM/Chronos), intraday scalping audits, and Stage X macro overlays.
+- [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md): Research integrity protocols, frozen executor rules, pre-registration mandates, and clean window policies.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): System architecture of the 4H/Daily Swing Meta-Labeling engine and risk engine.
+- [`docs/LESSONS.md`](docs/LESSONS.md): Canonical quantitative lessons learned from extensive simulation audits.
 
 ---
 
-## 4. Security & Environment Configuration
+## 6. Security & Environment Configuration
 
 - **Mandatory Secrets**: In production (`NODE_ENV=production`), the application throws a fatal configuration error if `AUTH_SECRET`, `AUTH_PASSWORD_HASH`, or `CRON_SECRET` is missing.
 - **Edge Protection**: All API endpoints and quantitative execution terminals are gated behind signed HS256 JWT cookies with `HttpOnly: true` and `SameSite: lax`.
 - **Scheduled Automation**: Background cron runners (`.github/workflows/cloud-cron.yml`) require `Authorization: Bearer <CRON_SECRET>`.
-
-> [!CAUTION]
-> **Credential Rotation Notice**: A historical password (`20102004`) was committed in git history prior to the JWT security overhaul. It must be treated as permanently compromised and purged via `git filter-repo`.
+- **Clean Ingestion**: Python data loaders accept configurable `DATA_ROOT` environment variables with zero hardcoded absolute drive paths.
