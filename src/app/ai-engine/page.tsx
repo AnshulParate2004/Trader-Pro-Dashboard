@@ -22,14 +22,12 @@ import {
   EnginePerformanceMetrics,
   TOP_MODELS,
 } from "@/lib/engineTypes";
-import { Paper1HAMetrics, Paper1HATrade } from "@/lib/paperTrading1HA";
 
 // Modular Clean Components
 import PaperOnlyBanner from "@/components/ai-engine/PaperOnlyBanner";
 import HonestMetricsStrip from "@/components/ai-engine/HonestMetricsStrip";
 import ResearchResultsTable from "@/components/ai-engine/ResearchResultsTable";
 import LiveTradesTable from "@/components/ai-engine/LiveTradesTable";
-import PaperTradingPanel from "@/components/ai-engine/PaperTradingPanel";
 import ModelCard from "@/components/ai-engine/ModelCard";
 import FeeModeToggle from "@/components/ai-engine/FeeModeToggle";
 
@@ -38,11 +36,7 @@ export default function AiEnginePage() {
   const [metrics, setMetrics] = useState<EnginePerformanceMetrics | null>(null);
   const [selectedModelId, setSelectedModelId] = useState<string>("4h-swing-meta-017");
 
-  // Setup 1H-A Frozen Paper Trading State
-  const [paperMetrics, setPaperMetrics] = useState<Paper1HAMetrics | null>(null);
-  const [paperTrades, setPaperTrades] = useState<Paper1HATrade[]>([]);
-  const [isPaperLoading, setIsPaperLoading] = useState<boolean>(true);
-  const [paperCoinFilter, setPaperCoinFilter] = useState<string>("ALL");
+
   const [config, setConfig] = useState<EngineConfig>({
     autoTradingEnabled: true,
     currency: "INR",
@@ -65,7 +59,7 @@ export default function AiEnginePage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Table View Tabs & Interactive Filtering / Pagination
-  const [tableTab, setTableTab] = useState<"live" | "historical">("live");
+  const [tableTab, setTableTab] = useState<"live" | "historical">("historical");
   const [liveSideFilter, setLiveSideFilter] = useState<"ALL" | "LONG" | "SHORT">("ALL");
   const [liveLimit, setLiveLimit] = useState<number>(100);
 
@@ -180,32 +174,14 @@ export default function AiEnginePage() {
     }
   };
 
-  const fetchPaperData = async () => {
-    setIsPaperLoading(true);
-    try {
-      const res = await fetch("/api/paper/1h-a");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success) {
-          setPaperMetrics(data.metrics);
-          setPaperTrades(data.trades || []);
-        }
-      }
-    } catch (err) {
-      console.warn("Could not fetch paper 1H-A data:", err);
-    } finally {
-      setIsPaperLoading(false);
-    }
-  };
+
 
   useEffect(() => {
     fetchData(selectedModelId, config.tradingFeePercent);
     fetchHistoricalTrades(selectedModelId);
-    fetchPaperData();
-    const interval = setInterval(() => {
+        const interval = setInterval(() => {
       fetchData(selectedModelIdRef.current, activeFeeRef.current, liveLimitRef.current);
-      fetchPaperData();
-    }, 4000);
+          }, 4000);
     return () => clearInterval(interval);
   }, [selectedModelId, config.tradingFeePercent]);
 
@@ -676,14 +652,7 @@ export default function AiEnginePage() {
           feePercent={currentFeePercent}
         />
 
-        {/* Phase 2 Baseline: Setup 1H-A Multi-Coin Paper Trading Validation Panel */}
-        <PaperTradingPanel
-          paperMetrics={paperMetrics}
-          paperTrades={paperTrades}
-          isPaperLoading={isPaperLoading}
-          paperCoinFilter={paperCoinFilter}
-          setPaperCoinFilter={setPaperCoinFilter}
-        />
+
 
       </main>
 

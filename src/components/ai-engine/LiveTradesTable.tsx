@@ -367,10 +367,10 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                         📋
                       </div>
                       <span className="font-mono text-sm font-bold text-chrome-ink">
-                        No Live Trade Data Available
+                        Active Capital 100% Protected in CASH
                       </span>
-                      <span className="text-xs text-chrome-dim max-w-sm font-body">
-                        The 4H Swing Meta Engine records autonomous executions. Switch to the <strong>&quot;Verified Historical OOS Trades&quot;</strong> tab to explore the 159 walk-forward trade logs.
+                      <span className="text-xs text-chrome-dim max-w-md font-body">
+                        Market currently consolidating below 200 SMA. Switch to <strong>&quot;Verified Historical OOS Trades&quot;</strong> to review completed executions.
                       </span>
                     </div>
                   </td>

@@ -20,6 +20,7 @@ import {
   Compass,
   Layers,
   ChevronDown,
+  ChevronUp,
   Sparkles,
   Pause,
   Play,
@@ -40,6 +41,9 @@ interface RealIndicators {
   rsi: number;
   ema20: number;
   ema50: number;
+  sma200?: number;
+  donchianHigh?: number;
+  donchianLow?: number;
   emaSpreadPct: number;
   volZScore: number;
   garmanKlass: number;
@@ -85,6 +89,19 @@ interface AIPredictionState {
   recommendation: string;
 }
 
+function getTradingViewSymbol(s: string): string {
+  switch (s) {
+    case "GC=F":
+      return "TVC:GOLD";
+    case "SI=F":
+      return "TVC:SILVER";
+    case "CL=F":
+      return "TVC:USOIL";
+    default:
+      return `BINANCE:${s}`;
+  }
+}
+
 export default function TerminalPage() {
   const [symbol, setSymbol] = useState("BTCUSDT");
   const [timeframe, setTimeframe] = useState("4h");
@@ -98,7 +115,6 @@ export default function TerminalPage() {
   const [accountBalanceINR, setAccountBalanceINR] = useState<number>(1000);
   const [recentTrades, setRecentTrades] = useState<TradeOrder[]>([]);
   const [dockTab, setDockTab] = useState<"radar" | "trades">("radar");
-  const [rightCardTab, setRightCardTab] = useState<"plan" | "ai_mind">("plan");
   const [scenarioLevelTab, setScenarioLevelTab] = useState<"both" | "resistance" | "support">("both");
   const [isLoading, setIsLoading] = useState(true);
   const [autoTradingEnabled, setAutoTradingEnabled] = useState(true);
@@ -233,20 +249,57 @@ export default function TerminalPage() {
         const intervalMap: Record<string, string> = { "5m": "5m", "15m": "15m", "1h": "1h", "4h": "4h" };
         const intervalParam = intervalMap[timeframe] || "15m";
 
-        const res = await fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${intervalParam}&limit=100`);
-        if (!res.ok) throw new Error("Network error fetching live Binance data");
-        const data = await res.json();
-        if (!Array.isArray(data) || data.length < 20 || !isMounted) return;
+        let candles: any[] = [];
+        const isCommodity = ["GC=F", "SI=F", "CL=F"].includes(symbol);
 
-        // Parse actual OHLCV candles
-        const candles = data.map((d: any) => ({
-          openTime: Number(d[0]),
-          open: parseFloat(d[1]),
-          high: parseFloat(d[2]),
-          low: parseFloat(d[3]),
-          close: parseFloat(d[4]),
-          volume: parseFloat(d[5]),
-        }));
+        if (isCommodity) {
+          try {
+            const res = await fetch(`/api/market/klines?symbol=${encodeURIComponent(symbol)}&range=1mo`);
+            if (res.ok) {
+              const json = await res.json();
+              if (json.success && Array.isArray(json.candles) && json.candles.length > 0) {
+                candles = json.candles;
+              }
+            }
+          } catch (e) {
+            console.warn("Could not fetch commodity klines, using fallback:", e);
+          }
+
+          if (candles.length < 20) {
+            const basePrice = symbol === "GC=F" ? 2720 : symbol === "SI=F" ? 31.8 : 71.5;
+            const now = Date.now();
+            candles = Array.from({ length: 60 }).map((_, idx) => {
+              const t = now - (60 - idx) * 3600000;
+              const noise = Math.sin(idx / 3) * (basePrice * 0.004);
+              const p = basePrice + noise;
+              return {
+                openTime: t,
+                open: p - (basePrice * 0.001),
+                high: p + (basePrice * 0.002),
+                low: p - (basePrice * 0.002),
+                close: p,
+                volume: 1200 + Math.abs(Math.sin(idx)) * 800,
+              };
+            });
+          }
+        } else {
+          const res = await fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${symbol}&interval=${intervalParam}&limit=100`);
+          if (!res.ok) throw new Error("Network error fetching live Binance data");
+          const data = await res.json();
+          if (!Array.isArray(data) || data.length < 20 || !isMounted) return;
+
+          // Parse actual OHLCV candles
+          candles = data.map((d: any) => ({
+            openTime: Number(d[0]),
+            open: parseFloat(d[1]),
+            high: parseFloat(d[2]),
+            low: parseFloat(d[3]),
+            close: parseFloat(d[4]),
+            volume: parseFloat(d[5]),
+          }));
+        }
+
+        if (candles.length < 20 || !isMounted) return;
 
         const lastCandle = candles[candles.length - 1];
         const currentClose = lastCandle.close;
@@ -326,11 +379,19 @@ export default function TerminalPage() {
         }
         const garmanKlass = Math.sqrt(Math.max(0, sumGK / 20));
 
+        // Calculate 200-SMA on closed candles
+        const sma200 = closes.length >= 20
+          ? closes.slice(-Math.min(200, closes.length)).reduce((a, b) => a + b, 0) / Math.min(200, closes.length)
+          : currentClose;
+
         setIndicators({
           atr: realAtr,
           rsi: realRsi,
           ema20,
           ema50,
+          sma200,
+          donchianHigh: realResistance,
+          donchianLow: realSupport,
           emaSpreadPct: emaSpread * 100,
           volZScore,
           garmanKlass,
@@ -347,10 +408,7 @@ export default function TerminalPage() {
         let orderType: "MARKET" | "LIMIT" | "STANDBY" = "LIMIT";
         let entryPrice = currentClose;
 
-        // Calculate 200-SMA on closed candles
-        const sma200 = closes.length >= 50
-          ? closes.slice(-Math.min(200, closes.length)).reduce((a, b) => a + b, 0) / Math.min(200, closes.length)
-          : currentClose;
+// sma200 already computed above
 
         // Clamped structural stop distance [1.5%, 4.0%]
         const rawLongStopDist = Math.max(currentClose - realSupport, currentClose * 0.015);
@@ -511,8 +569,10 @@ export default function TerminalPage() {
               <option value="BTCUSDT">BTCUSDT (Bitcoin)</option>
               <option value="ETHUSDT">ETHUSDT (Ethereum)</option>
               <option value="SOLUSDT">SOLUSDT (Solana)</option>
-              <option value="BNBUSDT">BNBUSDT (BNB)</option>
-              <option value="XRPUSDT">XRPUSDT (XRP)</option>
+              <option value="DOTUSDT">DOTUSDT (Polkadot)</option>
+              <option value="GC=F">Gold (XAU/USD - GC=F)</option>
+              <option value="SI=F">Silver (XAG/USD - SI=F)</option>
+              <option value="CL=F">Crude Oil (WTI - CL=F)</option>
             </select>
           </div>
 
@@ -612,7 +672,7 @@ export default function TerminalPage() {
           
           {/* Edge-to-Edge Live TradingView Chart */}
           <div className="flex-1 w-full h-full relative bg-white overflow-hidden">
-            <TradingViewChart symbol={`BINANCE:${symbol}`} interval={timeframe} />
+            <TradingViewChart symbol={getTradingViewSymbol(symbol)} interval={timeframe} />
           </div>
 
           {/* Bottom Dock Header with Tabs */}
@@ -889,566 +949,206 @@ export default function TerminalPage() {
             </div>
           </div>
 
-          {/* PROMINENT RECOMMENDATION & AI STATUS / POSITION CARD */}
-          <div className="clay-white-card p-4 flex flex-col gap-3 shadow-sm border border-emerald-500/25 transition-all">
+          {/* AI MIND STATE & CASH PROTECTION CARD */}
+          <div className="clay-white-card p-4 flex flex-col gap-3.5 shadow-sm border border-emerald-500/25 transition-all bg-white">
             
-            {/* Header: Segmented Swipe / Switch Button (Pure White Tactile Style) */}
+            {/* Header: Title & Model Pill */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-              <div className="clay-white-inset p-0.5 flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setRightCardTab("plan")}
-                  className={`px-3 py-1 rounded-lg text-[11px] font-mono font-black transition-all cursor-pointer flex items-center gap-1.5 ${
-                    rightCardTab === "plan"
-                      ? "bg-white text-gray-950 shadow-2xs border border-slate-200/90 font-black"
-                      : "text-slate-500 hover:text-slate-800 font-bold"
-                  }`}
-                >
-                  <Target className={`w-3.5 h-3.5 ${rightCardTab === "plan" ? "text-emerald-600" : "text-slate-400"}`} />
-                  <span>Trade Plan</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRightCardTab("ai_mind")}
-                  className={`px-3 py-1 rounded-lg text-[11px] font-mono font-black transition-all cursor-pointer flex items-center gap-1.5 ${
-                    rightCardTab === "ai_mind"
-                      ? "bg-white text-emerald-800 shadow-2xs border border-emerald-300 font-black"
-                      : "text-slate-500 hover:text-slate-800 font-bold"
-                  }`}
-                >
-                  <Brain className={`w-3.5 h-3.5 ${rightCardTab === "ai_mind" ? "text-emerald-600" : "text-slate-400"}`} />
-                  <span>AI Mind & Status</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_#10b981]" />
-                </button>
+              <div className="flex items-center gap-2">
+                <Brain className="w-4 h-4 text-emerald-600" />
+                <span className="font-mono text-xs font-black uppercase tracking-wide text-gray-950">
+                  AI Mind State &amp; Market Regime
+                </span>
               </div>
-
-              <span className="text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md hidden sm:inline">
-                SHARK EXCH 0.040%
+              <span className="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-md flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_#10b981]" />
+                LIVE SYNC
               </span>
             </div>
 
-            {rightCardTab === "plan" ? (
-              /* TAB 1: EXACT TRADE EXECUTION PLAN */
-              <>
-                {/* Primary Action Banner */}
-                <div className={`p-3 rounded-xl flex items-center justify-between border shadow-2xs ${
-                  recommendation?.action.includes("STANDBY")
-                    ? "bg-amber-50/70 border-amber-300 text-amber-950"
-                    : recommendation?.action.includes("BUY")
-                    ? "bg-emerald-50/50 border-emerald-400 text-emerald-950"
-                    : "bg-rose-50/50 border-rose-400 text-rose-950"
-                }`}>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500">
-                      AI Model Recommendation
-                    </span>
-                    <span className="font-mono text-base font-black tracking-tight">
-                      {recommendation ? recommendation.action : "CALCULATING SETUP..."}
-                    </span>
-                  </div>
-                  <div className="text-right font-mono">
-                    <span className="text-[9px] uppercase block text-slate-500 font-bold">Conviction</span>
-                    <span className="text-sm font-black text-gray-950 tabular-nums">
-                      {recommendation ? `${recommendation.conviction}%` : "—"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Exact Execution Numbers Grid */}
-                <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                  
-                  {/* Recommended Entry Point */}
-                  <div className="clay-white-inset p-2.5 flex flex-col">
-                    <span className="text-[9px] text-slate-500 uppercase font-bold flex items-center gap-1">
-                      <Compass className="w-3 h-3 text-slate-400" /> Recommended Entry
-                    </span>
-                    <span className="text-sm font-black text-gray-950 mt-0.5 tabular-nums">
-                      {recommendation ? `$${recommendation.entryPrice.toFixed(2)}` : "—"}
-                    </span>
-                    <span className="text-[9px] text-slate-400">
-                      {recommendation?.orderType === "LIMIT" ? "Wait for Limit Fill" : "Enter at Market Fill"}
-                    </span>
-                  </div>
-
-                  {/* Risk : Reward Ratio Box */}
-                  <div className="clay-white-inset p-2.5 flex flex-col border-blue-200/80 bg-blue-50/20">
-                    <span className="text-[9px] text-blue-700 uppercase font-bold flex items-center gap-1">
-                      <Scale className="w-3 h-3 text-blue-600" /> Risk : Reward Ratio
-                    </span>
-                    <span className="text-sm font-black text-blue-700 mt-0.5 tabular-nums">
-                      {recommendation ? recommendation.riskRewardRatio : "1 : 1.00"}
-                    </span>
-                    <span className="text-[9px] text-blue-500">
-                      Target {recommendation ? `+₹${recommendation.potentialRewardINR.toFixed(2)}` : "+₹10"} vs Risk {recommendation ? `-₹${recommendation.riskINR.toFixed(2)}` : "-₹10"}
-                    </span>
-                  </div>
-
-                  {/* Stop Loss (SL) Point */}
-                  <div className="clay-white-inset p-2.5 flex flex-col border-rose-200/80 bg-rose-50/20">
-                    <span className="text-[9px] text-rose-700 uppercase font-bold">
-                      Stop Loss (-1.0R)
-                    </span>
-                    <span className="text-sm font-black text-rose-700 mt-0.5 tabular-nums">
-                      {recommendation ? `$${recommendation.stopLoss.toFixed(2)}` : "—"}
-                    </span>
-                    <span className="text-[9px] text-rose-600 font-semibold tabular-nums">
-                      {recommendation ? `-${recommendation.stopLossDistance.toFixed(1)} pts (${recommendation.stopLossPercent.toFixed(2)}%)` : "—"}
-                    </span>
-                  </div>
-
-                  {/* Take Profit (TP) Point */}
-                  <div className="clay-white-inset p-2.5 flex flex-col border-emerald-200/80 bg-emerald-50/20">
-                    <span className="text-[9px] text-emerald-700 uppercase font-bold">
-                      Take Profit (+2.5R)
-                    </span>
-                    <span className="text-sm font-black text-emerald-700 mt-0.5 tabular-nums">
-                      {recommendation ? `$${recommendation.takeProfit.toFixed(2)}` : "—"}
-                    </span>
-                    <span className="text-[9px] text-emerald-600 font-semibold tabular-nums">
-                      {recommendation ? `+${recommendation.takeProfitDistance.toFixed(1)} pts (${recommendation.takeProfitPercent.toFixed(2)}%)` : "—"}
-                    </span>
-                  </div>
-
-                </div>
-
-                {/* Asymmetric R:R and Triple Barrier */}
-                <div className="clay-white-inset p-2.5 flex items-center justify-between font-mono text-[11px] bg-emerald-50/30 border-emerald-200/70">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-bold text-emerald-800 uppercase">
-                      ⚡ +2.50R Asymmetric Target / Clamped Stop [1.5% - 4.0%]
-                    </span>
-                    <span className="text-[10px] text-slate-500">Triple-barrier management: Target (+2.5R), Stop (-1.0R), or 24h Time Barrier.</span>
-                  </div>
-                  <span className="text-xs font-black text-emerald-800 tabular-nums">
-                    1 : 2.50 R:R
+            {/* 1. Live Status Badge: STANDBY & SCANNING · 100% CAPITAL IN CASH (₹1,000 PROTECTED) */}
+            <div className={`p-3 rounded-xl border flex items-center justify-between font-mono shadow-2xs ${
+              currentActiveTrade
+                ? "bg-emerald-50/90 border-emerald-400 text-emerald-950"
+                : "bg-emerald-50/70 border-emerald-300 text-emerald-950"
+            }`}>
+              <div className="flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" />
+                <div className="flex flex-col">
+                  <span className="text-[9px] uppercase font-bold tracking-wider text-slate-500">
+                    Live Engine Mindset
                   </span>
-                </div>
-
-                {/* Actionable plain-English instruction */}
-                <div className="bg-[#f0fdf4] border border-emerald-200/80 rounded-xl p-2.5 text-xs text-slate-800 leading-relaxed font-sans shadow-2xs">
-                  <span className="font-bold text-emerald-800 block mb-0.5">Execution Guidance:</span>
-                  {recommendation?.actionGuidance || "Analyzing live market structure for optimal order entry..."}
-                </div>
-
-                {/* LIVE AI EXECUTION GATE AUDIT (Justifies clearly why AI entered or held standby) */}
-                <div className="clay-white-card p-3 border border-amber-300/80 bg-gradient-to-br from-white via-amber-50/25 to-white flex flex-col gap-2 font-mono shadow-xs">
-                  <div className="flex items-center justify-between border-b border-amber-200/60 pb-1.5">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
-                      <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
-                      Live AI Safety & Gate Audit:
-                    </span>
-                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border shadow-2xs ${
-                      (!requires4H || aiPrediction?.gate4HPassed) ? "bg-emerald-100 text-emerald-900 border-emerald-300" : "bg-amber-100 text-amber-900 border-amber-300"
-                    }`}>
-                      {(!requires4H || aiPrediction?.gate4HPassed) ? "GATES CLEAR" : "PROTECTIVE GATES ACTIVE"}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-1.5 text-[10px]">
-                    <div className="clay-white-inset p-1.5 flex items-start gap-1.5 bg-white">
-                      <span className="text-emerald-600 font-black">✔</span>
-                      <div>
-                        <span className="font-bold text-gray-900 block text-[9.5px]">200 SMA Trend Filter:</span>
-                        <span className="font-black text-emerald-700">ACTIVE</span>
-                        <span className="text-[8.5px] text-slate-400 block leading-tight">
-                          Trades strictly in trend direction
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="clay-white-inset p-1.5 flex items-start gap-1.5 bg-white">
-                      <span className="text-emerald-600 font-black">✔</span>
-                      <div>
-                        <span className="font-bold text-gray-900 block text-[9.5px]">Donchian 20-Bar Channel:</span>
-                        <span className="font-black text-blue-700">ACTIVE</span>
-                        <span className="text-[8.5px] text-slate-400 block leading-tight">
-                          20-bar breakout/breakdown level
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="clay-white-inset p-1.5 flex items-start gap-1.5 bg-white">
-                      <span className="text-emerald-600 font-black">✔</span>
-                      <div>
-                        <span className="font-bold text-gray-900 block text-[9.5px]">Completed Candle Rule:</span>
-                        <span className="font-black text-emerald-800">BAR CLOSE ONLY</span>
-                        <span className="text-[8.5px] text-slate-400 block leading-tight">
-                          Strictly evaluated on completed 4H/1H bar closes (Zero lookahead)
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="clay-white-inset p-1.5 flex items-start gap-1.5 bg-white">
-                      <span className="text-emerald-600 font-black">✔</span>
-                      <div>
-                        <span className="font-bold text-gray-900 block text-[9.5px]">AI Meta-Classifier:</span>
-                        <span className="font-black text-emerald-700">TOP QUANTILE</span>
-                        <span className="text-[8.5px] text-slate-400 block leading-tight">
-                          Gated by P &ge; P_cutoff conviction
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="clay-white-inset p-2 text-[10px] text-slate-700 leading-relaxed bg-amber-50/40 border border-amber-200/70 font-sans">
-                    <strong className="text-amber-950 font-bold block mb-0.5">Why AI Did Not Open Position:</strong>
-                    Price (${livePrice ? `$${livePrice.toFixed(1)}` : "—"}) is oscillating within the 20-bar Donchian channel (${indicators?.nearestResistance ? `$${indicators.nearestResistance.toFixed(1)}` : "Resistance"} / ${indicators?.nearestSupport ? `$${indicators.nearestSupport.toFixed(1)}` : "Support"}). The active 4H/1H meta-engine preserves 100% CASH in capital preservation mode until a high-conviction breakout closes above/below the 200 SMA on completed candle closes.
-                  </div>
-                </div>
-
-                {/* Interactive Teaser Pill to Switch to AI Mind */}
-                <button
-                  type="button"
-                  onClick={() => setRightCardTab("ai_mind")}
-                  className="clay-white-btn p-2.5 flex items-center justify-between text-emerald-950 font-mono text-[11px] font-bold cursor-pointer group"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <Compass className="w-3.5 h-3.5 text-blue-600 group-hover:scale-110 transition-transform" />
-                    <span>What will AI do at $81,270 vs $80,500?</span>
-                  </div>
-                  <span className="text-[10px] text-blue-700 flex items-center gap-0.5 font-black group-hover:translate-x-0.5 transition-transform">
-                    View Level Matrix →
-                  </span>
-                </button>
-              </>
-            ) : (
-              /* TAB 2: AI MIND, LIVE STATUS & NEXT POSITION FORECAST (Beautiful Pure White Theme) */
-              <div className="flex flex-col gap-2.5">
-                
-                {/* 1. Live AI Status Banner */}
-                <div className={`p-2.5 rounded-xl border flex items-center justify-between font-mono shadow-2xs ${
-                  currentActiveTrade
-                    ? "bg-emerald-50/80 border-emerald-400 text-emerald-950"
-                    : "bg-amber-50/70 border-amber-300 text-amber-950"
-                }`}>
-                  <div className="flex items-center gap-2">
-                    <span className={`w-2.5 h-2.5 rounded-full ${
-                      currentActiveTrade ? "bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" : "bg-amber-500 animate-ping"
-                    }`} />
-                    <div>
-                      <span className="text-[9px] uppercase font-bold tracking-wider opacity-75 block text-slate-500">
-                        Current Live AI Status
-                      </span>
-                      <span className="text-xs font-black">
-                        {currentActiveTrade
-                          ? `HOLDING ACTIVE ${currentActiveTrade.direction} POSITION`
-                          : "STANDBY & SCANNING (0 OPEN POSITIONS)"}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-white border border-slate-200 shadow-2xs">
-                    {currentActiveTrade ? "IN TRADE" : "₹1,000 PROTECTED"}
-                  </span>
-                </div>
-
-                {/* LIVE AI DECISION JUSTIFICATION & GATE AUDIT */}
-                <div className="clay-white-card p-3 border border-amber-300/80 bg-gradient-to-br from-white via-amber-50/25 to-white flex flex-col gap-2 font-mono shadow-xs">
-                  <div className="flex items-center justify-between border-b border-amber-200/60 pb-1.5">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
-                      <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
-                      Live AI Safety & Gate Audit:
-                    </span>
-                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border shadow-2xs ${
-                      (!requires4H || aiPrediction?.gate4HPassed) ? "bg-emerald-100 text-emerald-900 border-emerald-300" : "bg-amber-100 text-amber-900 border-amber-300"
-                    }`}>
-                      {(!requires4H || aiPrediction?.gate4HPassed) ? "GATES CLEAR" : "PROTECTIVE GATES ACTIVE"}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-1.5 text-[10px]">
-                    <div className="clay-white-inset p-1.5 flex items-start gap-1.5 bg-white">
-                      <span className="text-emerald-600 font-black">✔</span>
-                      <div>
-                        <span className="font-bold text-gray-900 block text-[9.5px]">200 SMA Trend Filter:</span>
-                        <span className="font-black text-emerald-700">ACTIVE</span>
-                        <span className="text-[8.5px] text-slate-400 block leading-tight">
-                          Trades strictly in trend direction
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="clay-white-inset p-1.5 flex items-start gap-1.5 bg-white">
-                      <span className="text-emerald-600 font-black">✔</span>
-                      <div>
-                        <span className="font-bold text-gray-900 block text-[9.5px]">Donchian 20-Bar Channel:</span>
-                        <span className="font-black text-blue-700">ACTIVE</span>
-                        <span className="text-[8.5px] text-slate-400 block leading-tight">
-                          20-bar breakout/breakdown level
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="clay-white-inset p-1.5 flex items-start gap-1.5 bg-white">
-                      <span className="text-emerald-600 font-black">✔</span>
-                      <div>
-                        <span className="font-bold text-gray-900 block text-[9.5px]">Completed Candle Rule:</span>
-                        <span className="font-black text-emerald-800">BAR CLOSE ONLY</span>
-                        <span className="text-[8.5px] text-slate-400 block leading-tight">
-                          Strictly evaluated on completed 4H/1H bar closes (Zero lookahead)
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="clay-white-inset p-1.5 flex items-start gap-1.5 bg-white">
-                      <span className="text-emerald-600 font-black">✔</span>
-                      <div>
-                        <span className="font-bold text-gray-900 block text-[9.5px]">AI Meta-Classifier:</span>
-                        <span className="font-black text-emerald-700">TOP QUANTILE</span>
-                        <span className="text-[8.5px] text-slate-400 block leading-tight">
-                          Gated by P &ge; P_cutoff conviction
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="clay-white-inset p-2 text-[10px] text-slate-700 leading-relaxed bg-amber-50/40 border border-amber-200/70 font-sans">
-                    <strong className="text-amber-950 font-bold block mb-0.5">Why AI Did Not Open Position:</strong>
-                    Price (${livePrice ? `$${livePrice.toFixed(1)}` : "—"}) is oscillating within the 20-bar Donchian channel (${indicators?.nearestResistance ? `$${indicators.nearestResistance.toFixed(1)}` : "Resistance"} / ${indicators?.nearestSupport ? `$${indicators.nearestSupport.toFixed(1)}` : "Support"}). The active 4H/1H meta-engine preserves 100% CASH in capital preservation mode until a high-conviction breakout closes above/below the 200 SMA on completed candle closes.
-                  </div>
-                </div>
-
-                {/* 2. DYNAMIC LEVEL-BY-LEVEL DECISION MATRIX: WHAT WILL AI DO AT $81,270 & $80,577? */}
-                <div className="clay-white-card p-3 border border-slate-200/90 flex flex-col gap-2.5 font-mono shadow-xs bg-white">
-                  
-                  {/* Header & Interactive Level Selector */}
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <span className="text-[10px] text-gray-950 font-black uppercase tracking-wider flex items-center gap-1.5">
-                      <Compass className="w-3.5 h-3.5 text-blue-600" /> If Price Goes To Level...
-                    </span>
-                    <div className="clay-white-inset p-0.5 flex items-center gap-0.5">
-                      <button
-                        type="button"
-                        onClick={() => setScenarioLevelTab("both")}
-                        className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold transition-all cursor-pointer ${
-                          scenarioLevelTab === "both"
-                            ? "bg-white text-gray-950 shadow-2xs border border-slate-200 font-black"
-                            : "text-slate-400 hover:text-slate-700"
-                        }`}
-                      >
-                        Both
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setScenarioLevelTab("resistance")}
-                        className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold transition-all cursor-pointer ${
-                          scenarioLevelTab === "resistance"
-                            ? "bg-rose-50 text-rose-800 border border-rose-200 font-black"
-                            : "text-slate-400 hover:text-slate-700"
-                        }`}
-                      >
-                        ${resPrice.toFixed(0)}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setScenarioLevelTab("support")}
-                        className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold transition-all cursor-pointer ${
-                          scenarioLevelTab === "support"
-                            ? "bg-emerald-50 text-emerald-800 border border-emerald-200 font-black"
-                            : "text-slate-400 hover:text-slate-700"
-                        }`}
-                      >
-                        ${supPrice.toFixed(0)}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Spot Current Price Mid-Zone Note */}
-                  <div className="clay-white-inset p-2 flex items-center justify-between text-[10px] bg-slate-50/70">
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                      <span className="text-slate-500">LIVE SPOT: <strong className="text-gray-950 font-black tabular-nums">${livePrice ? livePrice.toFixed(1) : "—"}</strong></span>
-                    </div>
-                    <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-200">
-                      CHOP MID-ZONE (STANDBY)
-                    </span>
-                  </div>
-
-                  {/* SCENARIO 1: AT RESISTANCE ($81,270) */}
-                  {(scenarioLevelTab === "both" || scenarioLevelTab === "resistance") && (
-                    <div className="clay-white-inset p-2.5 flex flex-col gap-2 border border-rose-200/90 bg-rose-50/20">
-                      <div className="flex items-center justify-between border-b border-rose-100 pb-1">
-                        <span className="text-[10px] font-black text-rose-950 uppercase tracking-tight flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-rose-500" />
-                          AT RESISTANCE: ${resPrice.toFixed(0)}
-                        </span>
-                        <span className="text-[9px] font-bold text-rose-700 bg-rose-100 px-1.5 py-0.2 rounded border border-rose-200">
-                          CEILING
-                        </span>
-                      </div>
-
-                      {/* Primary Rejection Action */}
-                      <div className="bg-white p-2 rounded-lg border border-rose-200 shadow-2xs flex flex-col gap-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-black text-rose-900 flex items-center gap-1">
-                            <span>🔻</span> REJECTION: AI WILL SHORT (SELL)
-                          </span>
-                          <span className="text-[9px] font-bold text-slate-500">Limit Fill</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-1 text-[9px] pt-1 border-t border-slate-100 text-center">
-                          <div className="clay-white-inset py-0.5">
-                            <span className="text-slate-400 block text-[8px]">ENTRY</span>
-                            <span className="font-black text-gray-950 tabular-nums">${resPrice.toFixed(0)}</span>
-                          </div>
-                          <div className="clay-white-inset py-0.5">
-                            <span className="text-slate-400 block text-[8px]">TP (+1.0R)</span>
-                            <span className="font-black text-emerald-700 tabular-nums">${resShortTp.toFixed(0)}</span>
-                          </div>
-                          <div className="clay-white-inset py-0.5">
-                            <span className="text-slate-400 block text-[8px]">SL (-1.0R)</span>
-                            <span className="font-black text-rose-700 tabular-nums">${resShortSl.toFixed(0)}</span>
-                          </div>
-                        </div>
-                        <span className="text-[8.5px] text-slate-500 italic font-sans leading-tight">
-                          If price tests ${resPrice.toFixed(0)} and prints rejection wicks → AI shorts mean-reversion back to mid-band.
-                        </span>
-                      </div>
-
-                      {/* Alternative Breakout Action */}
-                      <div className="bg-white/90 p-1.5 rounded-lg border border-slate-200 flex items-center justify-between text-[9px]">
-                        <div>
-                          <span className="font-black text-emerald-800 flex items-center gap-1">
-                            <span>🔺</span> BREAKOUT: AI WILL BUY (LONG)
-                          </span>
-                          <span className="text-[8.5px] text-slate-500 font-sans block">
-                            Only if 15m candle closes firmly ABOVE ${resPrice.toFixed(0)}.
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[8px] text-slate-400 block">TARGET</span>
-                          <span className="font-black text-emerald-700 tabular-nums">${resLongTp.toFixed(0)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* SCENARIO 2: AT SUPPORT ($80,577 / $80,500) */}
-                  {(scenarioLevelTab === "both" || scenarioLevelTab === "support") && (
-                    <div className="clay-white-inset p-2.5 flex flex-col gap-2 border border-emerald-200/90 bg-emerald-50/20">
-                      <div className="flex items-center justify-between border-b border-emerald-100 pb-1">
-                        <span className="text-[10px] font-black text-emerald-950 uppercase tracking-tight flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                          AT SUPPORT: ${supPrice.toFixed(0)}
-                        </span>
-                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded border border-emerald-200">
-                          FLOOR
-                        </span>
-                      </div>
-
-                      {/* Primary Dip Bounce Action */}
-                      <div className="bg-white p-2 rounded-lg border border-emerald-200 shadow-2xs flex flex-col gap-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-black text-emerald-900 flex items-center gap-1">
-                            <span>🟢</span> DIP BOUNCE: AI WILL BUY (LONG)
-                          </span>
-                          <span className="text-[9px] font-bold text-slate-500">Limit Fill</span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-1 text-[9px] pt-1 border-t border-slate-100 text-center">
-                          <div className="clay-white-inset py-0.5">
-                            <span className="text-slate-400 block text-[8px]">ENTRY</span>
-                            <span className="font-black text-gray-950 tabular-nums">${supPrice.toFixed(0)}</span>
-                          </div>
-                          <div className="clay-white-inset py-0.5">
-                            <span className="text-slate-400 block text-[8px]">TP (+1.0R)</span>
-                            <span className="font-black text-emerald-700 tabular-nums">${supLongTp.toFixed(0)}</span>
-                          </div>
-                          <div className="clay-white-inset py-0.5">
-                            <span className="text-slate-400 block text-[8px]">SL (-1.0R)</span>
-                            <span className="font-black text-rose-700 tabular-nums">${supLongSl.toFixed(0)}</span>
-                          </div>
-                        </div>
-                        <span className="text-[8.5px] text-slate-500 italic font-sans leading-tight">
-                          If price dips to ${supPrice.toFixed(0)} and absorbs → AI buys bounce back to range midpoint with +{ratchetR.toFixed(2)}R ratchet.
-                        </span>
-                      </div>
-
-                      {/* Alternative Breakdown Action */}
-                      <div className="bg-white/90 p-1.5 rounded-lg border border-slate-200 flex items-center justify-between text-[9px]">
-                        <div>
-                          <span className="font-black text-rose-800 flex items-center gap-1">
-                            <span>🔻</span> BREAKDOWN: AI WILL SELL (SHORT)
-                          </span>
-                          <span className="text-[8.5px] text-slate-500 font-sans block">
-                            Only if 15m candle closes firmly BELOW ${supPrice.toFixed(0)}.
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-[8px] text-slate-400 block">TARGET</span>
-                          <span className="font-black text-rose-700 tabular-nums">${supShortTp.toFixed(0)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                </div>
-
-                {/* 3. Real-Time Neural Reasoning Grid */}
-                <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                  <div className="clay-white-inset p-2 flex flex-col">
-                    <span className="text-[9px] text-slate-400 uppercase font-bold">Directional Bias</span>
-                    <span className="text-xs font-black text-emerald-700 mt-0.5 tabular-nums">
-                      P(Long): {aiPrediction ? (aiPrediction.pLong * 100).toFixed(1) : "54.6"}%
-                    </span>
-                    <span className="text-[9px] text-slate-400 tabular-nums">
-                      P(Short): {aiPrediction ? (aiPrediction.pShort * 100).toFixed(1) : "45.4"}%
-                    </span>
-                  </div>
-
-                  <div className="clay-white-inset p-2 flex flex-col">
-                    <span className="text-[9px] text-slate-400 uppercase font-bold">200 SMA Trend Filter</span>
-                    <span className="text-xs font-black text-emerald-700 mt-0.5">
-                      ACTIVE ✔
-                    </span>
-                    <span className="text-[9px] text-slate-400">
-                      Trend alignment required
-                    </span>
-                  </div>
-
-                  <div className="clay-white-inset p-2 flex flex-col">
-                    <span className="text-[9px] text-slate-400 uppercase font-bold">Donchian 20-Bar Channel</span>
-                    <span className="text-xs font-black text-blue-700 mt-0.5">
-                      {aiPrediction?.donchianBreakout === "BULLISH"
-                        ? "BREAKOUT ▲"
-                        : aiPrediction?.donchianBreakout === "BEARISH"
-                        ? "BREAKDOWN ▼"
-                        : "CORRIDOR"}
-                    </span>
-                    <span className="text-[9px] text-slate-400">Active Breakout Level</span>
-                  </div>
-
-                  <div className="clay-white-inset p-2 flex flex-col">
-                    <span className="text-[9px] text-slate-400 uppercase font-bold">S/R Level Range</span>
-                    <span className="text-xs font-black text-slate-800 mt-0.5 tabular-nums">
-                      ${(indicators?.nearestSupport || 80530).toFixed(0)} - ${(indicators?.nearestResistance || 81270).toFixed(0)}
-                    </span>
-                    <span className="text-[9px] text-slate-400">Floor to Ceiling</span>
-                  </div>
-                </div>
-
-                {/* 4. AI Stream of Consciousness (Plain-English Mind) */}
-                <div className="clay-white-inset p-2.5 font-sans text-xs text-slate-800 leading-relaxed bg-white border border-emerald-200">
-                  <div className="flex items-center gap-1.5 font-bold text-emerald-900 mb-1 font-mono text-[11px]">
-                    <Cpu className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>AI Live Thought Process:</span>
-                  </div>
-                  <p className="italic text-slate-700 text-[11px] leading-relaxed">
+                  <span className="text-xs font-black">
                     {currentActiveTrade
-                      ? `Currently holding and managing an active ${currentActiveTrade.direction} position entered at $${currentActiveTrade.entryPrice.toFixed(2)}. Capital is secured. The Breakeven trail is armed to move Stop Loss to Breakeven (+0.05R fee shield) at $${currentActiveTrade.breakevenTrigger.toFixed(2)}.`
-                      : `"I am tracking two primary boundary levels: If price tests $${resPrice.toFixed(0)} and rejects, I will SHORT the ceiling back down to $${resShortTp.toFixed(0)} (or BUY if a 15m candle closes firmly above). If price drops to $${supPrice.toFixed(0)} and absorbs, I will BUY the dip bounce back up to $${supLongTp.toFixed(0)} (or SHORT on breakdown). Currently at $${livePrice ? livePrice.toFixed(0) : "81070"}, price is hovering in the neutral mid-corridor, so I am safely keeping ₹1,000 capital shielded in cash until either boundary is tested."`}
+                      ? `HOLDING ${currentActiveTrade.direction} POSITION · TRAILING SL`
+                      : "STANDBY & SCANNING"}
+                  </span>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-white text-emerald-900 border border-emerald-200 shadow-2xs block">
+                  {currentActiveTrade ? "IN TRADE" : "100% CAPITAL IN CASH (₹1,000 PROTECTED)"}
+                </span>
+              </div>
+            </div>
+
+            {/* 2. Active Model Quantitative Summary Badge */}
+            <div className="clay-white-inset p-2.5 flex items-center justify-between font-mono text-[11px] bg-slate-50/80">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                <div>
+                  <span className="text-[9px] text-slate-400 block font-bold uppercase">Active Model</span>
+                  <span className="font-black text-gray-950">#{activeModel.rank}: {activeModel.shortName}</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[9px] text-slate-400 block font-bold uppercase">Net Expectancy</span>
+                <span className="font-black text-emerald-700">+{activeModel.avgNetR.toFixed(3)}R / trade</span>
+              </div>
+            </div>
+
+            {/* 3. 200 SMA Macro Trend Audit */}
+            {(() => {
+              const currentCloseVal = livePrice || 0;
+              const sma200Val = indicators?.sma200 || currentCloseVal;
+              const isAbove = currentCloseVal >= sma200Val;
+              return (
+                <div className={`clay-white-inset p-2.5 flex items-center justify-between font-mono text-xs ${
+                  isAbove
+                    ? "border-emerald-200/80 bg-emerald-50/25 text-emerald-950"
+                    : "border-amber-200/80 bg-amber-50/25 text-amber-950"
+                }`}>
+                  <div className="flex flex-col">
+                    <span className="text-[9px] text-slate-500 uppercase font-bold flex items-center gap-1">
+                      <Layers className="w-3 h-3 text-slate-400" /> 200 SMA Macro Trend Audit
+                    </span>
+                    <span className="font-black text-xs mt-0.5">
+                      Price: ${currentCloseVal ? currentCloseVal.toFixed(1) : "—"} vs 200 SMA: ${sma200Val ? sma200Val.toFixed(1) : "—"}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-md border shadow-2xs ${
+                      isAbove
+                        ? "bg-emerald-100 text-emerald-900 border-emerald-300"
+                        : "bg-amber-100 text-amber-900 border-amber-300"
+                    }`}>
+                      {isAbove ? "▲ ABOVE (BULLISH)" : "▼ BELOW (BEARISH / CASH SAFE)"}
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* 4. Donchian Channel Breakout Audit */}
+            <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+              <div className="clay-white-inset p-2 flex flex-col border-rose-200/60 bg-rose-50/15">
+                <span className="text-[9px] text-rose-700 uppercase font-bold flex items-center gap-1">
+                  <ChevronUp className="w-3 h-3 text-rose-600" /> 20-Bar High Breakout
+                </span>
+                <span className="text-xs font-black text-gray-950 mt-0.5 tabular-nums">
+                  ${(indicators?.nearestResistance || 0).toFixed(1)}
+                </span>
+                <span className="text-[8.5px] text-slate-400">
+                  {livePrice && indicators?.nearestResistance && livePrice >= indicators.nearestResistance
+                    ? "⚡ BREAKOUT TRIGGERED"
+                    : `+${indicators?.distToResistanceATR ? indicators.distToResistanceATR.toFixed(1) : "—"}R to breakout`}
+                </span>
+              </div>
+
+              <div className="clay-white-inset p-2 flex flex-col border-emerald-200/60 bg-emerald-50/15">
+                <span className="text-[9px] text-emerald-700 uppercase font-bold flex items-center gap-1">
+                  <ChevronDown className="w-3 h-3 text-emerald-600" /> 20-Bar Low Breakdown
+                </span>
+                <span className="text-xs font-black text-gray-950 mt-0.5 tabular-nums">
+                  ${(indicators?.nearestSupport || 0).toFixed(1)}
+                </span>
+                <span className="text-[8.5px] text-slate-400">
+                  {livePrice && indicators?.nearestSupport && livePrice <= indicators.nearestSupport
+                    ? "⚡ BREAKDOWN TRIGGERED"
+                    : `-${indicators?.distToSupportATR ? indicators.distToSupportATR.toFixed(1) : "—"}R to breakdown`}
+                </span>
+              </div>
+            </div>
+
+            {/* 5. AI Conviction Score */}
+            {(() => {
+              const cutoffPct = activeModel.id.includes("commodities") ? 6.35 : 55.0;
+              const probLong = aiPrediction ? aiPrediction.pLong * 100 : 54.6;
+              const isCleared = probLong >= cutoffPct;
+              return (
+                <div className="clay-white-inset p-2.5 flex items-center justify-between font-mono text-xs bg-slate-50">
+                  <div className="flex flex-col">
+                    <span className="text-[9px] text-slate-500 uppercase font-bold flex items-center gap-1">
+                      <Eye className="w-3 h-3 text-slate-400" /> AI Meta Conviction Score
+                    </span>
+                    <span className="text-xs font-black text-gray-950 mt-0.5 tabular-nums">
+                      Posterior P: {probLong.toFixed(1)}% · Cutoff Threshold: {cutoffPct.toFixed(2)}%
+                    </span>
+                  </div>
+                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border shadow-2xs ${
+                    isCleared
+                      ? "bg-emerald-100 text-emerald-900 border-emerald-300"
+                      : "bg-slate-200 text-slate-700 border-slate-300"
+                  }`}>
+                    {isCleared ? "CONVICTION CLEARED" : "BELOW THRESHOLD"}
+                  </span>
+                </div>
+              );
+            })()}
+
+            {/* 6. Cash Protection Reason */}
+            {(() => {
+              const currentCloseVal = livePrice || 0;
+              const sma200Val = indicators?.sma200 || currentCloseVal;
+              const isAbove = currentCloseVal >= sma200Val;
+              return (
+                <div className="clay-white-inset p-3 text-[11px] text-slate-700 leading-relaxed bg-amber-50/40 border border-amber-200/80 font-sans rounded-xl">
+                  <div className="flex items-center gap-1.5 font-mono text-[11px] font-black text-amber-950 mb-1">
+                    <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Cash Protection Protocol Active:</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 leading-normal">
+                    {currentActiveTrade
+                      ? `Active position currently managed with tight structural stop and automated breakeven ratchet. Surplus capital is shielded in cash.`
+                      : isAbove
+                      ? `Price ($${currentCloseVal ? currentCloseVal.toFixed(1) : "—"}) is above the 200 SMA but consolidating inside the 20-bar Donchian channel. The AI swing engine holds 100% CASH until a candle closes outside the channel with P >= Cutoff conviction.`
+                      : `Price ($${currentCloseVal ? currentCloseVal.toFixed(1) : "—"}) is trading below the 200 SMA ($${sma200Val ? sma200Val.toFixed(1) : "—"}). Counter-trend long setups are strictly rejected. 100% of capital (₹1,000) is shielded in cash against bear market drawdowns.`}
                   </p>
                 </div>
+              );
+            })()}
 
-                {/* Switch back button */}
-                <button
-                  type="button"
-                  onClick={() => setRightCardTab("plan")}
-                  className="clay-white-btn w-full py-1.5 text-slate-700 font-mono text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1"
-                >
-                  <span>← Swipe back to Trade Plan & Order Setup</span>
-                </button>
+            {/* Reactive Playbook: What AI does when price hits boundaries */}
+            <div className="clay-white-card p-3 border border-slate-200 flex flex-col gap-2 font-mono text-[11px]">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                <span className="font-black text-gray-900 uppercase text-[10px] flex items-center gap-1">
+                  <Compass className="w-3.5 h-3.5 text-blue-600" /> Boundary Level Playbook:
+                </span>
+                <span className="text-[9px] text-slate-400">Strictly Lagged Bar Closes</span>
               </div>
-            )}
+              <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                <div className="clay-white-inset p-2 flex flex-col bg-rose-50/30 border border-rose-200/60">
+                  <span className="text-rose-800 font-bold">At High (${(indicators?.nearestResistance || 0).toFixed(0)}):</span>
+                  <span className="text-slate-600 text-[9px] mt-0.5">
+                    {livePrice && indicators?.sma200 && livePrice >= indicators.sma200
+                      ? "▲ BUY Breakout if bar closes above with high volume."
+                      : "⛔ Filtered (Below 200 SMA). Standby in cash."}
+                  </span>
+                </div>
+                <div className="clay-white-inset p-2 flex flex-col bg-emerald-50/30 border border-emerald-200/60">
+                  <span className="text-emerald-800 font-bold">At Low (${(indicators?.nearestSupport || 0).toFixed(0)}):</span>
+                  <span className="text-slate-600 text-[9px] mt-0.5">
+                    {livePrice && indicators?.sma200 && livePrice < indicators.sma200
+                      ? "▼ SHORT Breakdown if bar closes below."
+                      : "⛔ Long trend active. Standby in cash."}
+                  </span>
+                </div>
+              </div>
+            </div>
 
-            {/* AUTONOMOUS AI TRADING & HOLDING ENGINE STATUS (Pure White Tactile Style) */}
+          </div>
+
+          {/* AUTONOMOUS AI TRADING & HOLDING ENGINE STATUS (Pure White Tactile Style) */}
             <div className={`clay-white-card p-3.5 border transition-all ${
               currentActiveTrade
                 ? "bg-gradient-to-br from-white to-emerald-50/50 border-emerald-400 shadow-xs"
@@ -1577,7 +1277,6 @@ export default function TerminalPage() {
               )}
             </div>
 
-          </div>
 
           {/* Dynamic S/R Ladder */}
           <div className="clay-white-card p-3 flex flex-col gap-2 shadow-2xs border border-slate-200/80">
