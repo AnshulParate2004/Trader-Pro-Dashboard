@@ -1,0 +1,284 @@
+{
+  "exploratory_table": [
+    {
+      "strategy": "15m Engine (14 bps tier)",
+      "dates": "2024-11-01 to 2026-10-31",
+      "net_return_pct": 111.0755907466475,
+      "max_drawdown_pct": -15.492639349769455,
+      "trade_count": 376,
+      "net_metric_name": "Net R / trade",
+      "net_per_trade_mean": 0.21009023927638304,
+      "net_ci_95": [
+        0.047210126869595866,
+        0.3757573836672212
+      ],
+      "noise_null_mean": -0.3625358678799357,
+      "noise_null_metric": "Net R",
+      "alpha_ann_pct": 39.590387815425956,
+      "alpha_ci_95": [
+        5.02314125007292,
+        74.15763438077899
+      ],
+      "beta": -0.0064069186231639295,
+      "t_stat": 2.2448175029367534,
+      "p_val": 0.02477985066914168
+    },
+    {
+      "strategy": "15m Engine (50 bps tier)",
+      "dates": "2024-11-01 to 2026-10-31",
+      "net_return_pct": -97.52879474590472,
+      "max_drawdown_pct": -97.52329714136665,
+      "trade_count": 376,
+      "net_metric_name": "Net R / trade",
+      "net_per_trade_mean": -0.963588828495096,
+      "net_ci_95": [
+        -1.222861094868641,
+        -0.6859424560368508
+      ],
+      "noise_null_mean": -1.152060987890425,
+      "noise_null_metric": "Net R",
+      "alpha_ann_pct": -180.84912004174677,
+      "alpha_ci_95": [
+        -225.99856030215128,
+        -135.69967978134233
+      ],
+      "beta": -0.020956594210386488,
+      "t_stat": -7.850911843810493,
+      "p_val": 4.218847493575595e-15
+    },
+    {
+      "strategy": "TimesFM Daily Strategy (14 bps)",
+      "dates": "2024-11-01 to 2026-10-31",
+      "net_return_pct": -54.81443773178647,
+      "max_drawdown_pct": -65.6188754324722,
+      "trade_count": 178,
+      "net_metric_name": "Net Return % / trade",
+      "net_per_trade_mean": -0.3426395582570675,
+      "net_ci_95": [
+        -0.9340950888580223,
+        0.23022046488507728
+      ],
+      "noise_null_mean": -44.21259881818478,
+      "noise_null_metric": "Net Return %",
+      "alpha_ann_pct": -30.875579456605063,
+      "alpha_ci_95": [
+        -87.25944349466694,
+        25.508284581456824
+      ],
+      "beta": 0.06379486498444872,
+      "t_stat": -1.0732881963196872,
+      "p_val": 0.28314182955821154
+    },
+    {
+      "strategy": "TimesFM Daily Strategy (50 bps)",
+      "dates": "2024-11-01 to 2026-10-31",
+      "net_return_pct": -76.21154104385862,
+      "max_drawdown_pct": -80.23349701692801,
+      "trade_count": 178,
+      "net_metric_name": "Net Return % / trade",
+      "net_per_trade_mean": -0.701272073588663,
+      "net_ci_95": [
+        -1.2915441648929513,
+        -0.1313962945984881
+      ],
+      "noise_null_mean": -84.96671841093061,
+      "noise_null_metric": "Net Return %",
+      "alpha_ann_pct": -62.81302964219364,
+      "alpha_ci_95": [
+        -118.4930390495966,
+        -7.133020234790685
+      ],
+      "beta": 0.06293420128577942,
+      "t_stat": -2.2110904687155264,
+      "p_val": 0.02702957285061025
+    },
+    {
+      "strategy": "Chronos-Base Daily Strategy (14 bps)",
+      "dates": "2024-11-01 to 2026-10-31",
+      "net_return_pct": 63.57237004127205,
+      "max_drawdown_pct": -47.03390079663819,
+      "trade_count": 165,
+      "net_metric_name": "Net Return % / trade",
+      "net_per_trade_mean": 0.4091627351789746,
+      "net_ci_95": [
+        -0.4164977266982856,
+        1.277768628828003
+      ],
+      "noise_null_mean": -44.21259881818478,
+      "noise_null_metric": "Net Return %",
+      "alpha_ann_pct": 32.71430002507077,
+      "alpha_ci_95": [
+        -31.83448018220924,
+        97.2630802323508
+      ],
+      "beta": 0.09801874438510529,
+      "t_stat": 0.9933577031701532,
+      "p_val": 0.3205356663113852
+    },
+    {
+      "strategy": "Chronos-Base Daily Strategy (50 bps)",
+      "dates": "2024-11-01 to 2026-10-31",
+      "net_return_pct": -9.533868583222926,
+      "max_drawdown_pct": -59.43306344961904,
+      "trade_count": 165,
+      "net_metric_name": "Net Return % / trade",
+      "net_per_trade_mean": 0.04956836544679493,
+      "net_ci_95": [
+        -0.7743529014559971,
+        0.9173544385572978
+      ],
+      "noise_null_mean": -84.96671841093061,
+      "noise_null_metric": "Net Return %",
+      "alpha_ann_pct": 3.1374713145319983,
+      "alpha_ci_95": [
+        -60.690693657572325,
+        66.96563628663633
+      ],
+      "beta": 0.09574386415648518,
+      "t_stat": 0.09634373444967893,
+      "p_val": 0.9232475775475457
+    },
+    {
+      "strategy": "Zero Forecast (Always Flat)",
+      "dates": "2024-11-01 to 2026-10-31",
+      "net_return_pct": 0.0,
+      "max_drawdown_pct": 0.0,
+      "trade_count": 0,
+      "net_metric_name": "Net Return % / trade",
+      "net_per_trade_mean": 0.0,
+      "net_ci_95": [
+        0.0,
+        0.0
+      ],
+      "noise_null_mean": 0.0,
+      "noise_null_metric": "Net Return %",
+      "alpha_ann_pct": 0.0,
+      "alpha_ci_95": [
+        0.0,
+        0.0
+      ],
+      "beta": 0.0,
+      "t_stat": 0.0,
+      "p_val": 1.0
+    },
+    {
+      "strategy": "Buy & Hold BTC (14 bps)",
+      "dates": "2024-11-01 to 2026-10-31",
+      "net_return_pct": 10.231036480533149,
+      "max_drawdown_pct": -52.97176591351057,
+      "trade_count": 1,
+      "net_metric_name": "Net Return % / trade",
+      "net_per_trade_mean": 10.231036480533149,
+      "net_ci_95": [
+        10.231036480533149,
+        10.231036480533149
+      ],
+      "noise_null_mean": 49.653405814041975,
+      "noise_null_metric": "Net Return %",
+      "alpha_ann_pct": 0.0,
+      "alpha_ci_95": [
+        0.0,
+        0.0
+      ],
+      "beta": 1.0,
+      "t_stat": 0.0,
+      "p_val": 1.0
+    },
+    {
+      "strategy": "Buy & Hold BTC (50 bps)",
+      "dates": "2024-11-01 to 2026-10-31",
+      "net_return_pct": 9.87103648053315,
+      "max_drawdown_pct": -52.97176591351057,
+      "trade_count": 1,
+      "net_metric_name": "Net Return % / trade",
+      "net_per_trade_mean": 9.87103648053315,
+      "net_ci_95": [
+        9.87103648053315,
+        9.87103648053315
+      ],
+      "noise_null_mean": 49.293405814041996,
+      "noise_null_metric": "Net Return %",
+      "alpha_ann_pct": 0.0,
+      "alpha_ci_95": [
+        0.0,
+        0.0
+      ],
+      "beta": 1.0,
+      "t_stat": 0.0,
+      "p_val": 1.0
+    }
+  ],
+  "oos_table": [
+    {
+      "strategy": "15m Engine (14 bps)",
+      "dates": "2026-11-01 to 2026-11-07",
+      "net_return_pct": -6.03198555677682,
+      "max_drawdown_pct": -7.040962221665839,
+      "trade_count": 6,
+      "mean_net_R": -1.0269431396859394,
+      "ci_95": [
+        -1.0269431396859396,
+        -1.0269431396859394
+      ],
+      "n_lt_30_warning": true
+    },
+    {
+      "strategy": "15m Engine (50 bps)",
+      "dates": "2026-11-01 to 2026-11-07",
+      "net_return_pct": -13.485600089042594,
+      "max_drawdown_pct": -12.375901002467534,
+      "trade_count": 6,
+      "mean_net_R": -2.381939784592641,
+      "ci_95": [
+        -2.381939784592641,
+        -2.381939784592641
+      ],
+      "n_lt_30_warning": true
+    },
+    {
+      "strategy": "TimesFM Daily (14 bps)",
+      "dates": "2026-11-01 to 2026-11-06",
+      "net_return_pct": 4.2167361232084755,
+      "max_drawdown_pct": -4.078035359120292,
+      "trade_count": 5,
+      "mean_ret_pct": 0.8322619878195248,
+      "n_lt_30_warning": true
+    },
+    {
+      "strategy": "TimesFM Daily (50 bps)",
+      "dates": "2026-11-01 to 2026-11-06",
+      "net_return_pct": 2.5325971333258535,
+      "max_drawdown_pct": -4.438035359120286,
+      "trade_count": 5,
+      "mean_ret_pct": 0.50431247027376,
+      "n_lt_30_warning": true
+    },
+    {
+      "strategy": "Chronos-Base Daily (14 bps)",
+      "dates": "2026-11-01 to 2026-11-06",
+      "net_return_pct": 8.734075825594513,
+      "max_drawdown_pct": -1.9628861369060742,
+      "trade_count": 3,
+      "mean_ret_pct": 2.8597165137701865,
+      "n_lt_30_warning": true
+    },
+    {
+      "strategy": "Chronos-Base Daily (50 bps)",
+      "dates": "2026-11-01 to 2026-11-06",
+      "net_return_pct": 7.778019552830218,
+      "max_drawdown_pct": -1.9628861369060706,
+      "trade_count": 3,
+      "mean_ret_pct": 2.55807013983221,
+      "n_lt_30_warning": true
+    },
+    {
+      "strategy": "Buy & Hold BTC (14 bps)",
+      "dates": "2026-11-01 to 2026-11-06",
+      "net_return_pct": -2.3802355597340776,
+      "max_drawdown_pct": -5.788543949549838,
+      "trade_count": 1,
+      "mean_ret_pct": -2.3802355597340776,
+      "n_lt_30_warning": true
+    }
+  ]
+}
