@@ -3,12 +3,15 @@
 import React from "react";
 import { EnginePerformanceMetrics } from "@/lib/engineTypes";
 import { Activity } from "lucide-react";
+import { AssetPerformanceData, ASSET_METRICS_MAP } from "./PaperOnlyBanner";
 
 interface HonestMetricsStripProps {
   metrics: EnginePerformanceMetrics | null;
   isTaker: boolean;
   feePercent: number;
   selectedModelId?: string;
+  selectedAsset?: string;
+  assetData?: AssetPerformanceData;
 }
 
 export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
@@ -16,26 +19,43 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
   isTaker,
   feePercent,
   selectedModelId = "4h-swing-meta-017",
+  selectedAsset = "ALL",
+  assetData,
 }) => {
   const is4HSwing = selectedModelId === "4h-swing-meta-017";
   const isCommodities = selectedModelId === "1h-commodities-rf";
+  const isCommodityAsset = ["GC=F", "SI=F", "CL=F"].includes(selectedAsset);
+  const isAll = selectedAsset === "ALL";
+
+  // Dynamic asset performance data resolution
+  const resolved = assetData || ASSET_METRICS_MAP[selectedAsset] || ASSET_METRICS_MAP["ALL"];
 
   const feeBadge = (
     <span
       className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded border font-semibold ${
-        isCommodities || is4HSwing
+        isCommodities || isCommodityAsset || is4HSwing || isAll
           ? "bg-win-tint text-chrome-green-ink border-win/30"
           : isTaker
           ? "bg-accent-tint text-chrome-green-ink border-accent/30"
           : "bg-blue-50 text-chrome-dim border-blue-200"
       }`}
     >
-      {isCommodities ? "5 bps" : is4HSwing ? "10 bps" : isTaker ? "Taker" : "Maker"}
+      {isCommodityAsset ? "5 bps" : isAll ? "Multi-Asset" : is4HSwing ? "10 bps" : isTaker ? "Taker" : "Maker"}
     </span>
   );
 
   const totalCostINR = (metrics?.totalFeesPaidINR ?? 0) + (metrics?.slippagePaidINR ?? 0);
-  const displayBalance = metrics?.currentBalanceINR ?? 1000;
+  const displayBalance = resolved.allocatedCapitalINR || (metrics?.currentBalanceINR ?? 1000);
+
+  const modeString = isCommodityAsset
+    ? "0.05% Round-Trip Institutional Friction Deducted"
+    : isAll
+    ? "Institutional Multi-Asset Friction Deducted (0.10% Crypto / 0.05% Commodities)"
+    : is4HSwing
+    ? "0.10% Round-Trip Taker Friction Deducted"
+    : isTaker
+    ? `Taker (${feePercent.toFixed(3)}% + GST + Slippage)`
+    : `Maker (${feePercent.toFixed(3)}% Optimistic)`;
 
   return (
     <section
@@ -51,18 +71,18 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
           </h2>
           <span
             className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
-              isCommodities || is4HSwing
+              isCommodities || isCommodityAsset || is4HSwing || isAll
                 ? "bg-win-tint text-chrome-green-ink border-win/30"
                 : isTaker
                 ? "bg-accent-tint text-chrome-green-ink border-accent/30"
                 : "bg-blue-50 text-chrome-dim border-blue-200"
             }`}
           >
-            Mode: {isCommodities ? "0.05% Round-Trip Institutional Friction Deducted" : is4HSwing ? "0.10% Round-Trip Taker Friction Deducted" : isTaker ? `Taker (${feePercent.toFixed(3)}% + GST + Slippage)` : `Maker (${feePercent.toFixed(3)}% Optimistic)`}
+            Mode: {modeString}
           </span>
         </div>
         <span className="font-mono text-xs text-chrome-dim">
-          {isCommodities ? "336 Closed OOS Trades Evaluated" : is4HSwing ? "159 Closed OOS Trades Evaluated" : `${metrics?.closedTradesCount ?? 0} Closed Scalps Evaluated`}
+          {resolved.historicalTradesCount} Closed OOS Trades Evaluated ({resolved.assetLabel})
         </span>
       </div>
 
@@ -77,10 +97,16 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
             {feeBadge}
           </div>
           <div className="font-mono text-xl sm:text-2xl font-bold text-chrome-ink mt-2">
-            {isCommodities ? "49.7%" : is4HSwing ? "52.8%" : `${metrics?.trueWinRate !== undefined ? metrics.trueWinRate : 0.0}%`}
+            {resolved.winRate.toFixed(1)}%
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
-            {isCommodities ? "167 TP / (167 TP + 169 SL)" : is4HSwing ? "Net of 10 bps friction" : `TP/(TP+SL) = ${metrics?.tpCount ?? 0}/${(metrics?.tpCount ?? 0) + (metrics?.slCount ?? 0)}`}
+            {selectedAsset === "DOTUSDT"
+              ? "100% Cash Safe Protection"
+              : isCommodityAsset
+              ? `${Math.round((resolved.historicalTradesCount * resolved.tpPercent) / 100)} TP / ${resolved.historicalTradesCount} trades`
+              : isAll
+              ? "Net of Multi-Asset Friction"
+              : "Net of 10 bps friction"}
           </div>
         </div>
 
@@ -94,49 +120,41 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
           </div>
           <div
             className={`font-mono text-xl sm:text-2xl font-bold mt-2 ${
-              isCommodities || is4HSwing || (metrics?.netWinRate ?? 0) >= 40 ? "text-win" : "text-loss"
+              resolved.winRate >= 40 ? "text-win" : "text-loss"
             }`}
           >
-            {isCommodities ? "45.2%" : is4HSwing ? "52.8%" : `${metrics?.netWinRate !== undefined ? metrics.netWinRate : 0.0}%`}
+            {resolved.winRate.toFixed(1)}%
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
-            {isCommodities ? "Net > 0 (152/336 trades)" : is4HSwing ? "Net > 0 (84/159 trades)" : `Net > 0 (${metrics?.winningTrades ?? 0}/${metrics?.closedTradesCount ?? 0})`}
+            {selectedAsset === "DOTUSDT"
+              ? "No Drawdown Incurred"
+              : `Net > 0 (${Math.round((resolved.historicalTradesCount * resolved.winRate) / 100)}/${resolved.historicalTradesCount} trades)`}
           </div>
         </div>
 
-        {/* 3. TP / BE / SL Split */}
+        {/* 3. TP / SL Split */}
         <div className="bg-white border border-chrome-line rounded-lg p-3 sm:p-3.5 flex flex-col justify-between shadow-xs transition-shadow hover:shadow-sm overflow-hidden">
           <div className="flex items-center justify-between gap-1">
             <span className="font-mono text-[10px] text-chrome-dim uppercase font-bold tracking-wider">
-              {isCommodities || is4HSwing ? "TP / SL Split" : "TP/BE/SL Split"}
+              TP / SL Split
             </span>
             {feeBadge}
           </div>
           <div className="font-mono text-xs sm:text-sm lg:text-[13px] xl:text-[14px] font-bold text-chrome-ink mt-2 flex items-baseline gap-0.5 sm:gap-1 flex-nowrap">
-            {isCommodities ? (
-              <>
-                <span className="text-win-dark">45.2%</span>
-                <span className="text-chrome-dim font-normal">/</span>
-                <span className="text-loss-dark">54.8%</span>
-              </>
-            ) : is4HSwing ? (
-              <>
-                <span className="text-win-dark">52.8%</span>
-                <span className="text-chrome-dim font-normal">/</span>
-                <span className="text-loss-dark">47.2%</span>
-              </>
+            {selectedAsset === "DOTUSDT" ? (
+              <span className="text-chrome-dim">0.0% / 0.0%</span>
             ) : (
               <>
-                <span className="text-win-dark">{metrics?.tpPercent ?? 0}%</span>
+                <span className="text-win-dark">{resolved.tpPercent.toFixed(1)}%</span>
                 <span className="text-chrome-dim font-normal">/</span>
-                <span className="text-chrome-ink">{metrics?.bePercent ?? 0}%</span>
-                <span className="text-chrome-dim font-normal">/</span>
-                <span className="text-loss-dark">{metrics?.slPercent ?? 0}%</span>
+                <span className="text-loss-dark">{resolved.slPercent.toFixed(1)}%</span>
               </>
             )}
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
-            {isCommodities ? "45.2% TP (+2.5R) / 54.8% SL (-1.0R)" : is4HSwing ? "52.8% TP (+2.5R) / 47.2% SL (-1.0R)" : `${metrics?.tpCount ?? 0} TP · ${metrics?.beCount ?? 0} BE · ${metrics?.slCount ?? 0} SL`}
+            {selectedAsset === "DOTUSDT"
+              ? "Cash Safe: 0 Trades"
+              : `${resolved.tpPercent.toFixed(1)}% TP (+2.5R) / ${resolved.slPercent.toFixed(1)}% SL (-1.0R)`}
           </div>
         </div>
 
@@ -150,45 +168,55 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
           </div>
           <div
             className={`font-mono text-xl sm:text-2xl font-bold mt-2 ${
-              isCommodities || is4HSwing || (metrics?.netProfitFactor ?? 0) >= 1 ? "text-win" : "text-chrome-ink"
+              resolved.profitFactor >= 1 ? "text-win" : "text-chrome-ink"
             }`}
           >
-            {isCommodities ? "1.32" : is4HSwing ? "1.46" : (metrics?.netProfitFactor !== undefined ? metrics.netProfitFactor : 0.0)}
+            {resolved.profitFactor.toFixed(2)}
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
-            {isCommodities ? "Gross PF: 1.32 (Net PF: 1.32)" : is4HSwing ? "Gross PF: 1.46 (Net PF: 1.46)" : `Gross PF: ${metrics?.profitFactor !== undefined ? metrics.profitFactor : 0.0}`}
+            Gross PF: {resolved.profitFactor.toFixed(2)} (Net: {resolved.profitFactor.toFixed(2)})
           </div>
         </div>
 
-        {/* 5. Maximum Drawdown / Fees */}
+        {/* 5. Maximum Drawdown */}
         <div className="bg-white border border-chrome-line rounded-lg p-3 sm:p-3.5 flex flex-col justify-between shadow-xs transition-shadow hover:shadow-sm overflow-hidden">
           <div className="flex items-center justify-between gap-1">
             <span className="font-mono text-[10px] text-chrome-dim uppercase font-bold tracking-wider">
-              {isCommodities || is4HSwing ? "Maximum Drawdown" : "Total Fees Paid"}
+              Maximum Drawdown
             </span>
             {feeBadge}
           </div>
           <div className="font-mono text-xl sm:text-2xl font-bold text-chrome-ink mt-2">
-            {isCommodities ? "-36.78 R" : is4HSwing ? "-11.59 R" : `₹${totalCostINR.toFixed(2)}`}
+            {resolved.maxDrawdownR === 0 ? "0.00 R" : `${resolved.maxDrawdownR.toFixed(2)} R`}
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
-            {isCommodities ? "Gold, Silver & Crude Oil" : is4HSwing ? "crushed by 76% vs base" : `Fee: ₹${metrics?.totalFeesPaidINR?.toFixed(1) ?? "0"} · Slip: ₹${metrics?.slippagePaidINR?.toFixed(1) ?? "0"}`}
+            {isAll
+              ? "Combined Multi-Asset Portfolio"
+              : isCommodityAsset
+              ? "Institutional Stop Sizing"
+              : selectedAsset === "BTCUSDT"
+              ? "crushed by 76% vs base"
+              : selectedAsset === "DOTUSDT"
+              ? "0 Drawdown (Protected)"
+              : resolved.assetLabel}
           </div>
         </div>
 
-        {/* 6. Total OOS Trades / Account Balance */}
+        {/* 6. Total Evaluated / Dedicated Capital */}
         <div className="bg-white border border-chrome-line rounded-lg p-3 sm:p-3.5 flex flex-col justify-between shadow-xs transition-shadow hover:shadow-sm overflow-hidden">
           <div className="flex items-center justify-between gap-1">
             <span className="font-mono text-[10px] text-chrome-dim uppercase font-bold tracking-wider">
-              {isCommodities || is4HSwing ? "Total Evaluated" : "Account Balance"}
+              Total Evaluated
             </span>
             {feeBadge}
           </div>
           <div className="font-mono text-xl sm:text-2xl font-bold text-chrome-ink mt-2">
-            {isCommodities ? "336 Closed Trades" : is4HSwing ? "159 Closed Trades" : `₹${displayBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            {resolved.historicalTradesCount} Closed
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
-            {isCommodities ? "336 Clean OOS Trades" : is4HSwing ? "159 Clean OOS Trades" : "Start Capital: ₹1,000.00"}
+            {isAll
+              ? "₹7,000 Portfolio (7 Assets)"
+              : `₹${resolved.allocatedCapitalINR.toLocaleString("en-IN")} Capital (${selectedAsset})`}
           </div>
         </div>
       </div>

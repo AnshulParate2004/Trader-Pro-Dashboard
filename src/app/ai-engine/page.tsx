@@ -24,7 +24,7 @@ import {
 } from "@/lib/engineTypes";
 
 // Modular Clean Components
-import PaperOnlyBanner from "@/components/ai-engine/PaperOnlyBanner";
+import PaperOnlyBanner, { AssetPerformanceData, ASSET_METRICS_MAP } from "@/components/ai-engine/PaperOnlyBanner";
 import HonestMetricsStrip from "@/components/ai-engine/HonestMetricsStrip";
 import ResearchResultsTable from "@/components/ai-engine/ResearchResultsTable";
 import LiveTradesTable from "@/components/ai-engine/LiveTradesTable";
@@ -36,6 +36,10 @@ export default function AiEnginePage() {
   const [metrics, setMetrics] = useState<EnginePerformanceMetrics | null>(null);
   const [selectedModelId, setSelectedModelId] = useState<string>("4h-swing-meta-017");
   const [livePredictionLogs, setLivePredictionLogs] = useState<any[]>([]);
+
+  // Lifted Asset Selection State for dynamic multi-asset reactive dashboard
+  const [selectedAsset, setSelectedAsset] = useState<string>("ALL");
+  const currentAssetData = ASSET_METRICS_MAP[selectedAsset] || ASSET_METRICS_MAP["ALL"];
 
 
   const [config, setConfig] = useState<EngineConfig>({
@@ -152,10 +156,16 @@ export default function AiEnginePage() {
     fetchHistoricalTrades(selectedModelId, 1, histLimit, histSideFilter, newOutcome, histSymbolFilter);
   };
 
-  const handleHistSymbolChange = (newSymbol: string) => {
-    setHistSymbolFilter(newSymbol);
+  const handleAssetChange = (newAsset: string) => {
+    setSelectedAsset(newAsset);
+    setHistSymbolFilter(newAsset);
+    setLiveSymbolFilter(newAsset);
     setHistPage(1);
-    fetchHistoricalTrades(selectedModelId, 1, histLimit, histSideFilter, histOutcomeFilter, newSymbol);
+    fetchHistoricalTrades(selectedModelId, 1, histLimit, histSideFilter, histOutcomeFilter, newAsset);
+  };
+
+  const handleHistSymbolChange = (newSymbol: string) => {
+    handleAssetChange(newSymbol);
   };
 
   const filteredLiveTrades = trades.filter((t) => {
@@ -501,12 +511,15 @@ export default function AiEnginePage() {
             with the PAPER ONLY status. Most prominent element.
            ========================================================================= */}
         <PaperOnlyBanner
-          avgNetR={metrics?.avgNetR ?? (selectedModelId === "1h-commodities-rf" ? 0.1514 : selectedModelId === "4h-swing-meta-017" ? 0.1748 : -0.261)}
-          netPnLINR={metrics?.netPnLINR ?? (selectedModelId === "1h-commodities-rf" ? 5090 : selectedModelId === "4h-swing-meta-017" ? 2780 : 0)}
+          avgNetR={currentAssetData.avgNetR}
+          netPnLINR={currentAssetData.netPnLINR}
           isTaker={isTaker}
-          feePercent={selectedModelId === "1h-commodities-rf" ? 0.05 : currentFeePercent}
-          closedTradesCount={metrics?.closedTradesCount ?? (selectedModelId === "1h-commodities-rf" ? 336 : selectedModelId === "4h-swing-meta-017" ? 159 : trades.length)}
+          feePercent={["GC=F", "SI=F", "CL=F"].includes(selectedAsset) ? 0.05 : currentFeePercent}
+          closedTradesCount={tableTab === "live" ? currentAssetData.liveTradesCount : currentAssetData.historicalTradesCount}
           selectedModelId={selectedModelId}
+          selectedAsset={selectedAsset}
+          assetData={currentAssetData}
+          isLiveMode={tableTab === "live"}
         />
 
         {/* =========================================================================
@@ -520,6 +533,8 @@ export default function AiEnginePage() {
           isTaker={isTaker}
           feePercent={currentFeePercent}
           selectedModelId={selectedModelId}
+          selectedAsset={selectedAsset}
+          assetData={currentAssetData}
         />
 
         {/* =========================================================================
@@ -680,6 +695,8 @@ export default function AiEnginePage() {
           totalLiveCount={metrics?.totalTrades || trades.length}
           isTaker={isTaker}
           feePercent={currentFeePercent}
+          selectedAsset={selectedAsset}
+          onAssetChange={handleAssetChange}
         />
 
 

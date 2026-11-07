@@ -42,6 +42,8 @@ interface LiveTradesTableProps {
   totalLiveCount?: number;
   isTaker?: boolean;
   feePercent?: number;
+  selectedAsset?: string;
+  onAssetChange?: (asset: string) => void;
 }
 
 export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
@@ -74,6 +76,8 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   totalLiveCount,
   isTaker = true,
   feePercent = 0.040,
+  selectedAsset = "ALL",
+  onAssetChange,
 }) => {
   // Live Prediction Logs Filter & Pagination State
   const [logAssetFilter, setLogAssetFilter] = React.useState<"ALL" | "crypto" | "commodities">("ALL");
@@ -109,7 +113,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                   : "text-chrome-dim hover:text-chrome-ink"
               }`}
             >
-              🟢 Live Trades ({trades.length})
+              🟢 Live Trades ({selectedAsset !== "ALL" ? `${filteredLiveTrades.length}/${trades.length}` : trades.length})
             </button>
             <button
               onClick={() => setTableTab("historical")}
@@ -119,7 +123,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                   : "text-chrome-dim hover:text-chrome-ink"
               }`}
             >
-              📊 Verified Historical OOS Trades ({totalHistoricalCount ? totalHistoricalCount.toLocaleString() : "495"})
+              📊 Verified Historical OOS Trades ({totalHistoricalCount ? totalHistoricalCount.toLocaleString() : (selectedAsset === "ALL" ? "495" : "0")})
             </button>
           </div>
         </div>
@@ -144,8 +148,12 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
               <div className="flex items-center gap-1.5 bg-chrome-field border border-chrome-line rounded px-2.5 py-1">
                 <span className="text-[11px] text-chrome-dim">Asset:</span>
                 <select
-                  value={histSymbolFilter}
-                  onChange={(e) => handleHistSymbolChange && handleHistSymbolChange(e.target.value)}
+                  value={selectedAsset || histSymbolFilter}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (handleHistSymbolChange) handleHistSymbolChange(val);
+                    if (onAssetChange) onAssetChange(val);
+                  }}
                   aria-label="Filter historical trades by asset"
                   className="bg-transparent font-bold text-chrome-ink outline-none cursor-pointer text-xs"
                 >
@@ -270,8 +278,12 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
               <div className="flex items-center gap-1.5 bg-chrome-field border border-chrome-line rounded px-2.5 py-1">
                 <span className="text-[11px] text-chrome-dim">Asset:</span>
                 <select
-                  value={liveSymbolFilter}
-                  onChange={(e) => setLiveSymbolFilter && setLiveSymbolFilter(e.target.value)}
+                  value={selectedAsset || liveSymbolFilter}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (setLiveSymbolFilter) setLiveSymbolFilter(val);
+                    if (onAssetChange) onAssetChange(val);
+                  }}
                   aria-label="Filter live session trades by asset"
                   className="bg-transparent font-bold text-chrome-ink outline-none cursor-pointer text-xs"
                 >
