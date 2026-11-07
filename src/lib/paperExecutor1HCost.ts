@@ -78,6 +78,7 @@ export interface PaperTradeCostRecord {
   take_profit: number;
   be_trigger: number;
   limit_placed_bar_time?: number;
+  last_evaluated_candle_time?: number;
 }
 
 export interface SkippedTradeRecord {
@@ -282,6 +283,52 @@ export function evaluateActiveTradeOnCandle(
 }
 
 /**
+ * Amendment 2:
+ * Evaluates an active trade sequentially over a list of candles,
+ * ensuring each candle is evaluated only once by tracking last_evaluated_candle_time.
+ */
+export function evaluateTradeCandleStream(
+  trade: {
+    side: "LONG" | "SHORT";
+    stop_loss: number;
+    initial_stop_loss?: number;
+    take_profit: number;
+    be_trigger: number;
+    intended_price: number;
+    be_activated: boolean;
+    entry_time?: string | number;
+    last_evaluated_candle_time?: number;
+    status?: string;
+  },
+  candles: Candle[]
+): TradeExitResult | null {
+  const entryTimestamp = trade.entry_time ? new Date(trade.entry_time).getTime() : 0;
+  // Amendment 2: each run evaluates only candles with openTime > last_evaluated_candle_time
+  const minAllowedTime = trade.last_evaluated_candle_time !== undefined
+    ? trade.last_evaluated_candle_time
+    : (entryTimestamp - 1);
+
+  const subCandles = candles.filter((c) => c.openTime > minAllowedTime && c.openTime >= entryTimestamp);
+
+  for (const candle of subCandles) {
+    const exitRes = evaluateActiveTradeOnCandle(trade, candle, entryTimestamp);
+    trade.last_evaluated_candle_time = candle.openTime;
+
+    if (exitRes.beActivatedUpdated && !trade.be_activated) {
+      trade.be_activated = true;
+      trade.stop_loss = exitRes.newStopLoss ?? trade.intended_price;
+    }
+
+    if (exitRes.closed) {
+      if (trade.status) trade.status = "CLOSED";
+      return exitRes;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Main Paper Execution Cron for the Cost-Aware 1H Engine.
  * Operates strictly on separate collections (paper_1h_cost, paper_1h_cost_active, paper_1h_cost_skipped, paper_1h_cost_missed).
  */
@@ -394,10 +441,19 @@ export async function runPaper1HCostExecutor(options?: {
   }
 
   // 3. Manage active paper trades (Strict Fills: SL evaluated before TP, sub-hour 5m after entry)
+  const activeTrades: PaperTradeCostRecord[] = (!isDryRun && db) ? await db.collection("paper_1h_cost_active").find({ status: "ACTIVE" }).toArray() as any : [];
+
   let candles5m: Candle[] = options?.candles5m ?? [];
-  if (candles5m.length === 0) {
+  let fetchFailed = false;
+
+  if (activeTrades.length > 0 && candles5m.length === 0) {
     try {
-      const raw5m = await fetchBinanceKlines("5m", 36);
+      const earliestRequiredTime = Math.min(...activeTrades.map((t) => {
+        const entryTs = t.entry_time ? new Date(t.entry_time).getTime() : 0;
+        return t.last_evaluated_candle_time !== undefined ? t.last_evaluated_candle_time : entryTs;
+      }));
+      const limit = Math.max(36, Math.min(1000, Math.ceil((Date.now() - earliestRequiredTime) / (300 * 1000)) + 5));
+      const raw5m = await fetchBinanceKlines("5m", limit);
       candles5m = raw5m.map((c) => ({
         openTime: c.openTime,
         open: c.open,
@@ -408,34 +464,29 @@ export async function runPaper1HCostExecutor(options?: {
         closeTime: c.closeTime || c.openTime + 300000 - 1,
       }));
     } catch {
-      // fallback to liveCandle if Binance 5m fetch is unavailable
+      fetchFailed = true;
     }
   }
 
-  const activeTrades: PaperTradeCostRecord[] = (!isDryRun && db) ? await db.collection("paper_1h_cost_active").find({ status: "ACTIVE" }).toArray() as any : [];
-  for (const t of activeTrades) {
-    const entryTimestamp = t.entry_time ? new Date(t.entry_time).getTime() : 0;
-    const subCandles = candles5m.length > 0
-      ? candles5m.filter((c) => c.openTime >= entryTimestamp)
-      : (liveCandle.openTime >= entryTimestamp ? [liveCandle] : []);
+  if (activeTrades.length > 0 && fetchFailed) {
+    // Amendment 2: If 5m fetch fails, do not evaluate or close trade with coarse fallback; log NO_5M_DATA
+    actions.push("[COST-1H BTC] NO_5M_DATA: 5m klines fetch failed; skipping active trade evaluation to prevent unverified fallback");
+  } else {
+    for (const t of activeTrades) {
+      const exitRes = evaluateTradeCandleStream(t, candles5m);
 
-    for (const candle of subCandles) {
-      const exitRes = evaluateActiveTradeOnCandle(t, candle, entryTimestamp);
-
-      if (exitRes.beActivatedUpdated && !t.be_activated) {
-        t.be_activated = true;
-        t.stop_loss = exitRes.newStopLoss ?? t.intended_price;
+      if (exitRes?.beActivatedUpdated) {
         if (!isDryRun && db) {
           await db.collection("paper_1h_cost_active").updateOne(
             { id: t.id },
-            { $set: { be_activated: true, stop_loss: t.stop_loss } }
+            { $set: { be_activated: true, stop_loss: t.stop_loss, last_evaluated_candle_time: t.last_evaluated_candle_time } }
           );
         }
         actions.push(`[COST-1H BTC] ${t.id} triggered BE ratchet @ $${t.stop_loss.toFixed(2)}`);
       }
 
-      if (exitRes.closed) {
-        const exitPrice = exitRes.exitPrice ?? candle.close;
+      if (exitRes?.closed) {
+        const exitPrice = exitRes.exitPrice ?? candles5m[candles5m.length - 1]?.close ?? 0;
         const grossR = exitRes.grossR ?? -1.0;
         const netR = Number((grossR - t.cost_R).toFixed(4));
         const closedRecord: PaperTradeCostRecord = {
@@ -465,6 +516,7 @@ export async function runPaper1HCostExecutor(options?: {
           initial_stop_loss: t.initial_stop_loss ?? t.stop_loss,
           take_profit: t.take_profit,
           be_trigger: t.be_trigger,
+          last_evaluated_candle_time: t.last_evaluated_candle_time,
         };
 
         if (!isDryRun && db) {
@@ -472,7 +524,13 @@ export async function runPaper1HCostExecutor(options?: {
           await db.collection("paper_1h_cost_active").deleteOne({ id: t.id });
         }
         actions.push(`[COST-1H BTC CLOSED] ${t.id} ${exitRes.exitType} @ $${exitPrice.toFixed(2)} | Net R: ${netR >= 0 ? "+" : ""}${netR}R`);
-        break;
+      } else {
+        if (!isDryRun && db && t.last_evaluated_candle_time !== undefined) {
+          await db.collection("paper_1h_cost_active").updateOne(
+            { id: t.id },
+            { $set: { last_evaluated_candle_time: t.last_evaluated_candle_time } }
+          );
+        }
       }
     }
   }

@@ -6,6 +6,7 @@ import {
   checkMakerLimitFill,
   calculateSlippageBps,
   evaluateActiveTradeOnCandle,
+  evaluateTradeCandleStream,
   MAX_COST_R_THRESHOLD,
   ENABLE_MAKER_LIMIT_ENTRY,
   MAKER_LIMIT_EXPIRY_BARS,
@@ -199,6 +200,61 @@ describe("Cost-Aware 1H Engine Unit Tests", () => {
       };
       const resPost = evaluateActiveTradeOnCandle(trade, postEntryCandle, entryTimeMs);
       assert.equal(resPost.closed, false);
+    });
+  });
+
+  describe("6. Amendment 2: Candle Re-Evaluation & 5M Fallback Protection", () => {
+    test("re-evaluation bug: LONG trade reaching BE in candle 2 must not be closed at BE on run 2 due to candle 1 low", () => {
+      const t0 = 1700000000000;
+      const trade: any = {
+        id: "trade-re-eval-test",
+        side: "LONG" as const,
+        intended_price: 100000,
+        stop_loss: 98000,
+        initial_stop_loss: 98000,
+        be_trigger: 100600,
+        take_profit: 102000,
+        be_activated: false,
+        entry_time: new Date(t0).toISOString(),
+        status: "ACTIVE" as const,
+      };
+
+      // Candle 1: dips to 98,500 (between initial stop 98,000 and intended_price 100,000)
+      const candle1: Candle = {
+        openTime: t0,
+        open: 100000,
+        high: 100200,
+        low: 98500, // between 98,000 and 100,000
+        close: 99500,
+        volume: 100,
+      };
+
+      // Candle 2: reaches be_trigger (100,600)
+      const candle2: Candle = {
+        openTime: t0 + 300000,
+        open: 99500,
+        high: 100700, // >= 100,600
+        low: 99500,
+        close: 100650,
+        volume: 100,
+      };
+
+      const candleList = [candle1, candle2];
+
+      // Run 1: processes candle 1 and candle 2 using canonical evaluateTradeCandleStream
+      const exitRun1 = evaluateTradeCandleStream(trade, candleList);
+      assert.equal(trade.be_activated, true, "BE should be activated after candle 2");
+      assert.equal(trade.stop_loss, 100000, "Stop loss should be moved to intended price");
+      assert.equal(trade.status, "ACTIVE", "Trade should remain active after Run 1");
+      assert.equal(exitRun1, null, "No exit on Run 1");
+      assert.equal(trade.last_evaluated_candle_time, candle2.openTime, "last_evaluated_candle_time updated to candle 2");
+
+      // Run 2: executor loop runs again with the same candle list
+      const exitRun2 = evaluateTradeCandleStream(trade, candleList);
+
+      // Expected: No exit at BE on run 2 (trade remains ACTIVE)
+      assert.equal(exitRun2, null, "Expected no exit at BE on run 2");
+      assert.equal(trade.status, "ACTIVE", "Trade must remain ACTIVE on run 2");
     });
   });
 });
