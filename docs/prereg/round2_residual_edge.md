@@ -122,3 +122,43 @@ A strategy counts as having a statistically valid, useful quantitative edge if a
 ## 8. Execution Constraint
 
 - **Strict One-Run Protocol:** This document is committed prior to running any execution scripts on branch `feat/round2-residual-edge`. No parameters, formulas, or decision rules may be altered after execution.
+
+
+---
+
+## 9. Amendment 1 (2026-11-07)
+
+1. **Family Size & Bonferroni Correction ($M = 4$ Tests):**
+   - The primary statistical testing family consists of exactly **4 active overlay tests**:
+     1. EWMA(0.94) Volatility Targeting on BTCUSDT
+     2. 200-Day SMA Trend Filter on BTCUSDT
+     3. EWMA(0.94) Volatility Targeting on ETHUSDT
+     4. 200-Day SMA Trend Filter on ETHUSDT
+   - Passive Buy-and-Hold is the benchmark / baseline control, NOT a hypothesis test.
+   - Pre-registered Bonferroni significance threshold:
+     $$\alpha_{\text{Bonf}} = \frac{0.05}{4} = \mathbf{0.0125}$$
+     Evaluated via $98.75\%$ confidence intervals (two-sided, bounds $[0.625\%, 99.375\%]$).
+
+2. **Data Partitioning & ETH Data Alignment:**
+   - All daily bars up to and including **2026-10-31** are formally declared **exploratory**, including ETH daily bars spanning `2026-10-27` through `2026-10-31`.
+   - Data strictly **after 2026-10-31** (`> 2026-10-31`) constitutes the sealed clean confirmatory dataset.
+
+3. **Stage X (Exploratory Run Protocol):**
+   - Exactly one evaluation run on data up to and including `2026-10-31`.
+   - Results from Stage X are strictly descriptive (reporting historical net CAGR, MaxDD, Sharpe, turnover, and beta-adjusted residual alpha).
+   - No confirmatory edge verdict can be declared from Stage X results.
+
+4. **Stage Y (Confirmatory Run Protocol):**
+   - Exactly one confirmatory evaluation run.
+   - Stage Y execution may take place **earliest on 2027-11-01**, and **only** when at least 365 daily bars have accumulated after `2026-10-31` ($n \ge 365$).
+   - Until that date and sample size hurdle are reached, post-2026-10-31 daily data is strictly stored and archived, but never analyzed or inspected.
+
+5. **Execution Physics & Risk Safeguards:**
+   - Signals computed at the daily close of day $t$; position applied from next day $t+1$ (open fill).
+   - Friction charged strictly on rebalancing turnover: $\text{Cost}_t = |w_{t+1} - w_t| \times \text{friction}$.
+   - Leverage cap: strictly $w_t \le 1.0\times$ (no leverage under any condition).
+   - Long-only constraint: strictly $w_t \ge 0.0$ (no shorting; non-invested balance held in $0.0\%$ cash).
+
+6. **Additional Friction Sensitivity Tier (India 1% TDS / 100 bps):**
+   - Added a **100 bps round-trip ($0.0100$)** friction sensitivity tier representing Indian statutory $1\%$ Tax Deducted at Source (TDS) under Section 194S on gross crypto transfers.
+   - This 100 bps row is **reported-only for friction stress-testing** and is not part of the primary pass/fail decision rule.
