@@ -31,6 +31,7 @@ def get_data_root(custom_root: Optional[str] = None) -> Path:
         Path("../data"),
         Path("notebooks/data"),
         Path("../notebooks/data"),
+        Path("../Trader-Pro/notebooks/data"),
     ]
     for c in candidates:
         if c.exists():
