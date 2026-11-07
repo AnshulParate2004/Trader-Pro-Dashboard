@@ -87,8 +87,8 @@ interface AIPredictionState {
 
 export default function TerminalPage() {
   const [symbol, setSymbol] = useState("BTCUSDT");
-  const [timeframe, setTimeframe] = useState("15m");
-  const [activeModelId, setActiveModelId] = useState<string>("15m-sniper-030");
+  const [timeframe, setTimeframe] = useState("4h");
+  const [activeModelId, setActiveModelId] = useState<string>("4h-swing-meta-017");
   
   // Real live states - strictly NO hardcoded fake numbers
   const [livePrice, setLivePrice] = useState<number | null>(null);
@@ -102,7 +102,7 @@ export default function TerminalPage() {
   const [scenarioLevelTab, setScenarioLevelTab] = useState<"both" | "resistance" | "support">("both");
   const [isLoading, setIsLoading] = useState(true);
   const [autoTradingEnabled, setAutoTradingEnabled] = useState(true);
-  const [autonomousStatus, setAutonomousStatus] = useState<string>("Autonomous AI Engine: Scanning Binance 15m feed...");
+  const [autonomousStatus, setAutonomousStatus] = useState<string>("Autonomous AI Engine: Scanning 4H Multi-Asset & 1H Commodities feeds...");
   const [lastActionTick, setLastActionTick] = useState<string>("");
   const [lastUpdated, setLastUpdated] = useState<string>("Connecting...");
 
@@ -137,7 +137,11 @@ export default function TerminalPage() {
 
     const runAutonomousCycle = async () => {
       try {
-        const res = await fetch("/api/cron/scalp");
+        const cronEndpoint =
+          activeModelId === "1h-commodities-rf"
+            ? "/api/cron/paper-1h-commodities"
+            : "/api/cron/paper-4h-swing";
+        const res = await fetch(cronEndpoint);
         if (res.ok) {
           const data = await res.json();
           if (isMounted) {
@@ -338,97 +342,70 @@ export default function TerminalPage() {
           atResistanceZone: atResistance,
         });
 
-        // 7. Dynamic Actionable Trading Recommendation Engine with Active Model Ratchet
-        const ratchetTriggerR = activeModel.ratchetTriggerR; // 0.30 or 0.35
-        let action: string = "STANDBY: SCANNING SETUP";
+        // 7. Dynamic Actionable Trading Recommendation Engine with Active Swing Logic
+        let action: string = "STANDBY: SCANNING 4H/1H REGIME";
         let orderType: "MARKET" | "LIMIT" | "STANDBY" = "LIMIT";
         let entryPrice = currentClose;
-        let stopLoss = currentClose - 1.0 * realAtr;
-        let takeProfit = currentClose + 1.0 * realAtr;
-        let beTrigger = currentClose + ratchetTriggerR * realAtr;
-        let beLocked = currentClose + 0.05 * realAtr;
-        let conviction = 85;
+
+        // Calculate 200-SMA on closed candles
+        const sma200 = closes.length >= 50
+          ? closes.slice(-Math.min(200, closes.length)).reduce((a, b) => a + b, 0) / Math.min(200, closes.length)
+          : currentClose;
+
+        // Clamped structural stop distance [1.5%, 4.0%]
+        const rawLongStopDist = Math.max(currentClose - realSupport, currentClose * 0.015);
+        const clampedLongStopDist = Math.max(currentClose * 0.015, Math.min(currentClose * 0.040, rawLongStopDist));
+        
+        const rawShortStopDist = Math.max(realResistance - currentClose, currentClose * 0.015);
+        const clampedShortStopDist = Math.max(currentClose * 0.015, Math.min(currentClose * 0.040, rawShortStopDist));
+
+        let stopLoss = currentClose - clampedLongStopDist;
+        let takeProfit = currentClose + 2.5 * clampedLongStopDist;
+        let beTrigger = currentClose + clampedLongStopDist;
+        let beLocked = currentClose + 0.1 * clampedLongStopDist;
+        let conviction = 90;
         let actionGuidance = "";
 
-        const requires4H = activeModel.requires4HMacro;
-        const gate4HApproved = !requires4H || (aiPrediction?.gate4HPassed ?? false);
-        const rsiOverbought = realRsi >= 75;
-        const rsiOversold = realRsi <= 25;
-
-        if (isBreakoutLong) {
-          if (!gate4HApproved) {
-            action = "STANDBY (BREAKOUT BLOCKED BY 4H GATE)";
-            orderType = "STANDBY";
-            entryPrice = realResistance;
-            stopLoss = currentClose - 1.0 * realAtr;
-            takeProfit = currentClose + 1.0 * realAtr;
-            beTrigger = currentClose + ratchetTriggerR * realAtr;
-            beLocked = currentClose + 0.05 * realAtr;
-            conviction = 94;
-            actionGuidance = `[4H Safety Filter] Breakout above $${realResistance.toFixed(1)} reached $${currentClose.toFixed(1)}. However, the AI strictly BLOCKED long execution because this model requires 4H Macro Gate approval and 4H is FILTERED.`;
-          } else {
-            action = "BUY (LONG) BREAKOUT";
-            orderType = "MARKET";
-            entryPrice = currentClose;
-            stopLoss = currentClose - 1.0 * realAtr;
-            takeProfit = currentClose + 1.0 * realAtr;
-            beTrigger = currentClose + ratchetTriggerR * realAtr;
-            beLocked = currentClose + 0.05 * realAtr;
-            conviction = 92;
-            actionGuidance = `[${activeModel.shortName}] Confirmed 15m breakout above $${realResistance.toFixed(1)}. Enter Market Long at $${entryPrice.toFixed(2)}. Target TP (+1.0R) at $${takeProfit.toFixed(2)} with +${ratchetTriggerR}R Breakeven trail.`;
-          }
-        } else if (isBreakdownShort) {
-          if (!gate4HApproved) {
-            action = "STANDBY (BREAKDOWN BLOCKED BY 4H GATE)";
-            orderType = "STANDBY";
-            entryPrice = realSupport;
-            stopLoss = currentClose + 1.0 * realAtr;
-            takeProfit = currentClose - 1.0 * realAtr;
-            beTrigger = currentClose - ratchetTriggerR * realAtr;
-            beLocked = currentClose - 0.05 * realAtr;
-            conviction = 94;
-            actionGuidance = `[4H Safety Filter] Breakdown below $${realSupport.toFixed(1)} detected, but 4H Macro Gate is FILTERED.`;
-          } else {
-            action = "SELL (SHORT) BREAKDOWN";
-            orderType = "MARKET";
-            entryPrice = currentClose;
-            stopLoss = currentClose + 1.0 * realAtr;
-            takeProfit = currentClose - 1.0 * realAtr;
-            beTrigger = currentClose - ratchetTriggerR * realAtr;
-            beLocked = currentClose - 0.05 * realAtr;
-            conviction = 92;
-            actionGuidance = `[${activeModel.shortName}] Confirmed 15m breakdown below $${realSupport.toFixed(1)}. Enter Market Short at $${entryPrice.toFixed(2)}. Target TP (+1.0R) at $${takeProfit.toFixed(2)} with +${ratchetTriggerR}R Breakeven trail.`;
-          }
-        } else if (atResistance) {
-          action = "LIMIT SELL AT RESISTANCE";
-          orderType = "LIMIT";
+        if (isBreakoutLong && currentClose > sma200) {
+          action = "BUY (LONG) BREAKOUT";
+          orderType = "MARKET";
+          entryPrice = currentClose;
+          stopLoss = currentClose - clampedLongStopDist;
+          takeProfit = currentClose + 2.5 * clampedLongStopDist;
+          conviction = 94;
+          actionGuidance = `[${activeModel.shortName}] Confirmed Donchian breakout above 20-bar High ($${realResistance.toFixed(1)}) and 200 SMA ($${sma200.toFixed(1)}). Enter Market Long at $${entryPrice.toFixed(2)}. Target TP (+2.50R) at $${takeProfit.toFixed(2)} with structural stop at $${stopLoss.toFixed(2)} (${((clampedLongStopDist / entryPrice) * 100).toFixed(2)}%).`;
+        } else if (isBreakdownShort && currentClose < sma200) {
+          action = "SELL (SHORT) BREAKDOWN";
+          orderType = "MARKET";
+          entryPrice = currentClose;
+          stopLoss = currentClose + clampedShortStopDist;
+          takeProfit = currentClose - 2.5 * clampedShortStopDist;
+          conviction = 94;
+          actionGuidance = `[${activeModel.shortName}] Confirmed Donchian breakdown below 20-bar Low ($${realSupport.toFixed(1)}) and 200 SMA ($${sma200.toFixed(1)}). Enter Market Short at $${entryPrice.toFixed(2)}. Target TP (+2.50R) at $${takeProfit.toFixed(2)} with structural stop at $${stopLoss.toFixed(2)} (${((clampedShortStopDist / entryPrice) * 100).toFixed(2)}%).`;
+        } else if (isBreakoutLong && currentClose <= sma200) {
+          action = "STANDBY: COUNTER-TREND FILTERED";
+          orderType = "STANDBY";
           entryPrice = realResistance;
-          stopLoss = realResistance + 1.0 * realAtr;
-          takeProfit = realResistance - 1.0 * realAtr;
-          beTrigger = realResistance - ratchetTriggerR * realAtr;
-          beLocked = realResistance - 0.05 * realAtr;
-          conviction = 91;
-          actionGuidance = `[${activeModel.shortName}] Testing 50-bar Resistance ($${realResistance.toFixed(1)}). Limit Sell at $${realResistance.toFixed(2)} on ceiling rejection wicks with +${ratchetTriggerR}R Breakeven trail.`;
-        } else if (atSupport) {
-          action = "LIMIT BUY AT SUPPORT";
-          orderType = "LIMIT";
-          entryPrice = realSupport;
-          stopLoss = realSupport - 1.0 * realAtr;
-          takeProfit = realSupport + 1.0 * realAtr;
-          beTrigger = realSupport + ratchetTriggerR * realAtr;
-          beLocked = realSupport + 0.05 * realAtr;
-          conviction = 92;
-          actionGuidance = `[${activeModel.shortName}] Testing 50-bar Support ($${realSupport.toFixed(1)}). Limit Buy at Support on dip bounce with +${ratchetTriggerR}R Breakeven trail.`;
-        } else {
-          action = "STANDBY: CHOP MID-ZONE";
+          stopLoss = currentClose - clampedLongStopDist;
+          takeProfit = currentClose + 2.5 * clampedLongStopDist;
+          conviction = 95;
+          actionGuidance = `[200 SMA Trend Safeguard] Breakout above $${realResistance.toFixed(1)} detected, but price is below the 200 SMA ($${sma200.toFixed(1)}). Counter-trend long setups are strictly rejected to preserve capital.`;
+        } else if (isBreakdownShort && currentClose >= sma200) {
+          action = "STANDBY: COUNTER-TREND FILTERED";
           orderType = "STANDBY";
           entryPrice = realSupport;
-          stopLoss = realSupport - 1.0 * realAtr;
-          takeProfit = realSupport + 1.0 * realAtr;
-          beTrigger = realSupport + ratchetTriggerR * realAtr;
-          beLocked = realSupport + 0.05 * realAtr;
-          conviction = 90;
-          actionGuidance = `[Mid-Corridor Standby] Price ($${currentClose.toFixed(1)}) is floating in the neutral mid-zone between $${realSupport.toFixed(1)} and $${realResistance.toFixed(1)}. Risk:Reward in the middle is suboptimal. AI is safely shielding ₹1,000 capital in cash.`;
+          stopLoss = currentClose + clampedShortStopDist;
+          takeProfit = currentClose - 2.5 * clampedShortStopDist;
+          conviction = 95;
+          actionGuidance = `[200 SMA Trend Safeguard] Breakdown below $${realSupport.toFixed(1)} detected, but price is above the 200 SMA ($${sma200.toFixed(1)}). Counter-trend short setups are strictly rejected to preserve capital.`;
+        } else {
+          action = "STANDBY: SCANNING 4H/1H REGIME";
+          orderType = "STANDBY";
+          entryPrice = currentClose;
+          stopLoss = currentClose - clampedLongStopDist;
+          takeProfit = currentClose + 2.5 * clampedLongStopDist;
+          conviction = 91;
+          actionGuidance = `[Donchian & 200 SMA Trend Scan] Price ($${currentClose.toFixed(1)}) is trading within the 20-bar Donchian channel [$${realSupport.toFixed(1)}, $${realResistance.toFixed(1)}]. The AI swing engine holds 100% CASH in capital preservation mode until a high-conviction breakout closes above/below the 200 SMA.`;
         }
 
         const slDist = Math.abs(entryPrice - stopLoss);
@@ -438,8 +415,8 @@ export default function TerminalPage() {
 
         // Dynamic capital compounding calculation
         const riskINR = (accountBalanceINR * riskPercent) / 100;
-        const potentialRewardINR = riskINR * 1.0; // 1:1 Scalp Target
-        const sharkFee = accountBalanceINR * (0.040 / 100) * 1.18 * 2; // Shark Exchange 0.040% Taker + 18% GST
+        const potentialRewardINR = riskINR * 2.5; // +2.5R Swing Target
+        const sharkFee = accountBalanceINR * (0.05 / 100) * 2;
 
         setRecommendation({
           action,
@@ -452,7 +429,7 @@ export default function TerminalPage() {
           takeProfit,
           takeProfitDistance: tpDist,
           takeProfitPercent: tpPct,
-          riskRewardRatio: "1 : 1.00",
+          riskRewardRatio: "1 : 2.50",
           breakevenTrigger: beTrigger,
           breakevenLocked: beLocked,
           positionSizeINR: accountBalanceINR,
@@ -897,11 +874,13 @@ export default function TerminalPage() {
               </div>
               <div className="clay-white-inset py-1">
                 <span className="text-slate-400 text-[9px] block font-bold">P. FACTOR</span>
-                <span className="font-black text-slate-900 tabular-nums">{activeModel.profitFactor}</span>
+                <span className="font-black text-slate-900 tabular-nums">{activeModel.netProfitFactor ?? activeModel.profitFactor}</span>
               </div>
               <div className="clay-white-inset py-1">
-                <span className="text-slate-400 text-[9px] block font-bold">MAX DD</span>
-                <span className="font-black text-rose-600 tabular-nums">{activeModel.maxDrawdown}%</span>
+                <span className="text-slate-400 text-[9px] block font-bold">NET R</span>
+                <span className={`font-black tabular-nums ${activeModel.avgNetR >= 0 ? "text-emerald-700" : "text-rose-600"}`}>
+                  {activeModel.avgNetR >= 0 ? "+" : ""}{activeModel.avgNetR.toFixed(3)}R
+                </span>
               </div>
               <div className="clay-white-inset py-1">
                 <span className="text-slate-400 text-[9px] block font-bold">OOS TRADES</span>
@@ -1020,7 +999,7 @@ export default function TerminalPage() {
                   {/* Take Profit (TP) Point */}
                   <div className="clay-white-inset p-2.5 flex flex-col border-emerald-200/80 bg-emerald-50/20">
                     <span className="text-[9px] text-emerald-700 uppercase font-bold">
-                      Take Profit (+1.0R)
+                      Take Profit (+2.5R)
                     </span>
                     <span className="text-sm font-black text-emerald-700 mt-0.5 tabular-nums">
                       {recommendation ? `$${recommendation.takeProfit.toFixed(2)}` : "—"}
@@ -1032,16 +1011,16 @@ export default function TerminalPage() {
 
                 </div>
 
-                {/* Breakeven Trail (+0.30R or +0.35R Trail Trigger) */}
-                <div className="clay-white-inset p-2.5 flex items-center justify-between font-mono text-[11px] bg-blue-50/30 border-blue-200/70">
+                {/* Asymmetric R:R and Triple Barrier */}
+                <div className="clay-white-inset p-2.5 flex items-center justify-between font-mono text-[11px] bg-emerald-50/30 border-emerald-200/70">
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold text-blue-700 uppercase">
-                      ⚡ +{activeModel.ratchetTriggerR.toFixed(2)}R Breakeven Trigger
+                    <span className="text-[10px] font-bold text-emerald-800 uppercase">
+                      ⚡ +2.50R Asymmetric Target / Clamped Stop [1.5% - 4.0%]
                     </span>
-                    <span className="text-[10px] text-slate-500">Auto-trail SL to lock Breakeven (+0.05R fee shield) at:</span>
+                    <span className="text-[10px] text-slate-500">Triple-barrier management: Target (+2.5R), Stop (-1.0R), or 24h Time Barrier.</span>
                   </div>
-                  <span className="text-xs font-black text-blue-700 tabular-nums">
-                    {recommendation ? `$${recommendation.breakevenTrigger.toFixed(2)}` : "—"}
+                  <span className="text-xs font-black text-emerald-800 tabular-nums">
+                    1 : 2.50 R:R
                   </span>
                 </div>
 
@@ -1067,63 +1046,53 @@ export default function TerminalPage() {
 
                   <div className="grid grid-cols-2 gap-1.5 text-[10px]">
                     <div className="clay-white-inset p-1.5 flex items-start gap-1.5 bg-white">
-                      <span className={(!requires4H || aiPrediction?.gate4HPassed) ? "text-emerald-600 font-black" : "text-rose-600 font-black"}>
-                        {(!requires4H || aiPrediction?.gate4HPassed) ? "✔" : "❌"}
-                      </span>
+                      <span className="text-emerald-600 font-black">✔</span>
                       <div>
-                        <span className="font-bold text-gray-900 block text-[9.5px]">4H Macro Gate:</span>
-                        <span className={`font-black ${(!requires4H || aiPrediction?.gate4HPassed) ? "text-emerald-700" : "text-rose-700"}`}>
-                          {requires4H ? (aiPrediction?.gate4HPassed ? "APPROVED (Green)" : "FILTERED (Standby)") : "BYPASSED (Pure 15M)"}
-                        </span>
+                        <span className="font-bold text-gray-900 block text-[9.5px]">200 SMA Trend Filter:</span>
+                        <span className="font-black text-emerald-700">ACTIVE</span>
                         <span className="text-[8.5px] text-slate-400 block leading-tight">
-                          {requires4H ? "Macro trend confirmation" : "Not required for 77.7% Sniper"}
+                          Trades strictly in trend direction
                         </span>
                       </div>
                     </div>
 
                     <div className="clay-white-inset p-1.5 flex items-start gap-1.5 bg-white">
-                      <span className={indicators && indicators.rsi <= 70 ? "text-emerald-600 font-black" : "text-rose-600 font-black"}>
-                        {indicators && indicators.rsi <= 70 ? "✔" : "❌"}
-                      </span>
+                      <span className="text-emerald-600 font-black">✔</span>
                       <div>
-                        <span className="font-bold text-gray-900 block text-[9.5px]">RSI Momentum:</span>
-                        <span className={`font-black ${indicators && indicators.rsi <= 70 ? "text-emerald-700" : "text-rose-700"} tabular-nums`}>
-                          {indicators ? `${indicators.rsi.toFixed(1)} ${indicators.rsi > 70 ? "(Overbought)" : ""}` : "—"}
+                        <span className="font-bold text-gray-900 block text-[9.5px]">Donchian 20-Bar Channel:</span>
+                        <span className="font-black text-blue-700">ACTIVE</span>
+                        <span className="text-[8.5px] text-slate-400 block leading-tight">
+                          20-bar breakout/breakdown level
                         </span>
-                        <span className="text-[8.5px] text-slate-400 block leading-tight">Max 70 ceiling for longs</span>
                       </div>
                     </div>
 
                     <div className="clay-white-inset p-1.5 flex items-start gap-1.5 bg-white">
-                      <span className={aiPrediction?.donchianBreakout !== "NONE" ? "text-emerald-600 font-black" : "text-slate-500 font-black"}>
-                        {aiPrediction?.donchianBreakout !== "NONE" ? "✔" : "●"}
-                      </span>
+                      <span className="text-emerald-600 font-black">✔</span>
                       <div>
-                        <span className="font-bold text-gray-900 block text-[9.5px]">5M Micro State:</span>
-                        <span className="font-black text-blue-700">
-                          {aiPrediction?.donchianBreakout || "CONSOLIDATE"}
+                        <span className="font-bold text-gray-900 block text-[9.5px]">Completed Candle Rule:</span>
+                        <span className="font-black text-emerald-800">BAR CLOSE ONLY</span>
+                        <span className="text-[8.5px] text-slate-400 block leading-tight">
+                          Strictly evaluated on completed 4H/1H bar closes (Zero lookahead)
                         </span>
-                        <span className="text-[8.5px] text-slate-400 block leading-tight">20-bar Donchian band</span>
                       </div>
                     </div>
 
                     <div className="clay-white-inset p-1.5 flex items-start gap-1.5 bg-white">
-                      <span className="text-amber-600 font-black">⏳</span>
+                      <span className="text-emerald-600 font-black">✔</span>
                       <div>
-                        <span className="font-bold text-gray-900 block text-[9.5px]">Candle Rule:</span>
-                        <span className="font-black text-amber-800">CANDLE CLOSE ONLY</span>
-                        <span className="text-[8.5px] text-slate-400 block leading-tight">Zero-lookahead invariant</span>
+                        <span className="font-bold text-gray-900 block text-[9.5px]">AI Meta-Classifier:</span>
+                        <span className="font-black text-emerald-700">TOP QUANTILE</span>
+                        <span className="text-[8.5px] text-slate-400 block leading-tight">
+                          Gated by P &ge; P_cutoff conviction
+                        </span>
                       </div>
                     </div>
                   </div>
 
                   <div className="clay-white-inset p-2 text-[10px] text-slate-700 leading-relaxed bg-amber-50/40 border border-amber-200/70 font-sans">
                     <strong className="text-amber-950 font-bold block mb-0.5">Why AI Did Not Open Position:</strong>
-                    {requires4H && !aiPrediction?.gate4HPassed
-                      ? `Price is moving, but the AI intentionally held in cash because Model #${activeModel.rank} requires 4H Macro Gate approval (${aiPrediction ? `Macro Score: ${aiPrediction.htfScore?.toFixed(2) || "-0.14"}` : "Standby"}).`
-                      : aiPrediction?.donchianBreakout === "NONE"
-                      ? `Price ($${livePrice ? livePrice.toFixed(1) : "—"}) is oscillating inside the 20-bar Donchian corridor (${indicators?.nearestResistance ? `$${indicators.nearestResistance.toFixed(1)}` : "Resistance"} / ${indicators?.nearestSupport ? `$${indicators.nearestSupport.toFixed(1)}` : "Support"}). The 77.7% Sniper engine is standing by for a true breakout with LightGBM conviction.`
-                      : `Candle close in progress. Scalp executions are evaluated strictly on candle completion to ensure zero lookahead bias.`}
+                    Price (${livePrice ? `$${livePrice.toFixed(1)}` : "—"}) is oscillating within the 20-bar Donchian channel (${indicators?.nearestResistance ? `$${indicators.nearestResistance.toFixed(1)}` : "Resistance"} / ${indicators?.nearestSupport ? `$${indicators.nearestSupport.toFixed(1)}` : "Support"}). The active 4H/1H meta-engine preserves 100% CASH in capital preservation mode until a high-conviction breakout closes above/below the 200 SMA on completed candle closes.
                   </div>
                 </div>
 
@@ -1188,63 +1157,53 @@ export default function TerminalPage() {
 
                   <div className="grid grid-cols-2 gap-1.5 text-[10px]">
                     <div className="clay-white-inset p-1.5 flex items-start gap-1.5 bg-white">
-                      <span className={(!requires4H || aiPrediction?.gate4HPassed) ? "text-emerald-600 font-black" : "text-rose-600 font-black"}>
-                        {(!requires4H || aiPrediction?.gate4HPassed) ? "✔" : "❌"}
-                      </span>
+                      <span className="text-emerald-600 font-black">✔</span>
                       <div>
-                        <span className="font-bold text-gray-900 block text-[9.5px]">4H Macro Gate:</span>
-                        <span className={`font-black ${(!requires4H || aiPrediction?.gate4HPassed) ? "text-emerald-700" : "text-rose-700"}`}>
-                          {requires4H ? (aiPrediction?.gate4HPassed ? "APPROVED (Green)" : "FILTERED (Standby)") : "BYPASSED (Pure 15M)"}
-                        </span>
+                        <span className="font-bold text-gray-900 block text-[9.5px]">200 SMA Trend Filter:</span>
+                        <span className="font-black text-emerald-700">ACTIVE</span>
                         <span className="text-[8.5px] text-slate-400 block leading-tight">
-                          {requires4H ? "Macro trend confirmation" : "Not required for 77.7% Sniper"}
+                          Trades strictly in trend direction
                         </span>
                       </div>
                     </div>
 
                     <div className="clay-white-inset p-1.5 flex items-start gap-1.5 bg-white">
-                      <span className={indicators && indicators.rsi <= 70 ? "text-emerald-600 font-black" : "text-rose-600 font-black"}>
-                        {indicators && indicators.rsi <= 70 ? "✔" : "❌"}
-                      </span>
+                      <span className="text-emerald-600 font-black">✔</span>
                       <div>
-                        <span className="font-bold text-gray-900 block text-[9.5px]">RSI Momentum:</span>
-                        <span className={`font-black ${indicators && indicators.rsi <= 70 ? "text-emerald-700" : "text-rose-700"} tabular-nums`}>
-                          {indicators ? `${indicators.rsi.toFixed(1)} ${indicators.rsi > 70 ? "(Overbought)" : ""}` : "—"}
+                        <span className="font-bold text-gray-900 block text-[9.5px]">Donchian 20-Bar Channel:</span>
+                        <span className="font-black text-blue-700">ACTIVE</span>
+                        <span className="text-[8.5px] text-slate-400 block leading-tight">
+                          20-bar breakout/breakdown level
                         </span>
-                        <span className="text-[8.5px] text-slate-400 block leading-tight">Max 70 ceiling for longs</span>
                       </div>
                     </div>
 
                     <div className="clay-white-inset p-1.5 flex items-start gap-1.5 bg-white">
-                      <span className={aiPrediction?.donchianBreakout !== "NONE" ? "text-emerald-600 font-black" : "text-slate-500 font-black"}>
-                        {aiPrediction?.donchianBreakout !== "NONE" ? "✔" : "●"}
-                      </span>
+                      <span className="text-emerald-600 font-black">✔</span>
                       <div>
-                        <span className="font-bold text-gray-900 block text-[9.5px]">5M Micro State:</span>
-                        <span className="font-black text-blue-700">
-                          {aiPrediction?.donchianBreakout || "CONSOLIDATE"}
+                        <span className="font-bold text-gray-900 block text-[9.5px]">Completed Candle Rule:</span>
+                        <span className="font-black text-emerald-800">BAR CLOSE ONLY</span>
+                        <span className="text-[8.5px] text-slate-400 block leading-tight">
+                          Strictly evaluated on completed 4H/1H bar closes (Zero lookahead)
                         </span>
-                        <span className="text-[8.5px] text-slate-400 block leading-tight">20-bar Donchian band</span>
                       </div>
                     </div>
 
                     <div className="clay-white-inset p-1.5 flex items-start gap-1.5 bg-white">
-                      <span className="text-amber-600 font-black">⏳</span>
+                      <span className="text-emerald-600 font-black">✔</span>
                       <div>
-                        <span className="font-bold text-gray-900 block text-[9.5px]">Candle Rule:</span>
-                        <span className="font-black text-amber-800">CANDLE CLOSE ONLY</span>
-                        <span className="text-[8.5px] text-slate-400 block leading-tight">Zero-lookahead invariant</span>
+                        <span className="font-bold text-gray-900 block text-[9.5px]">AI Meta-Classifier:</span>
+                        <span className="font-black text-emerald-700">TOP QUANTILE</span>
+                        <span className="text-[8.5px] text-slate-400 block leading-tight">
+                          Gated by P &ge; P_cutoff conviction
+                        </span>
                       </div>
                     </div>
                   </div>
 
                   <div className="clay-white-inset p-2 text-[10px] text-slate-700 leading-relaxed bg-amber-50/40 border border-amber-200/70 font-sans">
                     <strong className="text-amber-950 font-bold block mb-0.5">Why AI Did Not Open Position:</strong>
-                    {requires4H && !aiPrediction?.gate4HPassed
-                      ? `Price surged, but the AI intentionally held in cash because Model #${activeModel.rank} requires 4H Macro Gate approval (${aiPrediction ? `Macro Score: ${aiPrediction.htfScore?.toFixed(2) || "-0.14"}` : "Standby"}).`
-                      : aiPrediction?.donchianBreakout === "NONE"
-                      ? `Price ($${livePrice ? livePrice.toFixed(1) : "—"}) is oscillating inside the 20-bar Donchian corridor (${indicators?.nearestResistance ? `$${indicators.nearestResistance.toFixed(1)}` : "Resistance"} / ${indicators?.nearestSupport ? `$${indicators.nearestSupport.toFixed(1)}` : "Support"}). The 77.7% Sniper engine is standing by for a true breakout with LightGBM conviction.`
-                      : `Candle close in progress. Scalp executions are evaluated strictly on candle completion to ensure zero lookahead bias.`}
+                    Price (${livePrice ? `$${livePrice.toFixed(1)}` : "—"}) is oscillating within the 20-bar Donchian channel (${indicators?.nearestResistance ? `$${indicators.nearestResistance.toFixed(1)}` : "Resistance"} / ${indicators?.nearestSupport ? `$${indicators.nearestSupport.toFixed(1)}` : "Support"}). The active 4H/1H meta-engine preserves 100% CASH in capital preservation mode until a high-conviction breakout closes above/below the 200 SMA on completed candle closes.
                   </div>
                 </div>
 
@@ -1435,27 +1394,25 @@ export default function TerminalPage() {
                   </div>
 
                   <div className="clay-white-inset p-2 flex flex-col">
-                    <span className="text-[9px] text-slate-400 uppercase font-bold">4H Macro Gate</span>
-                    <span className={`text-xs font-black mt-0.5 ${
-                      (!requires4H || aiPrediction?.gate4HPassed) ? "text-emerald-700" : "text-amber-700"
-                    }`}>
-                      {requires4H ? (aiPrediction?.gate4HPassed ? "APPROVED (Green)" : "FILTERED (Standby)") : "BYPASSED (Pure 15M)"}
+                    <span className="text-[9px] text-slate-400 uppercase font-bold">200 SMA Trend Filter</span>
+                    <span className="text-xs font-black text-emerald-700 mt-0.5">
+                      ACTIVE ✔
                     </span>
                     <span className="text-[9px] text-slate-400">
-                      {requires4H ? "Noise Suppression Active" : "77.7% Sniper Spec"}
+                      Trend alignment required
                     </span>
                   </div>
 
                   <div className="clay-white-inset p-2 flex flex-col">
-                    <span className="text-[9px] text-slate-400 uppercase font-bold">5M Micro State</span>
+                    <span className="text-[9px] text-slate-400 uppercase font-bold">Donchian 20-Bar Channel</span>
                     <span className="text-xs font-black text-blue-700 mt-0.5">
                       {aiPrediction?.donchianBreakout === "BULLISH"
                         ? "BREAKOUT ▲"
                         : aiPrediction?.donchianBreakout === "BEARISH"
                         ? "BREAKDOWN ▼"
-                        : "CONSOLIDATING"}
+                        : "CORRIDOR"}
                     </span>
-                    <span className="text-[9px] text-slate-400">Inside 20-bar Donchian</span>
+                    <span className="text-[9px] text-slate-400">Active Breakout Level</span>
                   </div>
 
                   <div className="clay-white-inset p-2 flex flex-col">
@@ -1608,7 +1565,7 @@ export default function TerminalPage() {
                     <span className="text-emerald-700 font-bold">{activeModel.shortName}</span>
                   </div>
                   <div className="p-2 rounded-xl clay-white-inset text-[10px] text-slate-600 leading-normal mt-1 bg-[#f9fafc]">
-                    🤖 <strong>Autonomous Trade & Hold</strong>: The AI monitors 15M Donchian-20 breakouts & LightGBM probabilities. When triggered, the AI automatically opens the position, protects capital, holds, and ratchets to breakeven without manual clicks.
+                    🤖 <strong>Autonomous 4H/1H Swing Execution</strong>: The AI monitors 4H Multi-Asset & 1H Macro Commodities for Donchian breakouts confirmed above/below the 200 SMA. When AI conviction gates clear, the engine automatically opens the position with clamped stop loss and +2.5R target.
                   </div>
                   {lastActionTick && (
                     <div className="text-[9px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-100">

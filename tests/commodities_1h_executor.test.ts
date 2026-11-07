@@ -327,7 +327,7 @@ describe("1H Macro Commodities Paper Trading Engine Unit Tests", () => {
 
       const result = await runPaper1HCommoditiesExecutor({
         isDryRun: true,
-        injectedCandleMap: mockCandleMap,
+        customCandlesMap: mockCandleMap,
       });
 
       assert.equal(result.success, true);

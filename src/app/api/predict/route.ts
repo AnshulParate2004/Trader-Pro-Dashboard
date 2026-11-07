@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const config = await getEngineConfig();
-    const modelId = searchParams.get("modelId") || config.activeModelId || "15m-sniper-030";
+    const modelId = searchParams.get("modelId") || config.activeModelId || "4h-swing-meta-017";
 
     const is5MModel = (modelId.startsWith("5m") || modelId.includes("master")) && !modelId.startsWith("15m");
 
