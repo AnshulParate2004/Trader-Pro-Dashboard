@@ -20,6 +20,20 @@ interface StudyRecord {
 
 const RESEARCH_STUDIES: StudyRecord[] = [
   {
+    id: "1h-commodities-rf",
+    strategy: "1H Macro Commodities (Donchian Breakout + 200 SMA + Random Forest Filter on Gold, Silver, Crude Oil)",
+    timeframe: "1H",
+    sample: "336 Clean OOS Trades (GC=F, SI=F, CL=F)",
+    friction: "0.05% round-trip institutional friction",
+    avgNetR: "+0.151 R (OOS) [ACTIVE WINNING ENGINE]",
+    winRate: "True: 49.7% · Net: 45.2%",
+    confidenceInterval: "95% CI [+0.038, +0.264] R",
+    protocolCheck: "Clean Purged Walk-Forward (2024-2026) with zero lookahead, 100-tree Random Forest meta-classifier (P >= 0.0635), and full 5 bps institutional friction deducted. Generates 4.07 trades/day with +50.9R net profit.",
+    verdict: "ACTIVE_EDGE",
+    verdictLabel: "ACTIVE / VERIFIED OOS EDGE",
+    notes: "Bi-directional Donchian breakout / breakdown on Gold, Silver, and Crude Oil. Gated by 100-tree RF meta-classifier (0.613 OOS ROC-AUC). Produces +0.1514R net expectancy with 1.32 PF across 336 out-of-sample trades.",
+  },
+  {
     id: "4h-swing-meta",
     strategy: "4H Swing Meta-Labeling (Donchian-20 Breakout + 200 SMA + LightGBM Filter)",
     timeframe: "4H",

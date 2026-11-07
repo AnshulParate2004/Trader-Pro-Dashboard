@@ -1,0 +1,79 @@
+{
+  "model_name": "lgbm_meta_1h_tech_stocks",
+  "asset_class": "tech_stocks",
+  "timeframe": "1h",
+  "universe": [
+    "NVDA",
+    "MSFT",
+    "GOOGL",
+    "AMZN",
+    "AMD"
+  ],
+  "benchmark": "QQQ",
+  "earnings_blackout_filter_active": true,
+  "n_samples": 1631,
+  "target_base_rate": 0.0539546290619252,
+  "p_cutoff": 0.05802706811295345,
+  "friction_bps": 5.0,
+  "num_trees": 100,
+  "feature_names": [
+    "feat_rs_qqq_24h",
+    "feat_rs_qqq_72h",
+    "feat_rs_qqq_7d",
+    "feat_vol_zscore",
+    "feat_volatility_ratio",
+    "feat_atr_pct",
+    "feat_donchian_pos",
+    "feat_trend_dist_200"
+  ],
+  "feature_stats": {
+    "feat_rs_qqq_24h": {
+      "mean": 0.005902345028340438,
+      "std": 0.04375735678187241,
+      "min": -0.15573526192347575,
+      "max": 0.37587411998556797
+    },
+    "feat_rs_qqq_72h": {
+      "mean": 0.009637916292540767,
+      "std": 0.07148580218289506,
+      "min": -0.17185168988280886,
+      "max": 0.4434287389468521
+    },
+    "feat_rs_qqq_7d": {
+      "mean": 0.017511775082298394,
+      "std": 0.1193514997738919,
+      "min": -0.21157737081108774,
+      "max": 0.8188937116001687
+    },
+    "feat_vol_zscore": {
+      "mean": 0.29792402406726265,
+      "std": 1.0552629019961621,
+      "min": -1.261703546698561,
+      "max": 4.0
+    },
+    "feat_volatility_ratio": {
+      "mean": 0.8997038043071875,
+      "std": 0.3593318807140892,
+      "min": 0.27805933626508106,
+      "max": 3.670018354641004
+    },
+    "feat_atr_pct": {
+      "mean": 0.009985905639786444,
+      "std": 0.004555221280577865,
+      "min": 0.002963526010766151,
+      "max": 0.041237015770095
+    },
+    "feat_donchian_pos": {
+      "mean": 0.048212796676968345,
+      "std": 0.41244866695682664,
+      "min": -0.8364005077495048,
+      "max": 0.7134552996453488
+    },
+    "feat_trend_dist_200": {
+      "mean": 0.021468602233320897,
+      "std": 0.08614891710883839,
+      "min": -0.17707441748767455,
+      "max": 0.4
+    }
+  }
+}

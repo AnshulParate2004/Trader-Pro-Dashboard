@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { getDb } from "@/lib/mongodb";
+import { getInMemoryCommodityTrades } from "@/lib/paperExecutor1HCommodities";
 
 export const dynamic = "force-dynamic";
 
@@ -28,12 +29,72 @@ export async function GET(req: Request) {
     const side = (searchParams.get("side") || searchParams.get("direction") || "ALL").toUpperCase();
     const outcome = (searchParams.get("outcome") || "ALL").toUpperCase();
 
+    // -------------------------------------------------------------------------
+    // 1. ACTIVE 1H MACRO COMMODITIES ENGINE
+    // -------------------------------------------------------------------------
+    if (modelParam === "1h-commodities-rf") {
+      let closedCommodityTrades: any[] = [];
+      const db = await getDb();
+      if (db) {
+        try {
+          const col = db.collection("paper_trades_1h_commodities");
+          const query: any = { status: "CLOSED" };
+          if (side === "LONG" || side === "SHORT") query.side = side;
+          if (outcome && outcome !== "ALL") query.exit_type = outcome;
+          closedCommodityTrades = await col.find(query).sort({ entry_time_ms: -1 }).toArray();
+        } catch {
+          closedCommodityTrades = getInMemoryCommodityTrades().filter((t) => t.status === "CLOSED");
+        }
+      } else {
+        closedCommodityTrades = getInMemoryCommodityTrades().filter((t) => t.status === "CLOSED");
+      }
+
+      if (side === "LONG" || side === "SHORT") {
+        closedCommodityTrades = closedCommodityTrades.filter((t) => t.side === side);
+      }
+      if (outcome && outcome !== "ALL") {
+        closedCommodityTrades = closedCommodityTrades.filter((t) => t.exit_type === outcome);
+      }
+
+      const total = closedCommodityTrades.length;
+      const totalPages = Math.max(1, Math.ceil(total / limit));
+      const validPage = Math.min(page, totalPages);
+      const skip = (validPage - 1) * limit;
+      const paged = closedCommodityTrades.slice(skip, skip + limit);
+
+      const trades: HistoricalTrade[] = paged.map((d: any) => ({
+        id: d.id,
+        entryTime: d.entry_time,
+        exitTime: d.exit_time || d.entry_time,
+        side: d.side,
+        outcomeR: d.net_r ?? 0,
+        returnPct: Number(((d.net_r ?? 0) * (d.stop_distance_pct ? d.stop_distance_pct * 100 : 2.0)).toFixed(2)),
+        exitReason: d.exit_type === "TARGET" ? "TAKE_PROFIT" : d.exit_type === "TIME" ? "TIME_EXPIRY" : "STOP_LOSS",
+        symbol: d.symbol,
+        entry_price: d.entry_price,
+        exit_price: d.exit_price,
+        probability: d.probability,
+      }));
+
+      return NextResponse.json({
+        success: true,
+        modelId: "1h-commodities-rf",
+        source: "paper_trades_1h_commodities",
+        page: validPage,
+        limit,
+        totalPages,
+        totalHistoricalTrades: total,
+        returnedCount: trades.length,
+        trades,
+      });
+    }
+
     // Default to 4H Swing Meta-Labeling Engine unless explicitly requesting legacy models
     const isLegacy15M = modelParam && (modelParam.includes("15m") || modelParam.includes("5m") || modelParam.includes("master"));
     const modelId = isLegacy15M ? modelParam : "4h-swing-meta-017";
 
     // -------------------------------------------------------------------------
-    // 1. ACTIVE 4H SWING ENGINE (Default)
+    // 2. ACTIVE 4H SWING ENGINE (Default)
     // -------------------------------------------------------------------------
     if (!isLegacy15M) {
       const db = await getDb();
@@ -130,7 +191,7 @@ export async function GET(req: Request) {
     }
 
     // -------------------------------------------------------------------------
-    // 2. LEGACY RETIRED MODELS (Optional backward compatibility filter)
+    // 3. LEGACY RETIRED MODELS (Optional backward compatibility filter)
     // -------------------------------------------------------------------------
     let queryModelId = "15m-sniper-030";
     if (modelId.includes("5m") || modelId.includes("master")) {

@@ -1,0 +1,76 @@
+{
+  "model_name": "lgbm_meta_1h_macro_commodities",
+  "asset_class": "commodities",
+  "timeframe": "1h",
+  "universe": [
+    "GC=F",
+    "SI=F",
+    "CL=F"
+  ],
+  "benchmark": "DX-Y.NYB",
+  "n_samples": 3327,
+  "target_base_rate": 0.05801021941689209,
+  "p_cutoff": 0.06351804417941201,
+  "friction_bps": 5.0,
+  "num_trees": 100,
+  "feature_names": [
+    "feat_dxy_mom_24h",
+    "feat_dxy_mom_72h",
+    "feat_dxy_corr_60",
+    "feat_vol_zscore",
+    "feat_volatility_ratio",
+    "feat_atr_pct",
+    "feat_donchian_pos",
+    "feat_trend_dist_200"
+  ],
+  "feature_stats": {
+    "feat_dxy_mom_24h": {
+      "mean": -0.0003083193842024494,
+      "std": 0.004478572965963895,
+      "min": -0.024106463315762605,
+      "max": 0.016906560692484307
+    },
+    "feat_dxy_mom_72h": {
+      "mean": -0.00015617658278681138,
+      "std": 0.007188519784355758,
+      "min": -0.03361428530239974,
+      "max": 0.02483505432651345
+    },
+    "feat_dxy_corr_60": {
+      "mean": -0.1985837582210988,
+      "std": 0.3057113644145052,
+      "min": -0.8919508179500618,
+      "max": 0.8397935958910479
+    },
+    "feat_vol_zscore": {
+      "mean": 0.47868890322608365,
+      "std": 1.2736062599934699,
+      "min": -1.8212747716776019,
+      "max": 4.0
+    },
+    "feat_volatility_ratio": {
+      "mean": 0.9443135366833288,
+      "std": 0.3371476182941091,
+      "min": 0.0,
+      "max": 4.341129820830906
+    },
+    "feat_atr_pct": {
+      "mean": 0.005938455775372664,
+      "std": 0.0038006373933375014,
+      "min": 0.0012399279525247262,
+      "max": 0.04332125125968027
+    },
+    "feat_donchian_pos": {
+      "mean": 0.10073302505266622,
+      "std": 0.4043416572735516,
+      "min": -0.786136427278467,
+      "max": 0.764352885150307
+    },
+    "feat_trend_dist_200": {
+      "mean": 0.010205025511131519,
+      "std": 0.04493894475341965,
+      "min": -0.29746740318300857,
+      "max": 0.3
+    }
+  }
+}

@@ -287,7 +287,20 @@ export default function AiEnginePage() {
     setIsSimulating(true);
     setAiStatusMsg(null);
     try {
-      if (selectedModelId === "4h-swing-meta-017") {
+      if (selectedModelId === "1h-commodities-rf") {
+        const res = await fetch("/api/cron/paper-1h-commodities");
+        const data = await res.json();
+        if (data.success) {
+          if (data.actions && data.actions.length > 0) {
+            setAiStatusMsg(`⚡ 1H Commodities: ${data.actions.join(" · ")}`);
+          } else {
+            setAiStatusMsg(`✔ 1H Commodities Evaluated (${data.evaluated_symbols?.join(", ") || "GC=F, SI=F, CL=F"}): 0 triggers (capital preserved in CASH). Active: ${data.active_trades?.length || 0}`);
+          }
+          fetchData("1h-commodities-rf");
+        } else {
+          setAiStatusMsg(`Execution error: ${data.error || "Failed to execute 1H commodities loop"}`);
+        }
+      } else if (selectedModelId === "4h-swing-meta-017") {
         const res = await fetch("/api/cron/paper-4h-swing");
         const data = await res.json();
         if (data.success) {
@@ -487,11 +500,11 @@ export default function AiEnginePage() {
             with the PAPER ONLY status. Most prominent element.
            ========================================================================= */}
         <PaperOnlyBanner
-          avgNetR={metrics?.avgNetR ?? (selectedModelId === "4h-swing-meta-017" ? 0.1748 : -0.261)}
-          netPnLINR={metrics?.netPnLINR ?? (selectedModelId === "4h-swing-meta-017" ? 2780 : 0)}
+          avgNetR={metrics?.avgNetR ?? (selectedModelId === "1h-commodities-rf" ? 0.1514 : selectedModelId === "4h-swing-meta-017" ? 0.1748 : -0.261)}
+          netPnLINR={metrics?.netPnLINR ?? (selectedModelId === "1h-commodities-rf" ? 5090 : selectedModelId === "4h-swing-meta-017" ? 2780 : 0)}
           isTaker={isTaker}
-          feePercent={currentFeePercent}
-          closedTradesCount={metrics?.closedTradesCount ?? (selectedModelId === "4h-swing-meta-017" ? 159 : trades.length)}
+          feePercent={selectedModelId === "1h-commodities-rf" ? 0.05 : currentFeePercent}
+          closedTradesCount={metrics?.closedTradesCount ?? (selectedModelId === "1h-commodities-rf" ? 336 : selectedModelId === "4h-swing-meta-017" ? 159 : trades.length)}
           selectedModelId={selectedModelId}
         />
 

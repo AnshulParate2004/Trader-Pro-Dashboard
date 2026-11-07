@@ -21,7 +21,8 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
   selectedModelId = "4h-swing-meta-017",
 }) => {
   const is4HSwing = selectedModelId === "4h-swing-meta-017";
-  const isPositiveExpectancy = is4HSwing || avgNetR >= 0;
+  const isCommodities = selectedModelId === "1h-commodities-rf";
+  const isPositiveExpectancy = is4HSwing || isCommodities || avgNetR >= 0;
 
   return (
     <section
@@ -44,7 +45,9 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
             {isPositiveExpectancy ? (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-win-tint text-chrome-green-ink border border-win/40 font-mono text-[11px] font-bold uppercase tracking-wider">
                 <ShieldCheck className="w-3.5 h-3.5 text-win" />
-                ACTIVE - POSITIVE EXPECTANCY AFTER FULL 10 BPS FRICTION
+                {isCommodities
+                  ? "ACTIVE - POSITIVE EXPECTANCY AFTER FULL 5 BPS FRICTION"
+                  : "ACTIVE - POSITIVE EXPECTANCY AFTER FULL 10 BPS FRICTION"}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-rose-50 text-rose-800 border border-rose-300 font-mono text-[11px] font-bold uppercase tracking-wider">
@@ -62,20 +65,25 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
                   : "bg-blue-50 text-chrome-dim border-blue-200"
               }`}
             >
-              Fee Mode: {is4HSwing ? "0.10% Round-Trip Taker Friction Deducted" : isTaker ? `Taker (${feePercent.toFixed(3)}% + 18% GST + Slip)` : `Maker (${feePercent.toFixed(3)}% Optimistic)`}
+              Fee Mode: {isCommodities ? "0.05% Round-Trip Institutional Friction Deducted" : is4HSwing ? "0.10% Round-Trip Taker Friction Deducted" : isTaker ? `Taker (${feePercent.toFixed(3)}% + 18% GST + Slip)` : `Maker (${feePercent.toFixed(3)}% Optimistic)`}
             </span>
 
             <span className="font-mono text-[11px] text-chrome-dim">
-              ({is4HSwing ? 159 : closedTradesCount} {is4HSwing ? "Clean OOS Trades Evaluated" : "Live Executions Tracked"})
+              ({isCommodities ? 336 : is4HSwing ? 159 : closedTradesCount} {isCommodities || is4HSwing ? "Clean OOS Trades Evaluated" : "Live Executions Tracked"})
             </span>
           </div>
 
           <h1 className="font-brand text-2xl sm:text-3xl font-medium tracking-tight text-chrome-ink mt-1">
-            {is4HSwing ? "Net Expectancy After Fees: +0.175 R / trade" : "Net Expectancy After Fees"}
+            {isCommodities ? "Net Expectancy After Fees: +0.151 R / trade" : is4HSwing ? "Net Expectancy After Fees: +0.175 R / trade" : "Net Expectancy After Fees"}
           </h1>
 
           <p className="font-body text-xs sm:text-sm text-chrome-dim leading-relaxed">
-            {is4HSwing ? (
+            {isCommodities ? (
+              <>
+                Bi-directional 1-Hour Donchian breakout / breakdown on Gold (<strong>GC=F</strong>), Silver (<strong>SI=F</strong>), and Crude Oil (<strong>CL=F</strong>) gated by 100-tree Random Forest meta-classifier (Top 20% quantile conviction P &ge; 0.0635).
+                Validated across <strong>336 out-of-sample trades with full 5 bps institutional friction deducted</strong> (+0.151R expectancy, 1.32 PF, 4.07 trades/day).
+              </>
+            ) : is4HSwing ? (
               <>
                 Filtered 4-Hour Donchian breakouts with LightGBM Top 25% quantile conviction (P &ge; 0.10) above the 200 SMA.
                 Validated across <strong>159 out-of-sample trades with full 10 bps round-trip friction deducted</strong>.
@@ -100,7 +108,7 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
                 Avg Net R
               </span>
               <span className="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded border bg-chrome-field text-chrome-dim border-chrome-line">
-                {is4HSwing ? "10 bps" : isTaker ? "Taker" : "Maker"}
+                {isCommodities ? "5 bps" : is4HSwing ? "10 bps" : isTaker ? "Taker" : "Maker"}
               </span>
             </div>
             <div
@@ -114,13 +122,15 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
                 <ArrowDownRight className="w-6 h-6 inline text-loss" />
               )}
               <span>
-                {is4HSwing
+                {isCommodities
+                  ? "+0.151 R"
+                  : is4HSwing
                   ? "+0.175 R"
                   : `${isPositiveExpectancy ? "+" : ""}${avgNetR.toFixed(3)} R`}
               </span>
             </div>
             <span className="font-mono text-[10px] text-chrome-dim mt-0.5">
-              {is4HSwing ? "per closed swing trade" : "per closed scalp trade"}
+              {isCommodities ? "per closed commodity trade" : is4HSwing ? "per closed swing trade" : "per closed scalp trade"}
             </span>
           </div>
 
@@ -128,10 +138,10 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
           <div className="flex flex-col min-w-[140px] pl-4 border-l border-chrome-edge">
             <div className="flex items-center justify-between gap-2">
               <span className="font-mono text-[11px] uppercase font-bold text-chrome-dim">
-                {is4HSwing ? "Realized OOS Return" : "Realized Net PnL"}
+                {isCommodities || is4HSwing ? "Realized OOS Return" : "Realized Net PnL"}
               </span>
               <span className="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded border bg-chrome-field text-chrome-dim border-chrome-line">
-                {is4HSwing ? "OOS Edge" : isTaker ? "Taker" : "Maker"}
+                {isCommodities || is4HSwing ? "OOS Edge" : isTaker ? "Taker" : "Maker"}
               </span>
             </div>
             <div
@@ -139,12 +149,14 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
                 isPositiveExpectancy ? "text-win" : "text-loss"
               }`}
             >
-              {is4HSwing
+              {isCommodities
+                ? "+50.90 R"
+                : is4HSwing
                 ? "+27.80 R"
                 : `${netPnLINR >= 0 ? "+" : ""}₹${netPnLINR.toFixed(2)}`}
             </div>
             <span className="font-mono text-[10px] text-chrome-dim mt-0.5">
-              {is4HSwing ? "net of 0.10% taker friction" : "net of GST & slippage"}
+              {isCommodities ? "net of 0.05% friction (+₹5,090)" : is4HSwing ? "net of 0.10% taker friction" : "net of GST & slippage"}
             </span>
           </div>
         </div>

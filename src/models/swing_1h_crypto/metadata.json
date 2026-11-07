@@ -1,0 +1,83 @@
+{
+  "model_name": "lgbm_meta_1h_trusted_crypto",
+  "asset_class": "crypto",
+  "timeframe": "1h",
+  "universe": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "DOTUSDT"
+  ],
+  "n_samples": 5770,
+  "target_base_rate": 0.0779896013864818,
+  "p_cutoff": 0.09131271015958212,
+  "friction_bps": 10.0,
+  "num_trees": 100,
+  "feature_names": [
+    "feat_rs_btc_24h",
+    "feat_rs_btc_72h",
+    "feat_rs_btc_7d",
+    "feat_funding_zscore",
+    "feat_vol_zscore",
+    "feat_volatility_ratio",
+    "feat_atr_pct",
+    "feat_donchian_pos",
+    "feat_trend_dist_200"
+  ],
+  "feature_stats": {
+    "feat_rs_btc_24h": {
+      "mean": -9.496811416028532e-06,
+      "std": 0.026921754101218807,
+      "min": -0.20978901776357173,
+      "max": 0.2641862632450058
+    },
+    "feat_rs_btc_72h": {
+      "mean": -0.0005958439601722199,
+      "std": 0.04211387035359378,
+      "min": -0.22081485028112924,
+      "max": 0.354718835934436
+    },
+    "feat_rs_btc_7d": {
+      "mean": -0.004526714353405755,
+      "std": 0.05963927913158153,
+      "min": -0.24421386011081392,
+      "max": 0.3939346603759264
+    },
+    "feat_funding_zscore": {
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "feat_vol_zscore": {
+      "mean": 0.4451124869173883,
+      "std": 1.3103920150977029,
+      "min": -1.5861279494823406,
+      "max": 4.0
+    },
+    "feat_volatility_ratio": {
+      "mean": 0.9223752195939345,
+      "std": 0.363830996802192,
+      "min": 0.23734631350211838,
+      "max": 3.9641506611451067
+    },
+    "feat_atr_pct": {
+      "mean": 0.008203242623091094,
+      "std": 0.00393133758401737,
+      "min": 0.002,
+      "max": 0.04921663448800808
+    },
+    "feat_donchian_pos": {
+      "mean": -0.023062573265050127,
+      "std": 0.4375411007199906,
+      "min": -0.8279826048939454,
+      "max": 0.838946482999613
+    },
+    "feat_trend_dist_200": {
+      "mean": -0.0035012527724099063,
+      "std": 0.06165258558171246,
+      "min": -0.2904206932160623,
+      "max": 0.34355771606186725
+    }
+  }
+}
