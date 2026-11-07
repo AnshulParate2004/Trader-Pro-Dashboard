@@ -125,3 +125,17 @@ To declare statistical edge, the strategy must satisfy **ALL** of the following:
 
 5. **Executors Do Not Load ML Model Artifacts & Script Signal Superset:**
    Neither `paperExecutor1HA.ts` nor `paperExecutor1HCost.ts` loads the binary LightGBM/CatBoost model (`src/models/1h/final_model_BTCUSDT_1h.joblib`) or ONNX runtime. Signals in both executors are computed using a hand-coded heuristic score: `probLong = 0.50 + (momentum > 1.0 ? 0.08 : -0.08) + (breakout ? 0.07 : 0)`. The simulation script (`analysis/evaluate_cost_aware_1h.py`) tests raw Donchian breakouts regardless of momentum, making the script's signal universe a superset of the executor's signal universe: across the 59,788 historical 1H bars, there are 4,630 raw Donchian breakout signals evaluated, of which 4,470 (96.54%) pass the executor's 0.582 conviction threshold (which requires both the Donchian breakout and momentum $> 1.0$).
+
+
+---
+
+## 5. Amendment 1 (2026-11-07)
+
+1. **Simultaneous Stop and BE Trigger Collision Rule:**
+   If a single bar touches both the original initial stop loss (`stop_loss`) and the breakeven ratchet trigger (`be_trigger`), the trade must be booked strictly as a full stop-loss exit ($-1.0\text{R}$ gross, before friction) rather than activating the breakeven ratchet. Because intra-bar tick sequence is unknown on aggregated OHLC bars, conservative accounting dictates that the adverse boundary (initial stop) takes precedence over the favorable ratchet trigger.
+
+2. **Mode A Entry Price & Execution Timing Logging:**
+   For Mode A (taker market entry), the fill price is the live price at executor run time (`liveCandle.close` / current market ticker), rather than the candle open (`liveCandle.open`). The executor must log `entry_run_time` (UTC ISO string) and `cron_lag_ms` (difference between `entry_run_time` and the scheduled bar boundary) to accurately measure forward paper execution latency.
+
+3. **Sub-Hour Exit Testing Window (5m Candle Resolution):**
+   Active trades must be tested for exits strictly against price data occurring after `entry_run_time`. In live paper trading, the executor evaluates sub-hour 5-minute candles (`5m` klines) whose timestamps satisfy `candle.openTime >= trade.entry_time` (or intraday tick extremes after entry), preventing past intraday price extremes from falsely triggering exits on trades entered mid-hour.
