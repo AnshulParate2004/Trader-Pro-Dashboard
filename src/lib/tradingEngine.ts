@@ -76,9 +76,9 @@ let memoryConfig: EngineConfig = {
   makerFeePercent: MAKER_BASE_FEE_PERCENT,
   gstPercent: GST_RATE_PERCENT,
   riskPerTradePercent: 1.0, // 1% risk = ₹10 on ₹1,000
-  ratchetEnabled: true,
-  maxConcurrentTrades: 1,
-  activeModelId: "15m-sniper-030", // Default: Rank #1 15M Sniper Scalp (+0.30R Ratchet)
+  ratchetEnabled: false,
+  maxConcurrentTrades: 3,
+  activeModelId: "4h-swing-meta-017", // Default: Rank #1 4H Swing Meta (+0.17R Expectancy)
 };
 
 // Empty initial state: strictly no mock/fake trades when data is not available
@@ -109,7 +109,7 @@ export async function getEngineConfig(): Promise<EngineConfig> {
           riskPerTradePercent: Number(config.riskPerTradePercent || 1.0),
           ratchetEnabled: config.ratchetEnabled !== false,
           maxConcurrentTrades: Number(config.maxConcurrentTrades || 2),
-          activeModelId: config.activeModelId || "15m-sniper-030",
+          activeModelId: config.activeModelId || "4h-swing-meta-017",
         };
       } else {
         // Initialize Shark Exchange default in DB
@@ -190,8 +190,8 @@ export async function getTradeLogs(limit: number = 200, modelId?: string, feeOve
             symbol: t.symbol,
             direction: t.direction,
             orderType: t.orderType || (feeRate <= 0.020 ? "MAKER" : "TAKER"),
-            modelId: t.modelId || "15m-sniper-030",
-            modelName: t.modelName || "15M Sniper (+0.30R)",
+            modelId: t.modelId || "4h-swing-meta-017",
+            modelName: t.modelName || "4H Swing Meta (+0.17R)",
             entryPrice: t.entryPrice,
             exitPrice: t.exitPrice,
             positionSizeINR: pos,
@@ -250,8 +250,8 @@ export async function getActiveTradeLogs(): Promise<TradeOrder[]> {
           symbol: t.symbol,
           direction: t.direction,
           orderType: t.orderType || "TAKER",
-          modelId: t.modelId || "15m-sniper-030",
-          modelName: t.modelName || "15M Sniper (+0.30R)",
+          modelId: t.modelId || "4h-swing-meta-017",
+          modelName: t.modelName || "4H Swing Meta (+0.17R)",
           entryPrice: t.entryPrice,
           exitPrice: t.exitPrice,
           positionSizeINR: t.positionSizeINR || 1000,
@@ -307,7 +307,7 @@ export async function executeNewTrade(params: {
   modelId?: string;
 }): Promise<TradeOrder> {
   const config = await getEngineConfig();
-  const selectedModelId = params.modelId || config.activeModelId || "15m-sniper-030";
+  const selectedModelId = params.modelId || config.activeModelId || "4h-swing-meta-017";
   const model = TOP_MODELS.find((m) => m.id === selectedModelId) || TOP_MODELS[0];
   const ratchetR = model.ratchetTriggerR; // 0.30 or 0.35
 

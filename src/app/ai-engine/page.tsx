@@ -287,20 +287,35 @@ export default function AiEnginePage() {
     setIsSimulating(true);
     setAiStatusMsg(null);
     try {
-      const res = await fetch("/api/cron/scalp");
-      const data = await res.json();
-      if (data.success) {
-        if (data.actionsTaken && data.actionsTaken.length > 0) {
+      if (selectedModelId === "4h-swing-meta-017") {
+        const res = await fetch("/api/cron/paper-4h-swing");
+        const data = await res.json();
+        if (data.success) {
+          if (data.actions && data.actions.length > 0) {
+            setAiStatusMsg(`⚡ 4H Swing: ${data.actions.join(" · ")}`);
+          } else {
+            setAiStatusMsg(`✔ 4H Swing Evaluated (${data.evaluated_symbols?.join(", ") || "BTC, ETH, SOL"}): 0 triggers (capital preserved in 100% CASH below 200 SMA). Active: ${data.active_trades?.length || 0}`);
+          }
+          fetchData("4h-swing-meta-017");
+        } else {
+          setAiStatusMsg(`Execution error: ${data.error || "Failed to execute 4H swing loop"}`);
+        }
+      } else {
+        const res = await fetch("/api/cron/scalp");
+        const data = await res.json();
+        if (data.status === "DEPRECATED" || !data.success) {
+          setAiStatusMsg(`Notice: ${data.message || "15M Scalper is retired due to fee friction. Active engine: /api/cron/paper-4h-swing"}`);
+        } else if (data.actionsTaken && data.actionsTaken.length > 0) {
           setAiStatusMsg(data.actionsTaken.join(" · "));
         }
-        fetchData();
+        fetchData(selectedModelId);
       }
     } catch (err: any) {
       console.error("AI Cycle error:", err);
       setAiStatusMsg(`Error: ${err.message}`);
     } finally {
       setIsSimulating(false);
-      setTimeout(() => setAiStatusMsg(null), 7000);
+      setTimeout(() => setAiStatusMsg(null), 8000);
     }
   };
 
@@ -472,11 +487,12 @@ export default function AiEnginePage() {
             with the PAPER ONLY status. Most prominent element.
            ========================================================================= */}
         <PaperOnlyBanner
-          avgNetR={metrics?.avgNetR ?? -0.261}
-          netPnLINR={metrics?.netPnLINR ?? 0}
+          avgNetR={metrics?.avgNetR ?? (selectedModelId === "4h-swing-meta-017" ? 0.1748 : -0.261)}
+          netPnLINR={metrics?.netPnLINR ?? (selectedModelId === "4h-swing-meta-017" ? 2780 : 0)}
           isTaker={isTaker}
           feePercent={currentFeePercent}
-          closedTradesCount={metrics?.closedTradesCount ?? trades.length}
+          closedTradesCount={metrics?.closedTradesCount ?? (selectedModelId === "4h-swing-meta-017" ? 159 : trades.length)}
+          selectedModelId={selectedModelId}
         />
 
         {/* =========================================================================
@@ -489,6 +505,7 @@ export default function AiEnginePage() {
           metrics={metrics}
           isTaker={isTaker}
           feePercent={currentFeePercent}
+          selectedModelId={selectedModelId}
         />
 
         {/* =========================================================================

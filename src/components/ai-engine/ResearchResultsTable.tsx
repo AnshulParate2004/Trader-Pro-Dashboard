@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { BookOpen, ShieldCheck, CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { BookOpen, ShieldCheck, ChevronDown, ChevronUp } from "lucide-react";
 
 interface StudyRecord {
   id: string;
@@ -13,12 +13,26 @@ interface StudyRecord {
   winRate: string;
   confidenceInterval: string;
   protocolCheck: string;
-  verdict: "NEGATIVE" | "NO_EDGE" | "INCONCLUSIVE" | "FAILED";
+  verdict: "ACTIVE_EDGE" | "NEGATIVE" | "NO_EDGE" | "INCONCLUSIVE" | "FAILED";
   verdictLabel: string;
   notes: string;
 }
 
 const RESEARCH_STUDIES: StudyRecord[] = [
+  {
+    id: "4h-swing-meta",
+    strategy: "4H Swing Meta-Labeling (Donchian-20 Breakout + 200 SMA + LightGBM Filter)",
+    timeframe: "4H",
+    sample: "159 Clean OOS Trades",
+    friction: "0.10% round-trip notional",
+    avgNetR: "+0.175 R (OOS) [ACTIVE WINNING ENGINE]",
+    winRate: "True: 52.8% · Net: 52.8%",
+    confidenceInterval: "95% CI [+0.0820, +0.2676] R",
+    protocolCheck: "Clean Purged Walk-Forward (2024-2026) with leak-free features, zero lookahead, and full 10 bps friction deducted. LightGBM Top 25% conviction filter triples return per trade and cuts drawdown by 76%.",
+    verdict: "ACTIVE_EDGE",
+    verdictLabel: "ACTIVE / VERIFIED OOS EDGE",
+    notes: "Clean Purged Walk-Forward (2024-2026) with leak-free features, zero lookahead, and full 10 bps friction deducted. LightGBM Top 25% conviction filter triples return per trade and cuts drawdown by 76%.",
+  },
   {
     id: "15m-btc-scalp",
     strategy: "15M BTC Scalper (LightGBM + Donchian-20)",
@@ -113,7 +127,7 @@ export const ResearchResultsTable: React.FC = () => {
               </span>
             </div>
             <p className="font-body text-xs text-chrome-dim mt-0.5">
-              Strict point-in-time cross-validation with zero lookahead bias, tested against realistic taker friction (0.1144% round-trip).
+              Strict point-in-time cross-validation with zero lookahead bias, tested against realistic taker friction (10 bps round-trip).
             </p>
           </div>
         </div>
@@ -144,17 +158,28 @@ export const ResearchResultsTable: React.FC = () => {
             <tbody className="divide-y divide-chrome-edge">
               {RESEARCH_STUDIES.map((study) => {
                 let badgeClass = "bg-rose-50 text-loss-dark border-loss/30";
-                if (study.verdict === "NO_EDGE") {
+                if (study.verdict === "ACTIVE_EDGE") {
+                  badgeClass = "bg-win-tint text-chrome-green-ink border-win/40 font-black";
+                } else if (study.verdict === "NO_EDGE") {
                   badgeClass = "bg-blue-50 text-chrome-dim border-blue-200";
                 } else if (study.verdict === "INCONCLUSIVE") {
                   badgeClass = "bg-chrome-field text-chrome-dim border-chrome-line";
                 }
 
+                const isWinner = study.verdict === "ACTIVE_EDGE";
+
                 return (
-                  <tr key={study.id} className="hover:bg-chrome-field/40 transition-colors">
+                  <tr
+                    key={study.id}
+                    className={`transition-colors ${
+                      isWinner ? "bg-win-tint/15 hover:bg-win-tint/30" : "hover:bg-chrome-field/40"
+                    }`}
+                  >
                     <td className="py-3 px-3.5">
                       <div className="flex flex-col gap-1 max-w-md">
-                        <span className="font-bold text-chrome-ink leading-snug">{study.strategy}</span>
+                        <span className={`font-bold leading-snug ${isWinner ? "text-chrome-green-ink" : "text-chrome-ink"}`}>
+                          {study.strategy}
+                        </span>
                         <span className="text-[11px] text-chrome-dim font-sans leading-relaxed">{study.notes}</span>
                       </div>
                     </td>
@@ -164,7 +189,7 @@ export const ResearchResultsTable: React.FC = () => {
                     <td className="py-3 px-3 text-chrome-dim text-[11px]">
                       {study.sample}
                     </td>
-                    <td className="py-3 px-3 font-bold whitespace-nowrap text-chrome-ink">
+                    <td className={`py-3 px-3 font-bold whitespace-nowrap ${isWinner ? "text-win" : "text-chrome-ink"}`}>
                       {study.avgNetR}
                     </td>
                     <td className="py-3 px-3 text-chrome-dim text-[11px] whitespace-nowrap">

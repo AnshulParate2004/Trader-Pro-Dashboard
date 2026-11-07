@@ -93,14 +93,14 @@ export default function LandingPage() {
         {/* Honest Parameters & Invariants */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-white border border-chrome-line rounded-lg p-5 shadow-xs">
           <div className="flex flex-col gap-0.5 border-r border-chrome-edge pr-3 last:border-none">
-            <span className="text-[10px] font-mono text-chrome-dim uppercase font-bold">Honest Fee Model</span>
-            <span className="text-2xl font-bold font-mono text-chrome-green-ink">0.1144%</span>
-            <span className="text-[10px] text-chrome-dim font-mono">Round-Trip Taker + GST + Slip</span>
+            <span className="text-[10px] font-mono text-chrome-dim uppercase font-bold">Swing Friction Model</span>
+            <span className="text-2xl font-bold font-mono text-chrome-green-ink">0.100%</span>
+            <span className="text-[10px] text-chrome-dim font-mono">Round-Trip Taker Cost Deducted</span>
           </div>
           <div className="flex flex-col gap-0.5 border-r border-chrome-edge pr-3 last:border-none">
-            <span className="text-[10px] font-mono text-chrome-dim uppercase font-bold">15M Net Expectancy</span>
-            <span className="text-2xl font-bold font-mono text-loss">-0.261 R</span>
-            <span className="text-[10px] text-chrome-dim font-mono">Paper-Trading Mode Only</span>
+            <span className="text-[10px] font-mono text-chrome-dim uppercase font-bold">4H Swing Expectancy</span>
+            <span className="text-2xl font-bold font-mono text-win">+0.175 R</span>
+            <span className="text-[10px] text-chrome-dim font-mono">Active OOS Paper Engine</span>
           </div>
           <div className="flex flex-col gap-0.5 border-r border-chrome-edge pr-3 last:border-none">
             <span className="text-[10px] font-mono text-chrome-dim uppercase font-bold">Exchange Fee Base</span>

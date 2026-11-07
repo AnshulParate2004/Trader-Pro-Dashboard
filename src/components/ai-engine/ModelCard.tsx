@@ -38,6 +38,11 @@ export const ModelCard: React.FC<ModelCardProps> = ({
               <span className="text-[10px] font-mono font-bold bg-accent-tint text-chrome-green-ink px-2 py-0.5 rounded border border-accent/30">
                 {currentModel ? currentModel.timeframe.toUpperCase() : "MULTI-TIMEFRAME"}
               </span>
+              {currentModel && currentModel.id === "4h-swing-meta-017" && (
+                <span className="text-[10px] font-mono font-bold bg-win-tint text-chrome-green-ink px-2 py-0.5 rounded border border-win/40">
+                  ACTIVE OOS EDGE
+                </span>
+              )}
               {currentModel && currentModel.statusBadge.includes("RETIRED") && (
                 <span className="text-[10px] font-mono font-bold bg-rose-50 text-rose-800 px-2 py-0.5 rounded border border-rose-300">
                   RETIRED
@@ -47,7 +52,7 @@ export const ModelCard: React.FC<ModelCardProps> = ({
             <p className="font-body text-xs text-chrome-dim max-w-2xl leading-relaxed mt-0.5">
               {currentModel
                 ? currentModel.description
-                : "Aggregated performance and execution logs across all 4 top-ranked algorithmic models from the backtesting suite."}
+                : "Aggregated performance and execution logs across all top-ranked algorithmic models from the backtesting suite."}
             </p>
           </div>
         </div>
@@ -64,7 +69,7 @@ export const ModelCard: React.FC<ModelCardProps> = ({
           >
             {TOP_MODELS.map((m) => (
               <option key={m.id} value={m.id}>
-                {m.rank === 1 ? "🥇" : m.rank === 2 ? "🥈" : m.rank === 3 ? "🥉" : "🎯"} #{m.rank}: {m.name}
+                #{m.rank}: {m.shortName}
               </option>
             ))}
             <option value="all">🌐 All Models Combined (Aggregate Portfolio)</option>
@@ -83,19 +88,25 @@ export const ModelCard: React.FC<ModelCardProps> = ({
 
           <div className="bg-chrome-field/50 border border-chrome-line rounded p-2 flex flex-col overflow-hidden">
             <span className="text-[10px] text-chrome-dim uppercase font-bold">Net Win Rate</span>
-            <span className="text-base font-bold text-loss mt-0.5">{currentModel.netWinRate}%</span>
+            <span className={`text-base font-bold mt-0.5 ${currentModel.netWinRate >= 50 ? "text-win" : "text-loss"}`}>
+              {currentModel.netWinRate}%
+            </span>
             <span className="text-[9px] text-chrome-dim font-sans">Net &gt; 0 After Fees</span>
           </div>
 
           <div className="bg-chrome-field/50 border border-chrome-line rounded p-2 flex flex-col overflow-hidden">
             <span className="text-[10px] text-chrome-dim uppercase font-bold">Avg Net R</span>
-            <span className="text-base font-bold text-loss mt-0.5">{currentModel.avgNetR} R</span>
-            <span className="text-[9px] text-chrome-dim font-sans">Taker + GST + Slip</span>
+            <span className={`text-base font-bold mt-0.5 ${currentModel.avgNetR >= 0 ? "text-win" : "text-loss"}`}>
+              {currentModel.avgNetR >= 0 ? "+" : ""}{currentModel.avgNetR.toFixed(3)} R
+            </span>
+            <span className="text-[9px] text-chrome-dim font-sans">Friction Deducted</span>
           </div>
 
           <div className="bg-chrome-field/50 border border-chrome-line rounded p-2 flex flex-col overflow-hidden">
             <span className="text-[10px] text-chrome-dim uppercase font-bold">Net Profit Factor</span>
-            <span className="text-base font-bold text-chrome-ink mt-0.5">{currentModel.netProfitFactor}</span>
+            <span className={`text-base font-bold mt-0.5 ${currentModel.netProfitFactor >= 1.0 ? "text-win" : "text-loss"}`}>
+              {currentModel.netProfitFactor}
+            </span>
             <span className="text-[9px] text-chrome-dim font-sans">Net Win / Net Loss</span>
           </div>
 
@@ -111,10 +122,20 @@ export const ModelCard: React.FC<ModelCardProps> = ({
             <span className="text-[9px] text-chrome-dim font-sans">Exit Distribution</span>
           </div>
 
-          <div className="bg-accent-tint border border-accent/40 rounded p-2 flex flex-col overflow-hidden">
-            <span className="text-[10px] text-chrome-green-ink uppercase font-bold">Live Status</span>
-            <span className="text-xs font-bold text-chrome-green-ink mt-1">PAPER ONLY</span>
-            <span className="text-[9px] text-chrome-dim font-sans">Negative Expectancy</span>
+          <div className={`border rounded p-2 flex flex-col overflow-hidden ${
+            currentModel.avgNetR >= 0 ? "bg-win-tint border-win/40" : "bg-rose-50 border-rose-300"
+          }`}>
+            <span className={`text-[10px] uppercase font-bold ${
+              currentModel.avgNetR >= 0 ? "text-chrome-green-ink" : "text-rose-800"
+            }`}>Live Status</span>
+            <span className={`text-xs font-bold mt-1 ${
+              currentModel.avgNetR >= 0 ? "text-win-dark" : "text-rose-800"
+            }`}>
+              {currentModel.avgNetR >= 0 ? "ACTIVE OOS PAPER" : "RETIRED"}
+            </span>
+            <span className="text-[9px] text-chrome-dim font-sans">
+              {currentModel.avgNetR >= 0 ? "Positive Expectancy" : "Negative Expectancy"}
+            </span>
           </div>
         </div>
       )}
