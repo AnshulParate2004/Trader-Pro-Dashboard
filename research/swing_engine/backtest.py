@@ -22,14 +22,26 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 
-from .config import (
-    META_QUALITY_THRESHOLD,
-    ROUND_TRIP_FRICTION_PCT,
-)
-from .train import (
-    prepare_multi_asset_dataset,
-    train_walk_forward_meta_classifier,
-)
+try:
+    from .config import (
+        META_QUALITY_THRESHOLD,
+        ROUND_TRIP_FRICTION_PCT,
+    )
+    from .train import (
+        prepare_multi_asset_dataset,
+        train_walk_forward_meta_classifier,
+    )
+except ImportError:
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+    from research.swing_engine.config import (
+        META_QUALITY_THRESHOLD,
+        ROUND_TRIP_FRICTION_PCT,
+    )
+    from research.swing_engine.train import (
+        prepare_multi_asset_dataset,
+        train_walk_forward_meta_classifier,
+    )
 
 
 def compute_trade_series_metrics(

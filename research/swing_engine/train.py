@@ -18,17 +18,32 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import roc_auc_score
 
-from .config import (
-    BENCHMARK_SYMBOL,
-    INTERVAL_4H,
-    ROUND_TRIP_FRICTION_PCT,
-    SYMBOLS,
-    TIME_BARRIER_BARS,
-)
-from .data_loader import load_market_dataset
-from .features import build_swing_features
-from .labeling import evaluate_single_trade_barriers
-from .signals import generate_candidate_signals
+try:
+    from .config import (
+        BENCHMARK_SYMBOL,
+        INTERVAL_4H,
+        ROUND_TRIP_FRICTION_PCT,
+        SYMBOLS,
+        TIME_BARRIER_BARS,
+    )
+    from .data_loader import load_market_dataset
+    from .features import build_swing_features
+    from .labeling import evaluate_single_trade_barriers
+    from .signals import generate_candidate_signals
+except ImportError:
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+    from research.swing_engine.config import (
+        BENCHMARK_SYMBOL,
+        INTERVAL_4H,
+        ROUND_TRIP_FRICTION_PCT,
+        SYMBOLS,
+        TIME_BARRIER_BARS,
+    )
+    from research.swing_engine.data_loader import load_market_dataset
+    from research.swing_engine.features import build_swing_features
+    from research.swing_engine.labeling import evaluate_single_trade_barriers
+    from research.swing_engine.signals import generate_candidate_signals
 
 
 FEATURE_COLUMNS = [
