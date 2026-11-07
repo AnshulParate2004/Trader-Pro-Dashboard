@@ -162,3 +162,45 @@ A strategy counts as having a statistically valid, useful quantitative edge if a
 6. **Additional Friction Sensitivity Tier (India 1% TDS / 100 bps):**
    - Added a **100 bps round-trip ($0.0100$)** friction sensitivity tier representing Indian statutory $1\%$ Tax Deducted at Source (TDS) under Section 194S on gross crypto transfers.
    - This 100 bps row is **reported-only for friction stress-testing** and is not part of the primary pass/fail decision rule.
+
+
+---
+
+## 10. Amendment 2 (2026-11-07)
+
+1. **Family Size & Prereg Round 2 Replacement ($M = 4$ Active Overlays):**
+   - This specification formally replaces Section 6: the family size is strictly $M = 4$ active overlay tests (EWMA(0.94) on BTC, SMA(200) on BTC, EWMA(0.94) on ETH, SMA(200) on ETH).
+   - Hypotheses H1 and H2 from `docs/prereg/prereg_round2.md` are formally superseded and replaced by the specifications in this document.
+   - Hypothesis H3 (50/50 BTC/ETH monthly rebalance) is permanently dropped and will not be run.
+   - Zero code, zero results files, and zero backtest runs ever existed for H1, H2, or H3.
+
+2. **One-Way Turnover Cost Accounting:**
+   - Transaction friction is defined per unit of one-way turnover $|\Delta w_t| = |w_t - w_{t-1}|$:
+     $$\text{Cost}_t = |\Delta w_t| \times \frac{\text{friction}}{2}$$
+   - Pre-registered fee schedules:
+     - **Primary Tier:** 25 bps round-trip ($12.5\text{ bps}$ per unit turnover, $\frac{\text{friction}}{2} = 0.00125$).
+     - **Sensitivity Benchmark:** 12.5 bps round-trip ($6.25\text{ bps}$ per unit turnover, $\frac{\text{friction}}{2} = 0.000625$).
+     - **Reported TDS Stress Tier:** 50 bps round-trip ($25\text{ bps}$ per unit turnover, or $1\%$ statutory TDS on sales/turnover, $\frac{\text{friction}}{2} = 0.0025$).
+
+3. **Return Accounting Convention (Close-to-Close):**
+   - Portfolio exposure $w_t$ determined at the daily close of day $t$ earns the close-to-close return of day $t+1$:
+     $$R_{\text{gross}, t+1} = w_t \cdot \left(\frac{close_{t+1}}{close_t} - 1\right)$$
+   - Exactly the same close-to-close convention applies to the buy-and-hold baseline ($w_t \equiv 1.0$).
+
+4. **Warm-Up Period & Variance Seeding:**
+   - The first 200 daily bars ($t = 0 \dots 199$) serve as a mandatory warm-up window to initialize the 200-day SMA and stabilize EWMA recursions.
+   - The first 200 bars are **strictly excluded from all performance and statistical evaluation metrics** across ALL strategies, including the buy-and-hold benchmark.
+   - The EWMA recursion is seeded at bar $t = 30$ using the sample variance of the first 30 daily log returns:
+     $$\sigma_{29}^2 = \frac{1}{29} \sum_{k=1}^{29} (r_k - \bar{r}_{0:29})^2$$
+
+5. **Decision vs. Reporting Inference:**
+   - The primary pass/fail decision rule is evaluated strictly against the **stationary block bootstrap confidence interval** ($L = 20$, $B = 1,000$) of annualized residual alpha $\alpha_{\text{ann}}$ at the Bonferroni significance level $\alpha_{\text{Bonf}} = \frac{0.05}{4} = 0.0125$ ($98.75\%$ CI).
+   - Parametric HAC (Newey-West, lag 20) standard errors are computed and reported alongside for transparency, but do not dictate the formal decision verdict.
+
+6. **Role of External `residual-edge-analyzer`:**
+   - The external skill script `analyze_residual_edge.py` is utilized solely as a cross-check on synthetic test datasets with known synthetic alpha and beta before any real evaluation run.
+   - The in-repo script `analysis/evaluate_round2_residual_edge.py` is the sole canonical implementation.
+
+7. **Stage Y Power & Drawdown Caveats:**
+   - With an evaluation window of approximately 365 daily bars, a non-significant null finding ($\text{CI}$ covering zero) must be formally categorized as **"Inconclusive (Underpowered)"**, not as definitive evidence of "No Edge".
+   - If the baseline buy-and-hold maximum peak-to-trough drawdown over the Stage Y window is less than $20\%$ ($\text{MaxDD}_{\text{B\&H}} > -0.20$), the drawdown reduction condition is formally classified as **"Not Testable (Insufficient Drawdown Regime)"**.
