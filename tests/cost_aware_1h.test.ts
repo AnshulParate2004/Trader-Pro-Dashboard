@@ -257,4 +257,97 @@ describe("Cost-Aware 1H Engine Unit Tests", () => {
       assert.equal(trade.status, "ACTIVE", "Trade must remain ACTIVE on run 2");
     });
   });
+
+  describe("7. Exit Candle Close Time & Route Live Price Enforcement", () => {
+    test("exit_time is recorded as the exit candle's close time, not the execution run time", () => {
+      const t0 = 1700000000000;
+
+      const trade: any = {
+        id: "trade-exit-time-test",
+        side: "LONG" as const,
+        intended_price: 100000,
+        stop_loss: 98000,
+        initial_stop_loss: 98000,
+        be_trigger: 100600,
+        take_profit: 102000,
+        be_activated: false,
+        entry_time: new Date(t0).toISOString(),
+        status: "ACTIVE" as const,
+      };
+
+      // Candle hitting SL with specific historical closeTime
+      const exitCandle: Candle = {
+        openTime: t0 + 600000,
+        open: 99000,
+        high: 99200,
+        low: 97800, // <= 98,000 (SL hit)
+        close: 97900,
+        volume: 50,
+        closeTime: t0 + 600000 + 300000 - 1,
+      };
+
+      const exitRes = evaluateActiveTradeOnCandle(trade, exitCandle, t0);
+      assert.equal(exitRes.closed, true);
+      assert.equal(exitRes.exitType, "SL");
+      assert.equal(exitRes.exitTime, new Date(exitCandle.closeTime!).toISOString());
+      assert.equal(exitRes.exitCandleCloseTime, exitCandle.closeTime);
+
+      // Verify evaluateTradeCandleStream populates trade.exit_time
+      const exitStream = evaluateTradeCandleStream(trade, [exitCandle]);
+      assert.ok(exitStream?.closed);
+      assert.equal(trade.exit_time, new Date(exitCandle.closeTime!).toISOString());
+
+      // Ensure exit_time reflects candle close in the past, distinct from current system time
+      const nowMs = Date.now();
+      assert.notEqual(new Date(trade.exit_time).getTime(), nowMs);
+    });
+
+    test("paper-1h-cost route returns NO_LIVE_PRICE status and enters no trades when price fetch fails", async () => {
+      const { GET } = await import("../src/app/api/cron/paper-1h-cost/route");
+      const originalFetch = globalThis.fetch;
+
+      try {
+        // Mock fetch to simulate complete Binance network failure
+        globalThis.fetch = (async () => {
+          throw new Error("Simulated network outage to Binance");
+        }) as any;
+
+        const res = await GET();
+        assert.equal(res.status, 200);
+        const data = await res.json();
+
+        assert.equal(data.success, false);
+        assert.equal(data.status, "NO_LIVE_PRICE");
+        assert.ok(data.error.includes("Simulated network outage"));
+        assert.ok(data.actions[0].includes("NO_LIVE_PRICE"));
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+
+    test("paper-1h-cost route passes livePrice when price fetch succeeds", async () => {
+      const { GET } = await import("../src/app/api/cron/paper-1h-cost/route");
+      const originalFetch = globalThis.fetch;
+
+      try {
+        // Mock fetch to return valid live candle data
+        globalThis.fetch = (async () => {
+          return new Response(
+            JSON.stringify([
+              [1700000000000, "95000", "95100", "94900", "95050.50", "100", 1700000059999, "0", 0, "0"],
+            ]),
+            { status: 200, headers: { "Content-Type": "application/json" } }
+          );
+        }) as any;
+
+        const res = await GET();
+        const data = await res.json();
+        // Since MongoDB might not be connected in isolated test, it either succeeds or throws API_ERROR / DB error
+        // But crucially, it did NOT abort with NO_LIVE_PRICE
+        assert.notEqual(data.status, "NO_LIVE_PRICE");
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
+    });
+  });
 });

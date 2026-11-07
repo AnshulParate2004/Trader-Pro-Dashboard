@@ -188,6 +188,8 @@ export interface TradeExitResult {
   grossR?: number;
   beActivatedUpdated?: boolean;
   newStopLoss?: number;
+  exitCandleCloseTime?: number;
+  exitTime?: string;
 }
 
 /**
@@ -217,6 +219,9 @@ export function evaluateActiveTradeOnCandle(
     return { closed: false };
   }
 
+  const candleCloseTime = candle.closeTime || (candle.openTime + 300000 - 1);
+  const exitTimeIso = new Date(candleCloseTime).toISOString();
+
   const initialSL = trade.initial_stop_loss ?? trade.stop_loss;
   const currentSL = trade.stop_loss;
 
@@ -235,6 +240,8 @@ export function evaluateActiveTradeOnCandle(
         exitType: "SL",
         exitPrice: initialSL,
         grossR: -1.0,
+        exitCandleCloseTime: candleCloseTime,
+        exitTime: exitTimeIso,
       };
     }
 
@@ -249,6 +256,8 @@ export function evaluateActiveTradeOnCandle(
           grossR: 1.0,
           beActivatedUpdated: true,
           newStopLoss: trade.intended_price,
+          exitCandleCloseTime: candleCloseTime,
+          exitTime: exitTimeIso,
         };
       }
       return {
@@ -265,6 +274,8 @@ export function evaluateActiveTradeOnCandle(
         exitType: "BE",
         exitPrice: currentSL,
         grossR: 0.0,
+        exitCandleCloseTime: candleCloseTime,
+        exitTime: exitTimeIso,
       };
     }
   }
@@ -276,6 +287,8 @@ export function evaluateActiveTradeOnCandle(
       exitType: "TP",
       exitPrice: trade.take_profit,
       grossR: 1.0,
+      exitCandleCloseTime: candleCloseTime,
+      exitTime: exitTimeIso,
     };
   }
 
@@ -321,6 +334,7 @@ export function evaluateTradeCandleStream(
 
     if (exitRes.closed) {
       if (trade.status) trade.status = "CLOSED";
+      if (exitRes.exitTime) (trade as any).exit_time = exitRes.exitTime;
       return exitRes;
     }
   }
@@ -498,7 +512,7 @@ export async function runPaper1HCostExecutor(options?: {
           entry_time: t.entry_time,
           entry_run_time: t.entry_run_time,
           cron_lag_ms: t.cron_lag_ms,
-          exit_time: new Date().toISOString(),
+          exit_time: exitRes.exitTime ?? (exitRes.exitCandleCloseTime ? new Date(exitRes.exitCandleCloseTime).toISOString() : new Date().toISOString()),
           intended_price: t.intended_price,
           fill_price: t.fill_price,
           realized_slippage_bps: t.realized_slippage_bps,
