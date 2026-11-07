@@ -183,6 +183,17 @@ def simulate_strategy_returns(
 
     # Exclude warm-up window strictly
     df_eval = df.iloc[warmup_bars:].copy()
+
+    # Amendment 4(d): Symmetric initial entry cost charged once at first evaluated bar
+    # Position entered from cash (0.0): turnover = |w_{warmup} - 0.0| = w_{warmup}
+    if len(df_eval) > 0:
+        first_idx = df_eval.index[0]
+        initial_w = float(weights.loc[first_idx])
+        initial_cost = abs(initial_w) * (friction_round_trip / 2.0)
+        df_eval.loc[first_idx, "one_way_turnover"] = abs(initial_w)
+        df_eval.loc[first_idx, "cost"] = initial_cost
+        df_eval.loc[first_idx, "net_return"] = df_eval.loc[first_idx, "gross_return"] - initial_cost
+
     return df_eval
 
 
@@ -317,6 +328,7 @@ def evaluate_overlay_pair(
     asset_name: str,
     friction_tier: str = "primary_50bps",
     seed: int = 42,
+    is_stage_x: bool = False,
 ) -> Dict:
     """
     Evaluates one active overlay strategy against buy-and-hold on a single asset series.
@@ -349,26 +361,29 @@ def evaluate_overlay_pair(
         seed=seed,
     )
 
-    # Decision rule logic
+    # Decision rule logic (Amendment 4)
     drawdown_condition_met = strat_metrics["max_dd"] > bh_metrics["max_dd"]  # max_dd is negative, closer to 0 is lower DD
     alpha_ci_excludes_zero = ci_low > 0.0
 
-    # Amendment 2(g) caveats
-    drawdown_testable = True
+    # Verdict classification rules (Amendment 4):
+    # 1. If B&H MaxDD is under 20%: NOT_TESTABLE and verdict is INCONCLUSIVE
     if abs(bh_metrics["max_dd"]) < 0.20:
-        drawdown_testable = False
-        dd_verdict = "NOT_TESTABLE (B&H MaxDD < 20%)"
-    else:
-        dd_verdict = "PASS" if drawdown_condition_met else "FAIL"
-
-    if alpha_ci_excludes_zero and drawdown_condition_met and drawdown_testable:
+        drawdown_condition = "NOT_TESTABLE"
+        verdict = "INCONCLUSIVE"
+    elif alpha_ci_excludes_zero and drawdown_condition_met:
+        drawdown_condition = "PASS"
         verdict = "INDEPENDENT_RESIDUAL_EDGE_CONFIRMED"
+    elif alpha_ci_excludes_zero and not drawdown_condition_met:
+        drawdown_condition = "FAIL"
+        verdict = "alpha without drawdown benefit"
     elif drawdown_condition_met:
+        drawdown_condition = "PASS"
         verdict = "RISK_REDUCTION_BETA_SCALING"
     else:
+        drawdown_condition = "FAIL"
         verdict = "NO_EDGE"
 
-    return {
+    result = {
         "asset": asset_name,
         "strategy": strategy_name,
         "friction_tier": friction_tier,
@@ -386,10 +401,15 @@ def evaluate_overlay_pair(
         "alpha_ann_hac_se": ols_hac["alpha_ann_se"],
         "alpha_ann_ci_9875_lower": ci_low,
         "alpha_ann_ci_9875_upper": ci_high,
-        "drawdown_condition": dd_verdict,
-        "residual_alpha_condition": "PASS" if alpha_ci_excludes_zero else "FAIL",
-        "verdict": verdict,
     }
+
+    # Amendment 4(c): Stage X output has descriptive fields only and no verdict field
+    if not is_stage_x:
+        result["drawdown_condition"] = drawdown_condition
+        result["residual_alpha_condition"] = "PASS" if alpha_ci_excludes_zero else "FAIL"
+        result["verdict"] = verdict
+
+    return result
 
 
 def main():

@@ -33,6 +33,7 @@ from analysis.evaluate_round2_residual_edge import (
     compute_performance_metrics,
     fit_ols_hac,
     compute_stationary_block_bootstrap_alpha_ci,
+    evaluate_overlay_pair,
     WARMUP_BARS,
     TARGET_VOL,
     ANNUALIZATION_FACTOR,
@@ -47,23 +48,24 @@ def test_constant_price_zero_turnover():
     n = 300
     constant_prices = pd.Series([100.0] * n)
 
-    # Buy and hold
+    # Buy and hold: initial entry at bar 200 incurs 1.0 turnover; subsequent rebalancing turnover is strictly 0.0
     w_bh = compute_weights_buy_and_hold(constant_prices)
     sim_bh = simulate_strategy_returns(constant_prices, w_bh, friction_round_trip=0.0050)
-    assert (sim_bh["one_way_turnover"] == 0.0).all(), "Buy-and-hold turnover must be 0 on constant price"
-    assert (sim_bh["cost"] == 0.0).all(), "Buy-and-hold cost must be 0 on constant price"
+    assert (sim_bh["one_way_turnover"].iloc[1:] == 0.0).all(), "Buy-and-hold subsequent rebalance turnover must be 0"
+    assert (sim_bh["cost"].iloc[1:] == 0.0).all(), "Buy-and-hold subsequent cost must be 0"
+    assert sim_bh["one_way_turnover"].iloc[0] == 1.0, "Initial entry turnover is 1.0"
 
-    # SMA 200
+    # SMA 200: constant price equals SMA -> weight 0.0, zero entry turnover and zero subsequent turnover
     w_sma = compute_weights_sma200(constant_prices)
     sim_sma = simulate_strategy_returns(constant_prices, w_sma, friction_round_trip=0.0050)
     assert (sim_sma["one_way_turnover"] == 0.0).all(), "SMA200 turnover must be 0 on constant price"
     assert (sim_sma["cost"] == 0.0).all(), "SMA200 cost must be 0 on constant price"
 
-    # EWMA vol targeting
+    # EWMA vol targeting: flat after seed period, zero subsequent rebalance turnover
     w_ewma = compute_weights_ewma(constant_prices)
     sim_ewma = simulate_strategy_returns(constant_prices, w_ewma, friction_round_trip=0.0050)
-    assert (sim_ewma["one_way_turnover"] == 0.0).all(), "EWMA turnover must be 0 on constant price"
-    assert (sim_ewma["cost"] == 0.0).all(), "EWMA cost must be 0 on constant price"
+    assert (sim_ewma["one_way_turnover"].iloc[1:] == 0.0).all(), "EWMA subsequent turnover must be 0"
+    assert (sim_ewma["cost"].iloc[1:] == 0.0).all(), "EWMA subsequent cost must be 0"
 
 
 def test_known_vol_expected_weight():
@@ -223,7 +225,10 @@ def test_five_bar_toy_series_hand_computed_net_return():
 
     sim = simulate_strategy_returns(prices, weights, friction_round_trip=friction, warmup_bars=0)
 
-    # Bar 0: initial, no return or shift available
+    # Bar 0: initial entry cost = |w_0| * (friction / 2) = 1.0 * 0.0025 = 0.0025
+    np.testing.assert_allclose(sim.loc[0, "cost"], 0.0025, rtol=1e-12)
+    np.testing.assert_allclose(sim.loc[0, "one_way_turnover"], 1.0, rtol=1e-12)
+
     # Bar 1: asset_ret = (110 - 100)/100 = +0.10
     #        gross_ret = w_0 * 0.10 = 1.0 * 0.10 = 0.10
     #        turnover = |0.5 - 1.0| = 0.5
@@ -311,3 +316,49 @@ def test_bootstrap_ci_covers_planted_alpha():
     assert ci_low <= planted_alpha_ann <= ci_high, (
         f"Planted alpha {planted_alpha_ann} outside CI [{ci_low}, {ci_high}]"
     )
+
+
+def test_symmetric_entry_cost_charged_to_buy_and_hold():
+    """
+    10. Amendment 4(d): Symmetric initial entry cost is charged to Buy-and-Hold
+        and all strategies at the first evaluated bar.
+    """
+    n = 250
+    prices = pd.Series(np.linspace(100, 200, n))
+    w_bh = compute_weights_buy_and_hold(prices)
+    friction = 0.0050  # 50 bps round trip -> 25 bps entry cost
+
+    sim_bh = simulate_strategy_returns(prices, w_bh, friction_round_trip=friction, warmup_bars=200)
+
+    # First evaluated bar (index 200) must have entry turnover = 1.0 and cost = 0.0025
+    first_idx = sim_bh.index[0]
+    assert first_idx == 200
+    np.testing.assert_allclose(sim_bh.loc[first_idx, "one_way_turnover"], 1.0, rtol=1e-12)
+    np.testing.assert_allclose(sim_bh.loc[first_idx, "cost"], 0.0025, rtol=1e-12)
+
+
+def test_verdict_rules_and_stage_x_no_verdict():
+    """
+    11. Amendment 4(b) & 4(c):
+        - If B&H MaxDD < 20%, drawdown condition is NOT_TESTABLE and verdict is INCONCLUSIVE.
+        - Stage X output has descriptive fields only and NO 'verdict' key.
+    """
+    np.random.seed(42)
+    n = 300
+    # Gentle upward price series with very small drawdown (< 20%)
+    prices = pd.Series(100.0 * np.exp(np.linspace(0, 0.20, n)))
+
+    # Test standard run (is_stage_x=False)
+    res_conf = evaluate_overlay_pair(prices, "sma_200_trend", "TEST_COIN", is_stage_x=False)
+    assert "verdict" in res_conf
+    assert abs(res_conf["bh_max_dd"]) < 0.20
+    assert res_conf["drawdown_condition"] == "NOT_TESTABLE"
+    assert res_conf["verdict"] == "INCONCLUSIVE"
+
+    # Test Stage X run (is_stage_x=True)
+    res_stage_x = evaluate_overlay_pair(prices, "sma_200_trend", "TEST_COIN", is_stage_x=True)
+    assert "verdict" not in res_stage_x, "Stage X output must NEVER contain 'verdict' key!"
+    assert "drawdown_condition" not in res_stage_x
+    assert "alpha_ann_point" in res_stage_x
+    assert "strategy_cagr" in res_stage_x
+
