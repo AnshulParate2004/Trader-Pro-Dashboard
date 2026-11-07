@@ -538,10 +538,10 @@ export default function TerminalPage() {
     <div className="h-screen w-screen flex flex-col bg-[#fafafc] overflow-hidden font-sans text-gray-900 select-none">
       
       {/* 1. Full-Screen Edge-to-Edge Pure White Tactile Header Bar */}
-      <header className="h-12 w-full bg-white border-b border-slate-200/80 px-4 flex items-center justify-between shrink-0 z-30 shadow-2xs">
+      <header className="h-12 w-full bg-white border-b border-slate-200/80 px-2 sm:px-4 flex items-center justify-between shrink-0 z-30 shadow-2xs overflow-x-auto no-scrollbar max-w-full">
         
         {/* Left Section: macOS Chrome Lights + Brand + Pair Selector + Live Ticker + ATR */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {/* macOS Chrome Dots (Stagehand clean hardware style) */}
           <div className="hidden sm:flex items-center gap-1.5 pr-1">
             <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f57] border border-black/10 inline-block shadow-2xs cursor-pointer hover:opacity-80 transition-opacity" title="Window active" />
@@ -549,7 +549,7 @@ export default function TerminalPage() {
             <span className="w-2.5 h-2.5 rounded-full bg-[#28c840] border border-black/10 inline-block shadow-2xs cursor-pointer hover:opacity-80 transition-opacity" title="AI engine connected" />
           </div>
 
-          <Link href="/" className="flex items-center gap-2 group mr-1" title="Back to Home">
+          <Link href="/" className="flex items-center gap-1.5 sm:gap-2 group mr-0.5 sm:mr-1 shrink-0" title="Back to Home">
             <div className="w-6 h-6 rounded bg-accent flex items-center justify-center text-white font-mono text-xs font-bold shadow-xs">
               TP
             </div>
@@ -561,7 +561,7 @@ export default function TerminalPage() {
           <div className="h-4 w-px bg-slate-200"></div>
 
           {/* Pair Selector Dropdown with Clay White styling */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             <select
               value={symbol}
               onChange={(e) => {
@@ -583,7 +583,7 @@ export default function TerminalPage() {
           <div className="h-4 w-px bg-slate-200 hidden md:block"></div>
 
           {/* AI Strategy Model Selector Dropdown in Terminal Header */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
             <span className="text-[10px] font-mono font-bold text-slate-400 hidden lg:inline uppercase tracking-wider">AI Model:</span>
             <select
               value={activeModelId}
@@ -601,7 +601,7 @@ export default function TerminalPage() {
           <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>
 
           {/* Real Live Price Ticker */}
-          <div className="flex items-center gap-2 font-mono">
+          <div className="flex items-center gap-1.5 sm:gap-2 font-mono shrink-0">
             <span className="text-slate-400 text-[10px] font-bold tracking-wider hidden md:inline uppercase">Price:</span>
             <span className="text-sm font-black text-gray-950 tracking-tight tabular-nums">
               {livePrice ? `$${livePrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
@@ -620,7 +620,7 @@ export default function TerminalPage() {
         </div>
 
         {/* Center: Tactile Pure White Segmented Timeframe Selector */}
-        <div className="flex clay-white-inset p-0.5 gap-0.5 font-mono text-xs">
+        <div className="flex clay-white-inset p-0.5 gap-0.5 font-mono text-xs shrink-0 mx-1 sm:mx-2">
           {["5m", "15m", "1h", "4h"].map((tf) => (
             <button
               key={tf}
@@ -640,31 +640,34 @@ export default function TerminalPage() {
         </div>
 
         {/* Right Section: Capital Badge + AI Engine Link + Live Status */}
-        <div className="flex items-center gap-2.5">
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 clay-white-pill font-mono text-xs">
-            <span className="text-slate-400 text-[10px] font-bold tracking-wider uppercase">Capital:</span>
-            <span className="font-black text-gray-950 tabular-nums">₹{accountBalanceINR.toFixed(2)}</span>
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 clay-white-pill font-mono text-xs shrink-0" title="Dedicated ₹1,000 INR per asset across 7 assets (₹7,000 Total Portfolio)">
+            <span className="text-slate-400 text-[10px] font-bold tracking-wider uppercase hidden md:inline">Capital:</span>
+            <span className="font-black text-emerald-700 tabular-nums">₹1,000 / asset</span>
+            <span className="text-[10px] font-bold text-slate-400 hidden xl:inline">(₹7,000 Total)</span>
           </div>
 
           <Link
             href="/ai-engine"
-            className="hidden md:flex items-center gap-1 px-2.5 py-1 text-xs font-mono font-bold text-slate-700 clay-white-btn hover:text-gray-900 transition-all cursor-pointer"
+            className="hidden md:flex items-center gap-1 px-2 py-1 text-xs font-mono font-bold text-slate-700 clay-white-btn hover:text-gray-900 transition-all cursor-pointer shrink-0"
           >
             <Zap className="w-3.5 h-3.5 text-emerald-600" />
             <span className="hidden sm:inline">AI Engine</span>
           </Link>
 
-          <div className="flex items-center gap-1.5 font-mono text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-300 px-2.5 py-0.5 rounded-full shadow-2xs">
+          <div className="flex items-center gap-1.5 font-mono text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-300 px-2 py-0.5 sm:px-2.5 rounded-full shadow-2xs shrink-0">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_#10b981]"></span>
             <span className="font-black hidden sm:inline">LIVE</span>
           </div>
 
-          <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-400">
+          <div className="flex items-center gap-1 text-[11px] font-mono text-slate-400 shrink-0">
             <RotateCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-emerald-600" : "text-slate-400"}`} />
             <span className="hidden lg:inline tabular-nums">{lastUpdated}</span>
           </div>
 
-          <UserAuthPill />
+          <div className="shrink-0">
+            <UserAuthPill />
+          </div>
         </div>
       </header>
 

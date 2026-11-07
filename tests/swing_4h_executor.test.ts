@@ -350,22 +350,31 @@ describe("4H Swing Meta-Labeling Engine Unit Tests", () => {
       assert.ok(data.message.includes("/api/cron/paper-4h-swing"));
     });
 
-    test("GET /api/history returns 159 verified 4H OOS historical trades by default", async () => {
+    test("GET /api/history returns 495 verified multi-asset historical trades by default", async () => {
       const { GET } = await import("../src/app/api/history/route");
-      const req = new Request("http://localhost:3000/api/history?limit=200");
+      const req = new Request("http://localhost:3000/api/history?limit=500");
       const res = await GET(req);
       assert.equal(res.status, 200);
       const data = await res.json();
       assert.equal(data.success, true);
-      assert.equal(data.modelId, "4h-swing-meta-017");
-      assert.equal(data.totalHistoricalTrades, 159);
-      assert.equal(data.trades.length, 159);
+      assert.equal(data.totalHistoricalTrades, 495);
+      assert.equal(data.trades.length, 495);
 
-      // Verify trade structure
-      const first = data.trades[0];
-      assert.equal(first.side, "LONG");
-      assert.ok(first.symbol === "BTCUSDT" || first.symbol === "SOLUSDT" || first.symbol === "ETHUSDT");
-      assert.ok(typeof first.outcomeR === "number");
+      // Verify trade structure and multi-asset coverage (Crypto + Commodities)
+      const symbols = new Set(data.trades.map((t: any) => t.symbol));
+      assert.ok(symbols.has("BTCUSDT"));
+      assert.ok(symbols.has("GC=F"));
+      assert.ok(symbols.has("SI=F"));
+      assert.ok(symbols.has("CL=F"));
+
+      // Verify symbol filter (e.g. Gold)
+      const reqGold = new Request("http://localhost:3000/api/history?symbol=GC=F&limit=200");
+      const resGold = await GET(reqGold);
+      const dataGold = await resGold.json();
+      assert.equal(dataGold.success, true);
+      assert.equal(dataGold.symbol, "GC=F");
+      assert.ok(dataGold.totalHistoricalTrades > 0);
+      assert.ok(dataGold.trades.every((t: any) => t.symbol === "GC=F"));
     });
 
     test("GET /api/trades defaults to 4H Swing Meta model", async () => {

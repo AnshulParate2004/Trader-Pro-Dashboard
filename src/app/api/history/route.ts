@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { getDb } from "@/lib/mongodb";
-import { getInMemoryCommodityTrades } from "@/lib/paperExecutor1HCommodities";
 
 export const dynamic = "force-dynamic";
 
@@ -24,84 +23,31 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const modelParam = searchParams.get("modelId");
+    const symbolParam = (searchParams.get("symbol") || searchParams.get("coin") || "ALL").trim();
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
     const limit = Math.min(500, Math.max(10, parseInt(searchParams.get("limit") || "50", 10)));
     const side = (searchParams.get("side") || searchParams.get("direction") || "ALL").toUpperCase();
     const outcome = (searchParams.get("outcome") || "ALL").toUpperCase();
 
-    // -------------------------------------------------------------------------
-    // 1. ACTIVE 1H MACRO COMMODITIES ENGINE
-    // -------------------------------------------------------------------------
-    if (modelParam === "1h-commodities-rf") {
-      let closedCommodityTrades: any[] = [];
-      const db = await getDb();
-      if (db) {
-        try {
-          const col = db.collection("paper_trades_1h_commodities");
-          const query: any = { status: "CLOSED" };
-          if (side === "LONG" || side === "SHORT") query.side = side;
-          if (outcome && outcome !== "ALL") query.exit_type = outcome;
-          closedCommodityTrades = await col.find(query).sort({ entry_time_ms: -1 }).toArray();
-        } catch {
-          closedCommodityTrades = getInMemoryCommodityTrades().filter((t) => t.status === "CLOSED");
-        }
-      } else {
-        closedCommodityTrades = getInMemoryCommodityTrades().filter((t) => t.status === "CLOSED");
-      }
-
-      if (side === "LONG" || side === "SHORT") {
-        closedCommodityTrades = closedCommodityTrades.filter((t) => t.side === side);
-      }
-      if (outcome && outcome !== "ALL") {
-        closedCommodityTrades = closedCommodityTrades.filter((t) => t.exit_type === outcome);
-      }
-
-      const total = closedCommodityTrades.length;
-      const totalPages = Math.max(1, Math.ceil(total / limit));
-      const validPage = Math.min(page, totalPages);
-      const skip = (validPage - 1) * limit;
-      const paged = closedCommodityTrades.slice(skip, skip + limit);
-
-      const trades: HistoricalTrade[] = paged.map((d: any) => ({
-        id: d.id,
-        entryTime: d.entry_time,
-        exitTime: d.exit_time || d.entry_time,
-        side: d.side,
-        outcomeR: d.net_r ?? 0,
-        returnPct: Number(((d.net_r ?? 0) * (d.stop_distance_pct ? d.stop_distance_pct * 100 : 2.0)).toFixed(2)),
-        exitReason: d.exit_type === "TARGET" ? "TAKE_PROFIT" : d.exit_type === "TIME" ? "TIME_EXPIRY" : "STOP_LOSS",
-        symbol: d.symbol,
-        entry_price: d.entry_price,
-        exit_price: d.exit_price,
-        probability: d.probability,
-      }));
-
-      return NextResponse.json({
-        success: true,
-        modelId: "1h-commodities-rf",
-        source: "paper_trades_1h_commodities",
-        page: validPage,
-        limit,
-        totalPages,
-        totalHistoricalTrades: total,
-        returnedCount: trades.length,
-        trades,
-      });
-    }
-
-    // Default to 4H Swing Meta-Labeling Engine unless explicitly requesting legacy models
+    // Default to Active Multi-Asset Engine (495 Trades) unless explicitly requesting legacy models
     const isLegacy15M = modelParam && (modelParam.includes("15m") || modelParam.includes("5m") || modelParam.includes("master"));
-    const modelId = isLegacy15M ? modelParam : "4h-swing-meta-017";
+    const modelId = isLegacy15M ? modelParam : (modelParam || "4h-swing-meta-017");
 
     // -------------------------------------------------------------------------
-    // 2. ACTIVE 4H SWING ENGINE (Default)
+    // 1. ACTIVE MULTI-ASSET ENGINE (Default: 495 Trades Across Crypto + Commodities)
     // -------------------------------------------------------------------------
     if (!isLegacy15M) {
       const db = await getDb();
       if (db) {
         try {
-          const col = db.collection("historical_trades_4h");
+          const col = db.collection("historical_trades_multi_asset");
           const query: any = {};
+          if (symbolParam && symbolParam !== "ALL") {
+            query.symbol = symbolParam;
+          }
+          if (modelParam === "1h-commodities-rf" && symbolParam === "ALL") {
+            query.modelId = "1h-commodities-rf";
+          }
           if (side === "LONG" || side === "SHORT") query.side = side;
           if (outcome && outcome !== "ALL") query.exitReason = outcome;
 
@@ -118,7 +64,7 @@ export async function GET(req: Request) {
               exitTime: d.exitTime,
               side: d.side,
               outcomeR: d.outcomeR ?? d.net_r,
-              returnPct: d.returnPct ?? (d.net_r * 3.0),
+              returnPct: d.returnPct ?? Number(((d.net_r ?? 0) * 3.0).toFixed(2)),
               exitReason: d.exitReason,
               symbol: d.symbol,
               entry_price: d.entry_price,
@@ -129,7 +75,8 @@ export async function GET(req: Request) {
             return NextResponse.json({
               success: true,
               modelId,
-              source: "mongodb_4h",
+              symbol: symbolParam,
+              source: "mongodb_multi_asset",
               page: validPage,
               limit,
               totalPages,
@@ -139,16 +86,25 @@ export async function GET(req: Request) {
             });
           }
         } catch (dbErr) {
-          console.warn("MongoDB 4H historical trades query error, falling back to JSON:", dbErr);
+          console.warn("MongoDB multi-asset historical trades query error, falling back to JSON:", dbErr);
         }
       }
 
-      // Fallback: Read verified_4h_historical_trades.json
-      const jsonPath = path.join(process.cwd(), "src", "data", "verified_4h_historical_trades.json");
-      if (fs.existsSync(jsonPath)) {
-        const raw = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+      // Fallback: Read verified_multi_asset_historical_trades.json (495 trades)
+      const multiJsonPath = path.join(process.cwd(), "src", "data", "verified_multi_asset_historical_trades.json");
+      const fallbackCryptoPath = path.join(process.cwd(), "src", "data", "verified_4h_historical_trades.json");
+      const targetPath = fs.existsSync(multiJsonPath) ? multiJsonPath : fallbackCryptoPath;
+
+      if (fs.existsSync(targetPath)) {
+        const raw = JSON.parse(fs.readFileSync(targetPath, "utf-8"));
         let filtered = raw;
 
+        if (symbolParam && symbolParam !== "ALL") {
+          filtered = filtered.filter((t: any) => t.symbol === symbolParam);
+        }
+        if (modelParam === "1h-commodities-rf" && symbolParam === "ALL") {
+          filtered = filtered.filter((t: any) => t.modelId === "1h-commodities-rf" || ["GC=F", "SI=F", "CL=F"].includes(t.symbol));
+        }
         if (side === "LONG" || side === "SHORT") {
           filtered = filtered.filter((t: any) => t.side === side);
         }
@@ -179,7 +135,8 @@ export async function GET(req: Request) {
         return NextResponse.json({
           success: true,
           modelId,
-          source: "verified_4h_json",
+          symbol: symbolParam,
+          source: targetPath.includes("multi_asset") ? "verified_multi_asset_json" : "verified_4h_json",
           page: validPage,
           limit,
           totalPages,
@@ -191,7 +148,7 @@ export async function GET(req: Request) {
     }
 
     // -------------------------------------------------------------------------
-    // 3. LEGACY RETIRED MODELS (Optional backward compatibility filter)
+    // 2. LEGACY RETIRED MODELS (Optional backward compatibility filter)
     // -------------------------------------------------------------------------
     let queryModelId = "15m-sniper-030";
     if (modelId.includes("5m") || modelId.includes("master")) {

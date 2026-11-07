@@ -62,6 +62,7 @@ export default function AiEnginePage() {
   // Table View Tabs & Interactive Filtering / Pagination
   const [tableTab, setTableTab] = useState<"live" | "historical">("historical");
   const [liveSideFilter, setLiveSideFilter] = useState<"ALL" | "LONG" | "SHORT">("ALL");
+  const [liveSymbolFilter, setLiveSymbolFilter] = useState<string>("ALL");
   const [liveLimit, setLiveLimit] = useState<number>(100);
 
   const [historicalTrades, setHistoricalTrades] = useState<any[]>([]);
@@ -71,6 +72,7 @@ export default function AiEnginePage() {
   const [histLimit, setHistLimit] = useState<number>(50);
   const [histSideFilter, setHistSideFilter] = useState<"ALL" | "LONG" | "SHORT">("ALL");
   const [histOutcomeFilter, setHistOutcomeFilter] = useState<string>("ALL");
+  const [histSymbolFilter, setHistSymbolFilter] = useState<string>("ALL");
   const [histTotalPages, setHistTotalPages] = useState<number>(1);
 
   // Synchronized runtime refs to prevent stale closure data in intervals and background cycles
@@ -95,7 +97,8 @@ export default function AiEnginePage() {
     page: number = histPage,
     limit: number = histLimit,
     side: "ALL" | "LONG" | "SHORT" = histSideFilter,
-    outcome: string = histOutcomeFilter
+    outcome: string = histOutcomeFilter,
+    symbol: string = histSymbolFilter
   ) => {
     setIsLoadingHistorical(true);
     try {
@@ -106,6 +109,7 @@ export default function AiEnginePage() {
         limit: limit.toString(),
         side: side,
         outcome: outcome,
+        symbol: symbol,
       });
       const res = await fetch(`/api/history?${params.toString()}`);
       if (res.ok) {
@@ -127,30 +131,40 @@ export default function AiEnginePage() {
   const handleHistPageChange = (newPage: number) => {
     if (newPage < 1 || newPage > histTotalPages) return;
     setHistPage(newPage);
-    fetchHistoricalTrades(selectedModelId, newPage, histLimit, histSideFilter, histOutcomeFilter);
+    fetchHistoricalTrades(selectedModelId, newPage, histLimit, histSideFilter, histOutcomeFilter, histSymbolFilter);
   };
 
   const handleHistLimitChange = (newLimit: number) => {
     setHistLimit(newLimit);
     setHistPage(1);
-    fetchHistoricalTrades(selectedModelId, 1, newLimit, histSideFilter, histOutcomeFilter);
+    fetchHistoricalTrades(selectedModelId, 1, newLimit, histSideFilter, histOutcomeFilter, histSymbolFilter);
   };
 
   const handleHistSideChange = (newSide: "ALL" | "LONG" | "SHORT") => {
     setHistSideFilter(newSide);
     setHistPage(1);
-    fetchHistoricalTrades(selectedModelId, 1, histLimit, newSide, histOutcomeFilter);
+    fetchHistoricalTrades(selectedModelId, 1, histLimit, newSide, histOutcomeFilter, histSymbolFilter);
   };
 
   const handleHistOutcomeChange = (newOutcome: string) => {
     setHistOutcomeFilter(newOutcome);
     setHistPage(1);
-    fetchHistoricalTrades(selectedModelId, 1, histLimit, histSideFilter, newOutcome);
+    fetchHistoricalTrades(selectedModelId, 1, histLimit, histSideFilter, newOutcome, histSymbolFilter);
+  };
+
+  const handleHistSymbolChange = (newSymbol: string) => {
+    setHistSymbolFilter(newSymbol);
+    setHistPage(1);
+    fetchHistoricalTrades(selectedModelId, 1, histLimit, histSideFilter, histOutcomeFilter, newSymbol);
   };
 
   const filteredLiveTrades = trades.filter((t) => {
-    if (liveSideFilter === "ALL") return true;
-    return t.direction === liveSideFilter;
+    if (liveSideFilter !== "ALL" && t.direction !== liveSideFilter) return false;
+    if (liveSymbolFilter !== "ALL") {
+      const sym = (t.symbol || "").toUpperCase();
+      if (sym !== liveSymbolFilter.toUpperCase()) return false;
+    }
+    return true;
   });
 
   // Fetch engine data and trade logs for selected model
@@ -401,6 +415,13 @@ export default function AiEnginePage() {
               {isTaker ? `TAKER (${currentFeePercent.toFixed(3)}% + 18% GST)` : "MAKER (0.016% OPTIMISTIC)"}
             </strong>
           </div>
+
+          {/* Dedicated ₹1,000 / asset allocation badge */}
+          <div className="hidden xl:flex items-center gap-1.5 font-mono text-[11px] bg-emerald-50 text-emerald-900 border border-emerald-300 px-2.5 py-0.5 rounded shadow-2xs">
+            <span className="text-slate-500 uppercase text-[10px]">Capital:</span>
+            <strong className="text-emerald-950 font-bold">₹1,000 / asset</strong>
+            <span className="text-slate-400 text-[10px]">(₹7,000 Allocated)</span>
+          </div>
         </div>
 
         {/* Right Header Navigation & Actions */}
@@ -633,6 +654,10 @@ export default function AiEnginePage() {
           setTableTab={setTableTab}
           liveSideFilter={liveSideFilter}
           setLiveSideFilter={setLiveSideFilter}
+          liveSymbolFilter={liveSymbolFilter}
+          setLiveSymbolFilter={setLiveSymbolFilter}
+          histSymbolFilter={histSymbolFilter}
+          handleHistSymbolChange={handleHistSymbolChange}
           liveLimit={liveLimit}
           onLiveLimitChange={(newL) => {
             setLiveLimit(newL);

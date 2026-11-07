@@ -20,6 +20,8 @@ interface LiveTradesTableProps {
   setTableTab: (tab: "live" | "historical") => void;
   liveSideFilter: "ALL" | "LONG" | "SHORT";
   setLiveSideFilter: (filter: "ALL" | "LONG" | "SHORT") => void;
+  liveSymbolFilter?: string;
+  setLiveSymbolFilter?: (filter: string) => void;
   liveLimit: number;
   onLiveLimitChange: (limit: number) => void;
   historicalTrades: any[];
@@ -29,6 +31,8 @@ interface LiveTradesTableProps {
   histLimit: number;
   histSideFilter: "ALL" | "LONG" | "SHORT";
   histOutcomeFilter: string;
+  histSymbolFilter?: string;
+  handleHistSymbolChange?: (symbol: string) => void;
   histTotalPages: number;
   handleHistPageChange: (newPage: number) => void;
   handleHistLimitChange: (newLimit: number) => void;
@@ -48,6 +52,8 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   setTableTab,
   liveSideFilter,
   setLiveSideFilter,
+  liveSymbolFilter = "ALL",
+  setLiveSymbolFilter,
   liveLimit,
   onLiveLimitChange,
   historicalTrades,
@@ -57,6 +63,8 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   histLimit,
   histSideFilter,
   histOutcomeFilter,
+  histSymbolFilter = "ALL",
+  handleHistSymbolChange,
   histTotalPages,
   handleHistPageChange,
   handleHistLimitChange,
@@ -101,7 +109,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                   : "text-chrome-dim hover:text-chrome-ink"
               }`}
             >
-              🟢 Live 4H Swing Trades ({trades.length})
+              🟢 Live Trades ({trades.length})
             </button>
             <button
               onClick={() => setTableTab("historical")}
@@ -111,15 +119,15 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                   : "text-chrome-dim hover:text-chrome-ink"
               }`}
             >
-              📊 Verified Historical OOS Trades ({totalHistoricalCount ? totalHistoricalCount.toLocaleString() : "159"})
+              📊 Verified Historical OOS Trades ({totalHistoricalCount ? totalHistoricalCount.toLocaleString() : "495"})
             </button>
           </div>
         </div>
 
         <div className="text-xs text-chrome-dim font-mono">
           {tableTab === "live"
-            ? "4H Swing Execution (0.10% Round-Trip Friction Deducted)"
-            : "Verified out-of-sample backtest logs (Point-in-Time execution)"}
+            ? "Multi-Asset Execution (Crypto 4H Swing + Commodities 1H | Friction Deducted)"
+            : "Verified out-of-sample backtest logs (Point-in-Time execution across 7 assets)"}
         </div>
       </div>
 
@@ -131,6 +139,26 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
               <span className="text-chrome-dim font-bold flex items-center gap-1">
                 <Filter className="w-3.5 h-3.5 text-chrome-dim" /> Filters:
               </span>
+
+              {/* Asset/Symbol Filter Dropdown */}
+              <div className="flex items-center gap-1.5 bg-chrome-field border border-chrome-line rounded px-2.5 py-1">
+                <span className="text-[11px] text-chrome-dim">Asset:</span>
+                <select
+                  value={histSymbolFilter}
+                  onChange={(e) => handleHistSymbolChange && handleHistSymbolChange(e.target.value)}
+                  aria-label="Filter historical trades by asset"
+                  className="bg-transparent font-bold text-chrome-ink outline-none cursor-pointer text-xs"
+                >
+                  <option value="ALL">All Assets (7)</option>
+                  <option value="BTCUSDT">BTCUSDT (Bitcoin)</option>
+                  <option value="ETHUSDT">ETHUSDT (Ethereum)</option>
+                  <option value="SOLUSDT">SOLUSDT (Solana)</option>
+                  <option value="DOTUSDT">DOTUSDT (Polkadot)</option>
+                  <option value="GC=F">Gold (GC=F)</option>
+                  <option value="SI=F">Silver (SI=F)</option>
+                  <option value="CL=F">Crude Oil (CL=F)</option>
+                </select>
+              </div>
 
               {/* Direction Filter Dropdown */}
               <div className="flex items-center gap-1.5 bg-chrome-field border border-chrome-line rounded px-2.5 py-1">
@@ -157,8 +185,8 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                   className="bg-transparent font-bold text-chrome-ink outline-none cursor-pointer text-xs"
                 >
                   <option value="ALL">All Outcomes</option>
-                  <option value="TAKE_PROFIT">🎯 Take Profit (+1.0R)</option>
-                  <option value="BREAKEVEN_RATCHET">⚡ Breakeven Exit (+0.05R Lock)</option>
+                  <option value="TAKE_PROFIT">🎯 Take Profit (+2.5R)</option>
+                  <option value="TIME_EXPIRY">⏱️ Time Barrier Exit</option>
                   <option value="STOP_LOSS">🛑 Stop Loss (-1.0R)</option>
                 </select>
               </div>
@@ -237,6 +265,28 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
               <span className="text-chrome-dim font-bold flex items-center gap-1">
                 <Filter className="w-3.5 h-3.5 text-chrome-dim" /> Filter:
               </span>
+
+              {/* Live Asset/Symbol Filter Dropdown */}
+              <div className="flex items-center gap-1.5 bg-chrome-field border border-chrome-line rounded px-2.5 py-1">
+                <span className="text-[11px] text-chrome-dim">Asset:</span>
+                <select
+                  value={liveSymbolFilter}
+                  onChange={(e) => setLiveSymbolFilter && setLiveSymbolFilter(e.target.value)}
+                  aria-label="Filter live session trades by asset"
+                  className="bg-transparent font-bold text-chrome-ink outline-none cursor-pointer text-xs"
+                >
+                  <option value="ALL">All Assets (7)</option>
+                  <option value="BTCUSDT">BTCUSDT</option>
+                  <option value="ETHUSDT">ETHUSDT</option>
+                  <option value="SOLUSDT">SOLUSDT</option>
+                  <option value="DOTUSDT">DOTUSDT</option>
+                  <option value="GC=F">Gold (GC=F)</option>
+                  <option value="SI=F">Silver (SI=F)</option>
+                  <option value="CL=F">Crude Oil (CL=F)</option>
+                </select>
+              </div>
+
+              {/* Direction Filter */}
               <div className="flex items-center gap-1.5 bg-chrome-field border border-chrome-line rounded px-2.5 py-1">
                 <span className="text-[11px] text-chrome-dim">Direction:</span>
                 <select
@@ -250,6 +300,8 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                   <option value="SHORT">🔴 SHORT ({trades.filter((t) => t.direction === "SHORT").length})</option>
                 </select>
               </div>
+
+              {/* Rows Filter */}
               <div className="flex items-center gap-1.5 bg-chrome-field border border-chrome-line rounded px-2.5 py-1">
                 <span className="text-[11px] text-chrome-dim">Rows:</span>
                 <select
@@ -338,42 +390,52 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                       <td className="py-2.5 px-3 font-semibold">
                         {isClosed ? (
                           <span className={trade.grossPnLINR && trade.grossPnLINR >= 0 ? "text-win" : "text-loss"}>
-                            {trade.grossPnLINR && trade.grossPnLINR >= 0 ? "+" : ""}₹{trade.grossPnLINR?.toFixed(2)}
+                            {trade.grossPnLINR && trade.grossPnLINR >= 0 ? "+" : ""}
+                            ₹{trade.grossPnLINR?.toFixed(2)}
                           </span>
                         ) : (
-                          <span className="text-chrome-dim">Floating</span>
+                          <span className="text-chrome-dim">Open</span>
                         )}
                       </td>
                       <td className="py-2.5 px-3 font-bold">
                         {isClosed ? (
                           <span className={isPositive ? "text-win" : "text-loss"}>
-                            {isPositive ? "+" : ""}₹{trade.netPnLINR?.toFixed(2)}
+                            {isPositive ? "+" : ""}
+                            ₹{trade.netPnLINR?.toFixed(2)}
                           </span>
                         ) : (
-                          <span className="text-accent animate-pulse">Running</span>
+                          <span className="text-accent animate-pulse font-bold">In Flight</span>
                         )}
                       </td>
                       <td className="py-2.5 px-3">
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                            isClosed
+                            trade.status === "ACTIVE"
+                              ? "bg-blue-50 text-blue-700 border-blue-200"
+                              : trade.status === "CLOSED"
                               ? "bg-chrome-field text-chrome-dim border-chrome-line"
-                              : "bg-win-tint text-win-dark border-win/30"
+                              : "bg-yellow-50 text-yellow-700 border-yellow-200"
                           }`}
                         >
                           {trade.status}
                         </span>
                       </td>
                       <td className="py-2.5 px-3">
-                        {!isClosed ? (
+                        {trade.status === "ACTIVE" ? (
                           <button
                             onClick={() => handleCloseTrade(trade.id, trade.entryPrice, trade.direction)}
-                            className="bg-chrome-ink hover:bg-black text-white text-[10px] font-bold px-2.5 py-1 rounded transition-colors cursor-pointer"
+                            className="px-2 py-1 bg-white hover:bg-loss-tint text-loss border border-loss/30 text-[10px] font-bold rounded cursor-pointer transition-colors shadow-2xs"
                           >
                             Close
                           </button>
                         ) : (
-                          <span className="text-chrome-dim text-[10px]">{trade.exitReason || "Done"}</span>
+                          <span className="text-chrome-dim text-[11px]">
+                            {trade.exitReason === "TARGET"
+                              ? "🎯 Target"
+                              : trade.exitReason === "STOP" || trade.exitReason === "COLLISION_STOP"
+                              ? "🛑 Stop"
+                              : "⏱️ Time"}
+                          </span>
                         )}
                       </td>
                     </tr>
@@ -381,16 +443,8 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                 })
               ) : (
                 <tr>
-                  <td colSpan={12} className="py-8 text-center bg-emerald-50/20">
-                    <div className="flex flex-col items-center justify-center gap-1.5 py-2">
-                      <div className="flex items-center gap-2 font-mono text-xs font-black text-emerald-900">
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" />
-                        <span>ACTIVE CAPITAL 100% SHIELDED IN CASH (₹1,000 PROTECTED)</span>
-                      </div>
-                      <span className="text-xs text-slate-500 font-sans max-w-md">
-                        Market chop and counter-trend regimes filtered by 200 SMA &amp; Donchian channels. Below is the real-time evaluation feed.
-                      </span>
-                    </div>
+                  <td colSpan={12} className="py-12 text-center text-chrome-dim">
+                    No live trades match the selected filter.
                   </td>
                 </tr>
               )}
@@ -498,65 +552,57 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
 
                       return (
                         <tr key={log.id} className="hover:bg-chrome-field/40 transition-colors">
-                          <td className="py-2 px-3 text-chrome-dim text-[11px] whitespace-nowrap">
-                            {new Date(log.timestamp_ms).toISOString().replace("T", " ").replace(":00.000Z", " UTC")}
+                          <td className="py-2.5 px-3 text-chrome-dim text-[11px] whitespace-nowrap">
+                            {log.time_utc}
                           </td>
-                          <td className="py-2 px-3 whitespace-nowrap">
-                            <span className="font-bold text-chrome-ink mr-1.5">{log.symbol}</span>
-                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-chrome-field border border-chrome-line text-chrome-dim">
-                              {log.timeframe.toUpperCase()}
+                          <td className="py-2.5 px-3 font-bold text-chrome-ink whitespace-nowrap">
+                            <span className="px-1.5 py-0.5 rounded bg-chrome-field border border-chrome-line text-[11px]">
+                              {log.symbol}
                             </span>
                           </td>
-                          <td className="py-2 px-3 font-bold text-chrome-ink tabular-nums">
-                            ${log.price.toLocaleString("en-US", { minimumFractionDigits: log.asset_class === "crypto" ? 1 : 2 })}
+                          <td className="py-2.5 px-3 font-bold text-chrome-ink tabular-nums">
+                            ${log.price?.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
                           </td>
-                          <td className="py-2 px-3 tabular-nums">
-                            <span className="font-semibold text-slate-700">
-                              ${log.sma_200.toLocaleString("en-US", { minimumFractionDigits: 1 })}
-                            </span>
-                            <span className={`ml-1.5 text-[9px] font-black px-1.5 py-0.2 rounded ${
-                              isAboveSma ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-amber-50 text-amber-800 border border-amber-200"
-                            }`}>
-                              {isAboveSma ? "▲ ABOVE" : "▼ BELOW"}
+                          <td className="py-2.5 px-3 text-chrome-dim tabular-nums">
+                            <span className={isAboveSma ? "text-emerald-700 font-semibold" : "text-amber-700 font-semibold"}>
+                              ${log.sma_200?.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
+                              {" "}({isAboveSma ? "Bullish ▲" : "Bearish ▼"})
                             </span>
                           </td>
-                          <td className="py-2 px-3 tabular-nums text-[11px] text-slate-600">
-                            [${log.donchian_low_20.toLocaleString()} - ${log.donchian_high_20.toLocaleString()}]
+                          <td className="py-2.5 px-3 text-chrome-dim text-[11px] tabular-nums whitespace-nowrap">
+                            ${log.donchian_low?.toFixed(1)} – ${log.donchian_high?.toFixed(1)}
                           </td>
-                          <td className="py-2 px-3 tabular-nums">
+                          <td className="py-2.5 px-3 whitespace-nowrap">
                             <div className="flex items-center gap-1.5">
-                              <span className={`font-black ${log.passes_gate ? "text-emerald-700" : "text-slate-600"}`}>
+                              <div className="w-12 bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200">
+                                <div
+                                  className={`h-full ${log.probability >= log.p_cutoff ? "bg-emerald-500" : "bg-slate-400"}`}
+                                  style={{ width: `${Math.min(100, Math.max(0, log.probability * 300))}%` }}
+                                />
+                              </div>
+                              <span className={`font-mono text-[11px] font-bold ${log.probability >= log.p_cutoff ? "text-emerald-700" : "text-slate-500"}`}>
                                 {(log.probability * 100).toFixed(1)}%
-                              </span>
-                              <span className="text-[9px] text-slate-400">
-                                (cutoff {(log.p_cutoff * 100).toFixed(1)}%)
                               </span>
                             </div>
                           </td>
-                          <td className="py-2 px-3">
+                          <td className="py-2.5 px-3 whitespace-nowrap">
                             {isExecuted ? (
                               <div className="flex items-center gap-1.5">
-                                <span className="px-2 py-0.5 rounded font-black text-[10px] bg-emerald-100 text-emerald-900 border border-emerald-300">
-                                  🟢 EXECUTED {log.trade_details?.side || "BREAKOUT"}
+                                <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold text-[10px]">
+                                  🟢 {log.side} EXECUTED
                                 </span>
-                                {log.trade_details && (
-                                  <span className={`text-[10px] font-mono font-bold ${
-                                    (log.trade_details.net_r ?? 0) >= 0 ? "text-emerald-700" : "text-rose-700"
-                                  }`}>
-                                    {(log.trade_details.net_r ?? 0) >= 0 ? "+" : ""}{log.trade_details.net_r?.toFixed(2)}R ({log.trade_details.exit_type})
-                                  </span>
-                                )}
+                                <span className="text-slate-600 text-[10.5px]">Breakout + Conviction Pass</span>
                               </div>
                             ) : isBearish ? (
-                              <div className="flex items-center gap-1 text-[11px]">
-                                <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-amber-50 text-amber-900 border border-amber-300">
-                                  🛡️ CASH SAFE
+                              <div className="flex items-center gap-1.5">
+                                <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-bold text-[10px]">
+                                  🛡️ 100% CASH SHIELD
                                 </span>
-                                <span className="text-slate-600 text-[10.5px]">Price below 200 SMA (₹1,000 Protected)</span>
+                                <span className="text-slate-600 text-[10.5px]">Price below 200 SMA (Trend Filtered)</span>
                               </div>
                             ) : (
-                              <div className="flex items-center gap-1 text-[11px]">
-                                <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-slate-100 text-slate-800 border border-slate-300">
+                              <div className="flex items-center gap-1.5">
+                                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 font-bold text-[10px]">
                                   🔒 CASH SAFE
                                 </span>
                                 <span className="text-slate-600 text-[10.5px]">Consolidating inside Donchian range</span>
@@ -653,7 +699,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                       <td className="py-2.5 px-3 text-chrome-dim text-[11px] whitespace-nowrap">
                         {t.exitTime}
                       </td>
-                      <td className="py-2.5 px-3 font-bold text-chrome-ink">BTCUSDT</td>
+                      <td className="py-2.5 px-3 font-bold text-chrome-ink">{t.symbol || "BTCUSDT"}</td>
                       <td className="py-2.5 px-3">
                         <span
                           className={`px-2 py-0.5 rounded font-bold text-[10px] ${
@@ -695,11 +741,11 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                               : "bg-loss-tint text-loss-dark border-loss/30"
                           }`}
                         >
-                          {isTP
-                            ? "🎯 Take Profit (+1.0R)"
-                            : isBE
-                            ? "⚡ Breakeven Exit (+0.05R Lock)"
-                            : "🛑 Stop Loss (-1.0R)"}
+                          {t.exitReason === "TAKE_PROFIT"
+                            ? `🎯 Take Profit (${t.outcomeR >= 0 ? "+" : ""}${t.outcomeR.toFixed(2)}R)`
+                            : t.exitReason === "TIME_EXPIRY"
+                            ? `⏱️ Time Barrier (${t.outcomeR >= 0 ? "+" : ""}${t.outcomeR.toFixed(2)}R)`
+                            : `🛑 Stop Loss (${t.outcomeR.toFixed(2)}R)`}
                         </span>
                       </td>
                       <td className="py-2.5 px-3 text-[10px] text-chrome-dim">
