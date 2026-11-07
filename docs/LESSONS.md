@@ -193,15 +193,16 @@ At 15M, only **`0.97%`** of historical signals meet the 0.08 threshold (**`99.03
 A comprehensive benchmark was conducted on 3,232 daily BTC bars across 2,730 total origins (2,184 Dev, 546 Holdout) using Garman-Klass daily realized volatility as the target under strict zero-lookahead alignment:
 1. **Directional Accuracy:** Zero directional alpha across all deep learning foundation models:
    * Google TimesFM 2.5 (200M): Dev `50.69%` ($p=0.5349$), Holdout `48.72%` ($p=0.5780$).
-   * Chronos-Bolt Base: Dev `50.60%` ($p=0.2984$), Holdout `51.20%` ($p=0.2841$).
-   * Chronos-Bolt Small: Dev `49.70%`, Holdout `50.40%`.
-   * `Baseline_ZeroReturn` beat all foundation models on return MAE with $p < 0.001$.
+   * Chronos-Bolt Base: Dev `51.65%` ($p=0.1287$), Holdout `52.56%` ($p=0.2479$).
+   * `Baseline_ZeroReturn` beat all foundation models on return MAE with $p < 0.002$.
 2. **Volatility Modeling (QLIKE vs EWMA 0.94):**
-   * Google TimesFM 2.5 achieved QLIKE $0.5984$ in Dev (diff vs EWMA $+0.0172$, 95% CI `[-0.0573, +0.0838]`, $p=0.5401$) and $0.5529$ in Holdout (diff vs EWMA $-0.0023$, 95% CI `[-0.0416, +0.0473]`, $p=0.9282$). Both CIs span zero.
-   * Chronos-Bolt Base achieved QLIKE $0.6953$ Dev, $0.7108$ Holdout ($p > 0.97$).
-   * Fixed HAR-RV achieved QLIKE $0.5792$ in Dev, but failed in Holdout ($0.6012$, $p=0.1479$).
-3. **Primary Decision Rule (Bonferroni $\alpha = 0.01$):** Did any foundation model or econometric variant beat EWMA_RV with $p < 0.01$ and a CI excluding zero in both Dev and Holdout? **NO.**
-4. **Engineering Recommendation:** **Use EWMA(0.94) and stop.** Google TimesFM 2.5 is significantly better calibrated than Amazon Chronos, but neither model yields statistically significant improvements over classical EWMA(0.94), while requiring heavy PyTorch runtimes, 925 MB weights, and severe latency penalties.
+   * Dev Window: TimesFM QLIKE is `-5.7676` (diff vs EWMA_RV `-0.0172`, 95% CI `[-0.0774, +0.0483]`, $p=0.5401$); Chronos-Base QLIKE is `-5.7622` (diff vs EWMA_RV `-0.0118`, 95% CI `[-0.0538, +0.0359]`, $p=0.5758$). Neither beats EWMA_RV.
+   * Holdout Window: TimesFM QLIKE is `-6.5955` (diff vs EWMA_RV `+0.0023`, 95% CI `[-0.0460, +0.0464]`, $p=0.9282$); Chronos-Base QLIKE is `-6.5810` (diff vs EWMA_RV `+0.0168`, 95% CI `[-0.0512, +0.0972]`, $p=0.6397$).
+   * Paired TimesFM vs Chronos: TimesFM QLIKE diff is `-0.0054` in Dev ($p=0.8334$, CI `[-0.0582, +0.0533]`) and `-0.0145` in Holdout ($p=0.6693$, CI `[-0.0960, +0.0458]`). The models are statistically indistinguishable.
+3. **80% Central Interval Coverage & Pinball Loss:**
+   * Chronos-Base empirical coverage (82.42% in Dev and Holdout) is closer to nominal 80% than TimesFM (83.38% Dev, 85.16% Holdout). Chronos-Base also has slightly lower mean pinball loss (79.07 vs 79.10 bps in Dev, 51.32 vs 51.88 bps in Holdout). The claim that TimesFM is better calibrated than Chronos is retracted.
+4. **Primary Decision Rule (Bonferroni $\alpha = 0.01$):** Did any foundation model beat EWMA_RV with $p < 0.01$ and a CI excluding zero in both Dev and Holdout? **NO.**
+5. **Engineering Recommendation:** **Use EWMA(0.94) and stop.**
 
 ---
 
@@ -213,19 +214,18 @@ The frozen 15M engine (`BTCUSDT_15m`, `final_model_BTCUSDT_15m.joblib`, $2.0\tex
 - **Cost Tier:** 50 bps round-trip friction ($0.50\%$). Live stop distance: $\text{stop\_pct} = 1.0\text{ ATR} / P_{\text{entry}}$. Cost in R: $\text{cost\_R} = 0.0050 / \text{stop\_pct}$.
 - **Partitioning:** Only trades entered after `2026-10-31 23:59:59 UTC` count as out-of-sample (OOS). Everything earlier is exploratory.
 
-### Results Table
+### Results Table: 50 bps vs 14 bps Friction Tiers
 
-| Metric | Noise-Null Control (50 Random Walks) | Pure ML Exploratory ($\le \text{2026-10-31}$) | Pure ML OOS ($> \text{2026-10-31}$) | Meta-Labeling Exploratory | Meta-Labeling OOS ($> \text{2026-10-31}$) |
-| :--- | :---: | :---: | :---: | :---: | :---: |
-| **Trades ($N$)** | 3,600 / sim | 2,105 trades | 6 trades | 12,653 trades | 37 trades |
-| **Gross R / trade** | $+0.0509\text{R}$ | $+0.1664\text{R}$ | $-0.5000\text{R}$ | $+0.0065\text{R}$ | $-0.0270\text{R}$ |
-| **Mean Cost R** | $1.1478\text{R}$ | $1.1427\text{R}$ | $1.8819\text{R}$ | $1.6789\text{R}$ | $2.3654\text{R}$ |
-| **Net R / trade** | **$-1.0970\text{R}$** | **$-0.9763\text{R}$** | **$-2.3819\text{R}$** | **$-1.6724\text{R}$** | **$-2.3924\text{R}$** |
-| **95% Bootstrap CI ($L=20$)** | $[\pm 0.025]$ | `[-1.0995, -0.8465]` | `[-3.0931, -1.7549]` | `[-1.7606, -1.5868]` | `[-3.1799, -1.6204]` |
-| **Share Trades $\text{cost\_R} > 0.15$** | 100.0% | **99.71%** | **100.00%** | **99.98%** | **100.00%** |
-| **Below Noise Null?** | N/A | No | **Yes ($-2.38 < -1.10$)** | **Yes ($-1.67 < -1.10$)** | **Yes ($-2.39 < -1.10$)** |
-| **Residual Alpha vs BTC** | N/A | $-1.31$ ($t = -18.03, p=0.000$) | $-0.0066$ ($t = -1.52, p=0.129$) | $-9.22$ ($t = -77.21, p=0.000$) | $-0.0275$ ($t = -4.05, p=0.000$) |
-| **Verdict** | Baseline | **no edge** | **no edge** | **no edge** | **no edge** |
+| Metric | 50 bps Noise-Null (50 RW) | 50 bps Pure ML Exploratory | 50 bps Pure ML OOS | 14 bps Noise-Null (50 RW) | 14 bps Pure ML Exploratory | 14 bps Pure ML OOS |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Trades ($)** | 3,600 / sim | 2,105 trades | 6 trades | 3,600 / sim | 2,105 trades | 6 trades |
+| **Gross R / trade** | $+0.0509\text{R}$ | $+0.1664\text{R}$ | $-0.5000\text{R}$ | $+0.0509\text{R}$ | $+0.1664\text{R}$ | $-0.5000\text{R}$ |
+| **Mean Cost R** | .1478\text{R}$ | .1427\text{R}$ | .8819\text{R}$ | .3214\text{R}$ | .3200\text{R}$ | .5269\text{R}$ |
+| **Net R / trade** | **$-1.0970\text{R}$** | **$-0.9763\text{R}$** | **$-2.3819\text{R}$** | **$-0.2925\text{R}$** | **$-0.1536\text{R}$** | **$-1.0269\text{R}$** |
+| **95% Bootstrap CI (=20$)** | $[\pm 0.025]$ | [-1.0995, -0.8465] | [-3.0931, -1.7549] | $[\pm 0.008]$ | [-0.2266, -0.0851] | [-1.0269, -1.0269] |
+| **Share Trades $\text{cost\_R} > 0.15$** | 100.0% | **99.71%** | **100.00%** | 86.5% | **85.94%** | **100.00%** |
+| **Below Noise Null?** | N/A | No | **Yes ($-2.38 < -1.10$)** | N/A | No | **Yes ($-1.03 < -0.29$)** |
+| **Verdict** | Baseline | **no edge** | **no edge** | Baseline | **no edge** | **no edge** |
 
 ### Definitive Invariant
-Under a 50 bps round-trip friction and strict-fill execution, 15-minute stops ($0.15\% - 0.45\%$) require paying $1.0\text{R}$ to $3.3\text{R}$ per trade in transaction costs alone. Over $99.7\%$ of trades violate $\text{cost\_R} \le 0.15$. Out-of-sample performance drops below the noise-null random-walk baseline. The engine possesses **no edge**.
+Even at the ultra-low 14 bps friction tier (.14\%$), over .9\%$ of exploratory trades and \%$ of out-of-sample trades exceed the $\text{cost\_R} \le 0.15$ budget. The out-of-sample net return ($-1.0269\text{R}$) drops far below the 14 bps noise-null baseline ($-0.2925\text{R}$). The 15M engine possesses **no edge** at any realistic fee level.
