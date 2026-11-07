@@ -238,3 +238,119 @@ def train_walk_forward_meta_classifier(
     split_metrics["total_oos_trades"] = len(df_oos)
 
     return df_oos, split_metrics
+
+
+def export_production_model(
+    output_dir: Optional[Union[str, Path]] = None,
+    max_date: str = "2026-10-31",
+    p_cutoff: float = 0.10,
+    hyperparams: Optional[Dict] = None,
+) -> Dict[str, Union[str, float, int]]:
+    """
+    Trains the final production LightGBM Meta-Classifier on all data up to max_date
+    (holding post-max_date strictly out-of-sample) and exports:
+    1. src/models/swing_4h/model.json (LightGBM decision trees and split thresholds)
+    2. src/models/swing_4h/metadata.json (Feature definitions, scaling stats, p_cutoff, verification samples)
+    """
+    import json
+
+    if output_dir is None:
+        repo_dir = Path(__file__).resolve().parent.parent.parent
+        output_dir = repo_dir / "src" / "models" / "swing_4h"
+    else:
+        output_dir = Path(output_dir)
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if hyperparams is None:
+        hyperparams = {
+            "max_depth": 3,
+            "num_leaves": 7,
+            "learning_rate": 0.03,
+            "n_estimators": 150,
+            "min_child_samples": 30,
+            "subsample": 0.80,
+            "colsample_bytree": 0.80,
+            "random_state": 42,
+            "verbose": -1,
+            "n_jobs": -1,
+        }
+
+    print(f"[EXPORT] Preparing multi-asset dataset up to {max_date}...")
+    df_dataset = prepare_multi_asset_dataset(max_date=max_date)
+
+    X = df_dataset[FEATURE_COLUMNS].replace([np.inf, -np.inf], np.nan).fillna(0.0)
+    y = df_dataset["label_y"].astype(int)
+
+    print(f"[EXPORT] Training LightGBM production meta-classifier on {len(X)} samples...")
+    clf = lgb.LGBMClassifier(**hyperparams)
+    clf.fit(X, y)
+
+    # In-sample probability distribution and quantiles
+    probs = clf.predict_proba(X)[:, 1]
+    pct_75 = float(np.percentile(probs, 75))
+    pct_80 = float(np.percentile(probs, 80))
+    pct_90 = float(np.percentile(probs, 90))
+
+    # Dump tree structure to model.json
+    model_dump = clf.booster_.dump_model()
+    model_json_path = output_dir / "model.json"
+    with open(model_json_path, "w", encoding="utf-8") as f:
+        json.dump(model_dump, f, indent=2)
+
+    # Calculate feature summary statistics
+    feature_stats = {}
+    for col in FEATURE_COLUMNS:
+        col_clean = X[col].replace([np.inf, -np.inf], np.nan).fillna(0.0)
+        feature_stats[col] = {
+            "mean": float(np.nan_to_num(col_clean.mean(), nan=0.0, posinf=0.0, neginf=0.0)),
+            "std": float(np.nan_to_num(col_clean.std(), nan=1.0, posinf=1.0, neginf=1.0)) if float(col_clean.std()) > 0 else 1.0,
+            "min": float(np.nan_to_num(col_clean.min(), nan=0.0, posinf=0.0, neginf=0.0)),
+            "max": float(np.nan_to_num(col_clean.max(), nan=0.0, posinf=0.0, neginf=0.0)),
+        }
+
+    # Generate 5 verification samples for TypeScript unit tests
+    verification_samples = []
+    test_indices = [0, len(X) // 4, len(X) // 2, (3 * len(X)) // 4, len(X) - 1]
+    for idx in test_indices:
+        sample_row = X.iloc[idx].to_dict()
+        verification_samples.append({
+            "features": sample_row,
+            "feature_array": [float(sample_row[c]) for c in FEATURE_COLUMNS],
+            "expected_prob": float(probs[idx]),
+        })
+
+    metadata = {
+        "model_name": "lgbm_meta_4h_swing",
+        "training_max_date": max_date,
+        "n_samples": len(X),
+        "target_base_rate": float(y.mean()),
+        "p_cutoff": float(p_cutoff),
+        "percentile_75": pct_75,
+        "percentile_80": pct_80,
+        "percentile_90": pct_90,
+        "num_trees": len(model_dump["tree_info"]),
+        "feature_names": FEATURE_COLUMNS,
+        "feature_stats": feature_stats,
+        "verification_samples": verification_samples,
+    }
+
+    metadata_json_path = output_dir / "metadata.json"
+    with open(metadata_json_path, "w", encoding="utf-8") as f:
+        json.dump(metadata, f, indent=2)
+
+    print(f"[EXPORT] Successfully exported production model to {output_dir}:")
+    print(f"  - model.json: {model_json_path.stat().st_size} bytes")
+    print(f"  - metadata.json: {metadata_json_path.stat().st_size} bytes (P_cutoff={p_cutoff})")
+
+    return {
+        "model_json": str(model_json_path),
+        "metadata_json": str(metadata_json_path),
+        "samples": len(X),
+        "p_cutoff": p_cutoff,
+        "percentile_75": pct_75,
+    }
+
+
+if __name__ == "__main__":
+    export_production_model()

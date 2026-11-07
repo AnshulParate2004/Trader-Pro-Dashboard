@@ -24,9 +24,10 @@ const BINANCE_BASE_URLS = [
 export async function fetchBinanceKlines(
   interval: string,
   limit: number = 150,
-  ttlMs: number = 10000
+  ttlMs: number = 10000,
+  symbol: string = "BTCUSDT"
 ): Promise<Candle[]> {
-  const cacheKey = `${interval}_${limit}`;
+  const cacheKey = `${symbol}_${interval}_${limit}`;
   const now = Date.now();
   const cached = candleCache[cacheKey];
 
@@ -38,7 +39,7 @@ export async function fetchBinanceKlines(
 
   for (const base of BINANCE_BASE_URLS) {
     try {
-      const url = `${base}?symbol=BTCUSDT&interval=${interval}&limit=${limit}`;
+      const url = `${base}?symbol=${symbol}&interval=${interval}&limit=${limit}`;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 6000);
 
