@@ -57,6 +57,8 @@ export interface PaperTradeCostRecord {
   entry_mode: "MODE_A_TAKER" | "MODE_B_MAKER";
   signal_time: string;
   entry_time: string;
+  entry_run_time?: string;
+  cron_lag_ms?: number;
   exit_time?: string;
   intended_price: number;
   fill_price: number;
@@ -72,6 +74,7 @@ export interface PaperTradeCostRecord {
   status: "ACTIVE" | "CLOSED" | "PENDING_MAKER";
   be_activated: boolean;
   stop_loss: number;
+  initial_stop_loss?: number;
   take_profit: number;
   be_trigger: number;
   limit_placed_bar_time?: number;
@@ -177,6 +180,107 @@ export function calculate14ATR(closedCandles: Candle[]): number {
   return trSum / period;
 }
 
+export interface TradeExitResult {
+  closed: boolean;
+  exitType?: "TP" | "BE" | "SL";
+  exitPrice?: number;
+  grossR?: number;
+  beActivatedUpdated?: boolean;
+  newStopLoss?: number;
+}
+
+/**
+ * Amendment 1(a) & 1(c):
+ * Evaluates an active trade against a candle.
+ * (a) If a bar touches BOTH the initial stop loss and the BE trigger,
+ *     it is booked strictly as an initial stop-loss exit (-1.0R gross),
+ *     because intra-bar tick sequence is unknown.
+ * (c) Only candles occurring strictly after the trade's entry time (openTime >= minAllowedTime) are evaluated.
+ */
+export function evaluateActiveTradeOnCandle(
+  trade: {
+    side: "LONG" | "SHORT";
+    stop_loss: number;
+    initial_stop_loss?: number;
+    take_profit: number;
+    be_trigger: number;
+    intended_price: number;
+    be_activated: boolean;
+    entry_time?: string | number;
+  },
+  candle: Candle,
+  minAllowedTime?: number
+): TradeExitResult {
+  // Amendment 1(c): Ignore any data prior to entry time
+  if (minAllowedTime !== undefined && candle.openTime < minAllowedTime) {
+    return { closed: false };
+  }
+
+  const initialSL = trade.initial_stop_loss ?? trade.stop_loss;
+  const currentSL = trade.stop_loss;
+
+  const hitInitialSL = trade.side === "LONG" ? candle.low <= initialSL : candle.high >= initialSL;
+  const hitCurrentSL = trade.side === "LONG" ? candle.low <= currentSL : candle.high >= currentSL;
+  const hitBE = trade.side === "LONG" ? candle.high >= trade.be_trigger : candle.low <= trade.be_trigger;
+  const hitTP = trade.side === "LONG" ? candle.high >= trade.take_profit : candle.low <= trade.take_profit;
+
+  // Case 1: Ratchet was NOT yet activated prior to this bar
+  if (!trade.be_activated) {
+    // Amendment 1(a): If bar touches initial stop (even if BE trigger is also touched),
+    // initial stop takes precedence over BE trigger (-1R exit).
+    if (hitInitialSL) {
+      return {
+        closed: true,
+        exitType: "SL",
+        exitPrice: initialSL,
+        grossR: -1.0,
+      };
+    }
+
+    // Only if initial stop was NOT touched in this bar, check BE trigger
+    if (hitBE) {
+      // If TP was also hit in the same bar after BE was triggered
+      if (hitTP) {
+        return {
+          closed: true,
+          exitType: "TP",
+          exitPrice: trade.take_profit,
+          grossR: 1.0,
+          beActivatedUpdated: true,
+          newStopLoss: trade.intended_price,
+        };
+      }
+      return {
+        closed: false,
+        beActivatedUpdated: true,
+        newStopLoss: trade.intended_price,
+      };
+    }
+  } else {
+    // Case 2: Ratchet was ALREADY activated on a prior bar (stop loss is at breakeven)
+    if (hitCurrentSL) {
+      return {
+        closed: true,
+        exitType: "BE",
+        exitPrice: currentSL,
+        grossR: 0.0,
+      };
+    }
+  }
+
+  // Check TP if not closed
+  if (hitTP) {
+    return {
+      closed: true,
+      exitType: "TP",
+      exitPrice: trade.take_profit,
+      grossR: 1.0,
+    };
+  }
+
+  return { closed: false };
+}
+
 /**
  * Main Paper Execution Cron for the Cost-Aware 1H Engine.
  * Operates strictly on separate collections (paper_1h_cost, paper_1h_cost_active, paper_1h_cost_skipped, paper_1h_cost_missed).
@@ -185,6 +289,8 @@ export async function runPaper1HCostExecutor(options?: {
   enableMakerLimit?: boolean;
   frictionPct?: number;
   dryRun?: boolean;
+  livePrice?: number;
+  candles5m?: Candle[];
 }): Promise<{
   status: string;
   actions: string[];
@@ -255,6 +361,7 @@ export async function runPaper1HCostExecutor(options?: {
           status: "ACTIVE",
           be_activated: false,
           stop_loss: p.stop_loss,
+          initial_stop_loss: p.stop_loss,
           take_profit: p.take_profit,
           be_trigger: p.be_trigger,
         };
@@ -286,77 +393,87 @@ export async function runPaper1HCostExecutor(options?: {
     }
   }
 
-  // 3. Manage active paper trades (Strict Fills: SL evaluated before TP)
-  const activeTrades = (!isDryRun && db) ? await db.collection("paper_1h_cost_active").find({ status: "ACTIVE" }).toArray() : [];
+  // 3. Manage active paper trades (Strict Fills: SL evaluated before TP, sub-hour 5m after entry)
+  let candles5m: Candle[] = options?.candles5m ?? [];
+  if (candles5m.length === 0) {
+    try {
+      const raw5m = await fetchBinanceKlines("5m", 36);
+      candles5m = raw5m.map((c) => ({
+        openTime: c.openTime,
+        open: c.open,
+        high: c.high,
+        low: c.low,
+        close: c.close,
+        volume: c.volume,
+        closeTime: c.closeTime || c.openTime + 300000 - 1,
+      }));
+    } catch {
+      // fallback to liveCandle if Binance 5m fetch is unavailable
+    }
+  }
+
+  const activeTrades: PaperTradeCostRecord[] = (!isDryRun && db) ? await db.collection("paper_1h_cost_active").find({ status: "ACTIVE" }).toArray() as any : [];
   for (const t of activeTrades) {
-    let closed = false;
-    let exitType: "TP" | "BE" | "SL" = "SL";
-    let exitPrice = liveCandle.close;
-    let grossR = 0;
+    const entryTimestamp = t.entry_time ? new Date(t.entry_time).getTime() : 0;
+    const subCandles = candles5m.length > 0
+      ? candles5m.filter((c) => c.openTime >= entryTimestamp)
+      : (liveCandle.openTime >= entryTimestamp ? [liveCandle] : []);
 
-    const hitSL = t.side === "LONG" ? liveCandle.low <= t.stop_loss : liveCandle.high >= t.stop_loss;
-    const hitTP = t.side === "LONG" ? liveCandle.high >= t.take_profit : liveCandle.low <= t.take_profit;
-    const hitBE = t.side === "LONG" ? liveCandle.high >= t.be_trigger : liveCandle.low <= t.be_trigger;
+    for (const candle of subCandles) {
+      const exitRes = evaluateActiveTradeOnCandle(t, candle, entryTimestamp);
 
-    // Check ratchet activation
-    if (!t.be_activated && hitBE) {
-      if (!isDryRun && db) {
-        await db.collection("paper_1h_cost_active").updateOne(
-          { id: t.id },
-          { $set: { be_activated: true, stop_loss: t.intended_price } }
-        );
+      if (exitRes.beActivatedUpdated && !t.be_activated) {
+        t.be_activated = true;
+        t.stop_loss = exitRes.newStopLoss ?? t.intended_price;
+        if (!isDryRun && db) {
+          await db.collection("paper_1h_cost_active").updateOne(
+            { id: t.id },
+            { $set: { be_activated: true, stop_loss: t.stop_loss } }
+          );
+        }
+        actions.push(`[COST-1H BTC] ${t.id} triggered BE ratchet @ $${t.stop_loss.toFixed(2)}`);
       }
-      t.be_activated = true;
-      t.stop_loss = t.intended_price;
-      actions.push(`[COST-1H BTC] ${t.id} triggered BE ratchet @ $${t.intended_price.toFixed(2)}`);
-    }
 
-    // STRICT FILLS: SL evaluated before TP in same candle
-    if (hitSL) {
-      closed = true;
-      exitType = t.be_activated ? "BE" : "SL";
-      exitPrice = t.stop_loss;
-      grossR = t.be_activated ? 0.0 : -1.0; // TRUE breakeven: 0.0R gross, no phantom credit
-    } else if (hitTP) {
-      closed = true;
-      exitType = "TP";
-      exitPrice = t.take_profit;
-      grossR = 1.0;
-    }
+      if (exitRes.closed) {
+        const exitPrice = exitRes.exitPrice ?? candle.close;
+        const grossR = exitRes.grossR ?? -1.0;
+        const netR = Number((grossR - t.cost_R).toFixed(4));
+        const closedRecord: PaperTradeCostRecord = {
+          id: t.id,
+          coin: "BTCUSDT",
+          side: t.side,
+          entry_mode: t.entry_mode || "MODE_A_TAKER",
+          signal_time: t.signal_time,
+          entry_time: t.entry_time,
+          entry_run_time: t.entry_run_time,
+          cron_lag_ms: t.cron_lag_ms,
+          exit_time: new Date().toISOString(),
+          intended_price: t.intended_price,
+          fill_price: t.fill_price,
+          realized_slippage_bps: t.realized_slippage_bps,
+          exit_price: exitPrice,
+          stop_distance_pct: t.stop_distance_pct,
+          exit_type: exitRes.exitType,
+          R_gross: grossR,
+          cost_R: t.cost_R,
+          R_net: netR,
+          probability: t.probability,
+          model_hash: FROZEN_1H_MODEL_HASH,
+          status: "CLOSED",
+          be_activated: t.be_activated,
+          stop_loss: t.stop_loss,
+          initial_stop_loss: t.initial_stop_loss ?? t.stop_loss,
+          take_profit: t.take_profit,
+          be_trigger: t.be_trigger,
+        };
 
-    if (closed) {
-      const netR = Number((grossR - t.cost_R).toFixed(4));
-      const closedRecord: PaperTradeCostRecord = {
-        id: t.id,
-        coin: "BTCUSDT",
-        side: t.side,
-        entry_mode: t.entry_mode || "MODE_A_TAKER",
-        signal_time: t.signal_time,
-        entry_time: t.entry_time,
-        exit_time: new Date().toISOString(),
-        intended_price: t.intended_price,
-        fill_price: t.fill_price,
-        realized_slippage_bps: t.realized_slippage_bps,
-        exit_price: exitPrice,
-        stop_distance_pct: t.stop_distance_pct,
-        exit_type: exitType,
-        R_gross: grossR,
-        cost_R: t.cost_R,
-        R_net: netR,
-        probability: t.probability,
-        model_hash: FROZEN_1H_MODEL_HASH,
-        status: "CLOSED",
-        be_activated: t.be_activated,
-        stop_loss: t.stop_loss,
-        take_profit: t.take_profit,
-        be_trigger: t.be_trigger,
-      };
-
-      if (!isDryRun && db) {
-        await db.collection("paper_1h_cost").insertOne(closedRecord);
-        await db.collection("paper_1h_cost_active").deleteOne({ id: t.id });
+        if (!isDryRun && db) {
+          await db.collection("paper_1h_cost").insertOne(closedRecord);
+          await db.collection("paper_1h_cost_active").deleteOne({ id: t.id });
+        }
+        actions.push(`[COST-1H BTC CLOSED] ${t.id} ${exitRes.exitType} @ $${exitPrice.toFixed(2)} | Net R: ${netR >= 0 ? "+" : ""}${netR}R`);
+        break;
       }
-      actions.push(`[COST-1H BTC CLOSED] ${t.id} ${exitType} @ $${exitPrice.toFixed(2)} | Net R: ${netR >= 0 ? "+" : ""}${netR}R`);
     }
   }
 
@@ -450,8 +567,12 @@ export async function runPaper1HCostExecutor(options?: {
           }
           actions.push(`[MODE B LIMIT PLACED] ${side} limit @ $${intendedPrice.toFixed(2)} | Cost R: ${gateResult.cost_R.toFixed(4)}R`);
         } else {
-          // Mode A: Taker market fill at next-bar open (live candle open)
-          const fillPrice = liveCandle.open;
+          // Amendment 1(b): Mode A entry price is live price at run time, not candle open
+          const entryRunTime = new Date().toISOString();
+          const scheduledBarTime = lastClosed.closeTime || (lastClosed.openTime + 3600000);
+          const cronLagMs = Math.max(0, now - scheduledBarTime);
+          const livePriceAtRun = options?.livePrice ?? liveCandle.close;
+          const fillPrice = livePriceAtRun;
           const slippageBps = calculateSlippageBps(intendedPrice, fillPrice);
 
           const activeTrade: PaperTradeCostRecord = {
@@ -460,7 +581,9 @@ export async function runPaper1HCostExecutor(options?: {
             side,
             entry_mode: "MODE_A_TAKER",
             signal_time: new Date(lastClosed.openTime).toISOString(),
-            entry_time: new Date(liveCandle.openTime).toISOString(),
+            entry_time: entryRunTime,
+            entry_run_time: entryRunTime,
+            cron_lag_ms: cronLagMs,
             intended_price: intendedPrice,
             fill_price: fillPrice,
             realized_slippage_bps: slippageBps,
@@ -471,6 +594,7 @@ export async function runPaper1HCostExecutor(options?: {
             status: "ACTIVE",
             be_activated: false,
             stop_loss: stopLoss,
+            initial_stop_loss: stopLoss,
             take_profit: takeProfit,
             be_trigger: beTrigger,
             R_net: 0,
@@ -479,7 +603,7 @@ export async function runPaper1HCostExecutor(options?: {
           if (!isDryRun && db) {
             await db.collection("paper_1h_cost_active").insertOne(activeTrade);
           }
-          actions.push(`[COST-1H BTC ENTERED] Mode A ${side} @ $${fillPrice.toFixed(2)} (intended: $${intendedPrice.toFixed(2)}, slip: ${slippageBps} bps) | Cost R: ${gateResult.cost_R.toFixed(4)}R`);
+          actions.push(`[COST-1H BTC ENTERED] Mode A ${side} @ $${fillPrice.toFixed(2)} (intended: $${intendedPrice.toFixed(2)}, slip: ${slippageBps} bps, lag: ${cronLagMs}ms) | Cost R: ${gateResult.cost_R.toFixed(4)}R`);
         }
       }
     }

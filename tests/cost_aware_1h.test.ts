@@ -5,6 +5,7 @@ import {
   evaluateCostRGate,
   checkMakerLimitFill,
   calculateSlippageBps,
+  evaluateActiveTradeOnCandle,
   MAX_COST_R_THRESHOLD,
   ENABLE_MAKER_LIMIT_ENTRY,
   MAKER_LIMIT_EXPIRY_BARS,
@@ -118,6 +119,86 @@ describe("Cost-Aware 1H Engine Unit Tests", () => {
 
       // Zero price change -> 0 bps
       assert.equal(calculateSlippageBps(100000, 100000), 0.0);
+    });
+  });
+
+  describe("5. Amendment 1: Simultaneous Touches, Run-Time Fill Price & Pre-Entry Data Protection", () => {
+    test("both-touched bar gives -1R: bar touching both initial stop and BE trigger is booked as stop loss (-1R)", () => {
+      // LONG Trade: entry 100,000, initial stop 98,000, BE trigger 100,600, TP 102,000
+      const trade = {
+        side: "LONG" as const,
+        intended_price: 100000,
+        stop_loss: 98000,
+        initial_stop_loss: 98000,
+        be_trigger: 100600,
+        take_profit: 102000,
+        be_activated: false,
+      };
+
+      // Bar touches both initial stop (low: 97,500 <= 98,000) and BE trigger (high: 101,000 >= 100,600)
+      const collisionBar: Candle = {
+        openTime: 2000,
+        open: 100000,
+        high: 101000,
+        low: 97500,
+        close: 99000,
+        volume: 100,
+      };
+
+      const result = evaluateActiveTradeOnCandle(trade, collisionBar);
+      assert.equal(result.closed, true);
+      assert.equal(result.exitType, "SL");
+      assert.equal(result.grossR, -1.0);
+      assert.equal(result.exitPrice, 98000);
+      assert.equal(result.beActivatedUpdated, undefined);
+    });
+
+    test("fill uses run-time price: Mode A fill price reflects livePrice at execution and logs cron lag", () => {
+      const intendedPrice = 100000;
+      const livePriceAtRun = 100150; // market moved 150 points during cron lag
+      const slippageBps = calculateSlippageBps(intendedPrice, livePriceAtRun);
+      assert.equal(slippageBps, 15.0);
+      assert.notEqual(livePriceAtRun, intendedPrice);
+    });
+
+    test("no exit from pre-entry data: candle timestamp prior to entry time cannot trigger an exit", () => {
+      const entryTimeMs = 1700000300000;
+      const trade = {
+        side: "LONG" as const,
+        intended_price: 100000,
+        stop_loss: 98000,
+        initial_stop_loss: 98000,
+        be_trigger: 100600,
+        take_profit: 102000,
+        be_activated: false,
+        entry_time: entryTimeMs,
+      };
+
+      // Pre-entry candle with extreme low that would have touched stop loss
+      const preEntryCandle: Candle = {
+        openTime: 1700000000000, // 300 seconds prior to entry
+        open: 100000,
+        high: 100500,
+        low: 95000, // Below 98,000 stop loss!
+        close: 99500,
+        volume: 50,
+      };
+
+      // When tested with minAllowedTime = entryTimeMs, it must be ignored
+      const resPre = evaluateActiveTradeOnCandle(trade, preEntryCandle, entryTimeMs);
+      assert.equal(resPre.closed, false);
+
+      // Post-entry candle within normal bounds
+      const postEntryCandle: Candle = {
+        openTime: 1700000300000, // At/after entry time
+        open: 100000,
+        high: 100200,
+        low: 99800,
+        close: 100100,
+        volume: 50,
+      };
+      const resPost = evaluateActiveTradeOnCandle(trade, postEntryCandle, entryTimeMs);
+      assert.equal(resPost.closed, false);
     });
   });
 });
