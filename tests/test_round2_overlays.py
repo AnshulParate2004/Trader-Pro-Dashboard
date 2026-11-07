@@ -362,3 +362,53 @@ def test_verdict_rules_and_stage_x_no_verdict():
     assert "alpha_ann_point" in res_stage_x
     assert "strategy_cagr" in res_stage_x
 
+
+def test_synthetic_cost_handling_entry_and_rebalance():
+    """
+    12. Synthetic tests verifying no double-charging at slice boundary and exact entry cost:
+        (a) strategy with weight 0 before first evaluated bar and 1.0 from first evaluated bar
+            pays exactly 0.0025 in total entry cost at 50 bps, not 0.005.
+        (b) constant weight 0.5 pays 0.5 * 0.0025 once and nothing later.
+        (c) buy-and-hold pays 0.0025 once and nothing later.
+    """
+    n = 250
+    warmup = 200
+    prices = pd.Series(100.0, index=pd.date_range("2020-01-01", periods=n, freq="D"))
+    friction = 0.0050  # 50 bps round-trip -> 25 bps (0.0025) one-way
+
+    # (a) weight 0 before first evaluated bar, 1.0 from first evaluated bar
+    w_a = pd.Series(0.0, index=prices.index)
+    w_a.iloc[warmup:] = 1.0
+    sim_a = simulate_strategy_returns(prices, w_a, friction_round_trip=friction, warmup_bars=warmup)
+    total_cost_a = float(sim_a["cost"].sum())
+    first_cost_a = float(sim_a["cost"].iloc[0])
+    subsequent_cost_a = float(sim_a["cost"].iloc[1:].sum())
+    print(f"\n[Test Case (a)] Total cost: {total_cost_a:.6f} | First bar: {first_cost_a:.6f} | Subsequent bars: {subsequent_cost_a:.6f}")
+    assert total_cost_a == 0.0025, f"Expected 0.0025, got {total_cost_a}"
+    assert first_cost_a == 0.0025
+    assert subsequent_cost_a == 0.0
+
+    # (b) constant weight 0.5
+    w_b = pd.Series(0.5, index=prices.index)
+    sim_b = simulate_strategy_returns(prices, w_b, friction_round_trip=friction, warmup_bars=warmup)
+    total_cost_b = float(sim_b["cost"].sum())
+    first_cost_b = float(sim_b["cost"].iloc[0])
+    subsequent_cost_b = float(sim_b["cost"].iloc[1:].sum())
+    expected_b = 0.5 * 0.0025  # 0.00125
+    print(f"[Test Case (b)] Total cost: {total_cost_b:.6f} | First bar: {first_cost_b:.6f} | Subsequent bars: {subsequent_cost_b:.6f}")
+    assert total_cost_b == expected_b, f"Expected {expected_b}, got {total_cost_b}"
+    assert first_cost_b == expected_b
+    assert subsequent_cost_b == 0.0
+
+    # (c) buy-and-hold (constant weight 1.0)
+    w_c = pd.Series(1.0, index=prices.index)
+    sim_c = simulate_strategy_returns(prices, w_c, friction_round_trip=friction, warmup_bars=warmup)
+    total_cost_c = float(sim_c["cost"].sum())
+    first_cost_c = float(sim_c["cost"].iloc[0])
+    subsequent_cost_c = float(sim_c["cost"].iloc[1:].sum())
+    print(f"[Test Case (c)] Total cost: {total_cost_c:.6f} | First bar: {first_cost_c:.6f} | Subsequent bars: {subsequent_cost_c:.6f}")
+    assert total_cost_c == 0.0025, f"Expected 0.0025, got {total_cost_c}"
+    assert first_cost_c == 0.0025
+    assert subsequent_cost_c == 0.0
+
+
