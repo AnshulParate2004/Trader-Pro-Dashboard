@@ -255,4 +255,8 @@ A strategy counts as having a statistically valid, useful quantitative edge if a
 5. **Evaluator Module Freezing & Architectural Modularization:**
    - The data loading logic is separated into an independent module ([`analysis/load_round2_data.py`](file:///D:/Projects_Main/Trade-Pro/Trader-Pro-Dashboard/analysis/load_round2_data.py)).
    - The evaluator module ([`analysis/evaluate_round2_residual_edge.py`](file:///D:/Projects_Main/Trade-Pro/Trader-Pro-Dashboard/analysis/evaluate_round2_residual_edge.py)) remains frozen and sealed except for incorporating these specific amendments.
-   - The new cryptographic SHA-256 of the committed evaluator script is recorded upon implementation.
+   - The new cryptographic SHA-256 of the committed evaluator script is formally recorded:
+     ```text
+     git show HEAD:analysis/evaluate_round2_residual_edge.py | sha256sum:
+     065f94be9f93ab22bbd67f3eaa8e0c596e9ac1b49c5bbf6619423e9f0c4c7d4c
+     ```
