@@ -7,6 +7,7 @@ export interface AIStrategyModel {
   trueWinRate: number; // TP / (TP + SL) * 100
   netWinRate: number;  // % of trades with net PnL > 0 after fees
   avgNetR: number;     // Average Net R per trade after fees and slippage
+  avgGrossR?: number;  // Average Gross R per trade before friction
   netProfitFactor: number; // Net Profit Factor after fees
   tpSplit: number;     // TP %
   beSplit: number;     // BE %
@@ -34,6 +35,7 @@ export const TOP_MODELS: AIStrategyModel[] = [
     trueWinRate: 52.8,
     netWinRate: 52.8,
     avgNetR: 0.1748,
+    avgGrossR: 0.2048,
     netProfitFactor: 1.46,
     tpSplit: 52.8,
     beSplit: 0.0,
@@ -59,6 +61,7 @@ export const TOP_MODELS: AIStrategyModel[] = [
     trueWinRate: 49.7,
     netWinRate: 45.2,
     avgNetR: 0.1514,
+    avgGrossR: 0.1639,
     netProfitFactor: 1.32,
     tpSplit: 45.2,
     beSplit: 0.0,
@@ -84,6 +87,7 @@ export const TOP_MODELS: AIStrategyModel[] = [
     trueWinRate: 62.0,
     netWinRate: 34.6,
     avgNetR: -0.259,
+    avgGrossR: 0.0410,
     netProfitFactor: 0.40,
     tpSplit: 36.5,
     beSplit: 41.2,

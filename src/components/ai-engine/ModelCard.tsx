@@ -8,14 +8,25 @@ interface ModelCardProps {
   selectedModelId: string;
   onModelChange: (modelId: string) => void;
   isTaker: boolean;
+  tradingFeePercent?: number;
 }
 
 export const ModelCard: React.FC<ModelCardProps> = ({
   selectedModelId,
   onModelChange,
   isTaker,
+  tradingFeePercent,
 }) => {
   const currentModel = TOP_MODELS.find((m) => m.id === selectedModelId) || null;
+
+  // Exact Indian regulatory platform friction in R per trade
+  const feePct = tradingFeePercent !== undefined ? tradingFeePercent : (isTaker ? 0.040 : 0.016);
+  const roundTripPct = (2 * (feePct * 1.18 + 0.010)) / 100;
+  const frictionR = Number(((1000 * roundTripPct) / 100).toFixed(4));
+  const avgGrossR = currentModel
+    ? (currentModel.avgGrossR ?? (currentModel.avgNetR + 0.025))
+    : 0.20;
+  const dynamicAvgNetR = currentModel ? Number((avgGrossR - frictionR).toFixed(3)) : 0;
 
   return (
     <div className="bg-white border border-chrome-line rounded-lg p-4 sm:p-5 flex flex-col gap-4 shadow-xs">
@@ -95,11 +106,18 @@ export const ModelCard: React.FC<ModelCardProps> = ({
           </div>
 
           <div className="bg-chrome-field/50 border border-chrome-line rounded p-2 flex flex-col overflow-hidden">
-            <span className="text-[10px] text-chrome-dim uppercase font-bold">Avg Net R</span>
-            <span className={`text-base font-bold mt-0.5 ${currentModel.avgNetR >= 0 ? "text-win" : "text-loss"}`}>
-              {currentModel.avgNetR >= 0 ? "+" : ""}{currentModel.avgNetR.toFixed(3)} R
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[10px] text-chrome-dim uppercase font-bold">Avg Net R</span>
+              <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-accent-tint text-chrome-green-ink border border-accent/30 font-bold truncate">
+                {feePct.toFixed(3)}%
+              </span>
+            </div>
+            <span className={`text-base font-bold mt-0.5 ${dynamicAvgNetR >= 0 ? "text-win" : "text-loss"}`}>
+              {dynamicAvgNetR >= 0 ? "+" : ""}{dynamicAvgNetR.toFixed(3)} R
             </span>
-            <span className="text-[9px] text-chrome-dim font-sans">Friction Deducted</span>
+            <span className="text-[9px] text-chrome-dim font-sans truncate">
+              Friction: ({feePct.toFixed(3)}% + 18% GST + Slip)
+            </span>
           </div>
 
           <div className="bg-chrome-field/50 border border-chrome-line rounded p-2 flex flex-col overflow-hidden">
@@ -123,18 +141,18 @@ export const ModelCard: React.FC<ModelCardProps> = ({
           </div>
 
           <div className={`border rounded p-2 flex flex-col overflow-hidden ${
-            currentModel.avgNetR >= 0 ? "bg-win-tint border-win/40" : "bg-rose-50 border-rose-300"
+            dynamicAvgNetR >= 0 ? "bg-win-tint border-win/40" : "bg-rose-50 border-rose-300"
           }`}>
             <span className={`text-[10px] uppercase font-bold ${
-              currentModel.avgNetR >= 0 ? "text-chrome-green-ink" : "text-rose-800"
+              dynamicAvgNetR >= 0 ? "text-chrome-green-ink" : "text-rose-800"
             }`}>Live Status</span>
             <span className={`text-xs font-bold mt-1 ${
-              currentModel.avgNetR >= 0 ? "text-win-dark" : "text-rose-800"
+              dynamicAvgNetR >= 0 ? "text-win-dark" : "text-rose-800"
             }`}>
-              {currentModel.avgNetR >= 0 ? "ACTIVE OOS PAPER" : "RETIRED"}
+              {dynamicAvgNetR >= 0 ? "ACTIVE OOS PAPER" : "RETIRED"}
             </span>
             <span className="text-[9px] text-chrome-dim font-sans">
-              {currentModel.avgNetR >= 0 ? "Positive Expectancy" : "Negative Expectancy"}
+              {dynamicAvgNetR >= 0 ? "Positive Expectancy" : "Negative Expectancy"}
             </span>
           </div>
         </div>

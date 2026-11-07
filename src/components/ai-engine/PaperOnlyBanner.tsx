@@ -1,3 +1,4 @@
+import { TradeOrder } from "@/lib/engineTypes";
 "use client";
 
 import React from "react";
@@ -266,6 +267,8 @@ interface PaperOnlyBannerProps {
   selectedAsset?: string;
   assetData?: AssetPerformanceData;
   isLiveMode?: boolean;
+  trades?: TradeOrder[];
+  tradingFeePercent?: number;
 }
 
 export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
@@ -278,6 +281,8 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
   selectedAsset = "ALL",
   assetData,
   isLiveMode = true,
+  trades = [],
+  tradingFeePercent,
 }) => {
   const is4HSwing = selectedModelId === "4h-swing-meta-017";
   const isCommodities = selectedModelId === "1h-commodities-rf";
@@ -286,10 +291,34 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
   // Use dynamic assetData values if provided or lookup from map
   const resolved = assetData || ASSET_METRICS_MAP[selectedAsset] || ASSET_METRICS_MAP["ALL"];
 
+  // Filter live trades array for selected asset
+  const filteredLiveTrades = trades && trades.length > 0
+    ? (selectedAsset && selectedAsset !== "ALL" ? trades.filter(t => t.symbol === selectedAsset) : trades)
+    : [];
+
+  const dynamicTotalFees = filteredLiveTrades.length > 0
+    ? filteredLiveTrades.reduce((acc, t) => acc + (t.totalFeeINR || 0), 0)
+    : (resolved.liveChargesINR ?? 140.20);
+
+  const dynamicNetProfit = filteredLiveTrades.length > 0
+    ? filteredLiveTrades.reduce((acc, t) => acc + (t.netPnLINR || 0), 0)
+    : (resolved.liveNetPnLINR ?? 2354.00);
+
+  const dynamicAvgNetR = filteredLiveTrades.length > 0
+    ? filteredLiveTrades.reduce((acc, t) => acc + ((t.netPnLINR ?? 0) / 100), 0) / filteredLiveTrades.length
+    : (resolved.liveAvgNetR ?? 0.336);
+
+  const dynamicReturnR = filteredLiveTrades.length > 0
+    ? filteredLiveTrades.reduce((acc, t) => acc + ((t.netPnLINR ?? 0) / 100), 0)
+    : (resolved.liveRealizedReturnR ?? 23.54);
+
+  const baseCapital = selectedAsset === "ALL" ? 7000 : 1000;
+  const dynamicCapital = baseCapital + dynamicNetProfit;
+
   // Differentiate live mode vs historical mode
-  const currentAvgNetR = isLiveMode ? resolved.liveAvgNetR : resolved.avgNetR;
-  const currentReturnR = isLiveMode ? resolved.liveRealizedReturnR : resolved.realizedReturnR;
-  const currentTradeCount = isLiveMode ? resolved.liveTradesCount : resolved.historicalTradesCount;
+  const currentAvgNetR = isLiveMode ? dynamicAvgNetR : resolved.avgNetR;
+  const currentReturnR = isLiveMode ? dynamicReturnR : resolved.realizedReturnR;
+  const currentTradeCount = isLiveMode ? (filteredLiveTrades.length || resolved.liveTradesCount) : resolved.historicalTradesCount;
 
   const isPositiveExpectancy = !isLegacy && currentAvgNetR >= 0;
   const isCommodityAsset = ["GC=F", "SI=F", "CL=F"].includes(selectedAsset);
@@ -359,9 +388,9 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
           {isLiveMode ? (
             <p className="font-body text-xs sm:text-sm text-chrome-dim leading-relaxed">
               <strong>Capital Given:</strong> ₹{resolved.allocatedCapitalINR.toLocaleString("en-IN", { minimumFractionDigits: 2 })} {isAll ? "(₹1,000 / asset)" : ""} &nbsp;|&nbsp;
-              <strong>Current Balance:</strong> <span className={resolved.liveCurrentCapitalINR >= resolved.allocatedCapitalINR ? "text-win font-bold" : "text-loss font-bold"}>₹{resolved.liveCurrentCapitalINR.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span> &nbsp;|&nbsp;
-              <strong>Shark Charges (w/ GST) Paid:</strong> ₹{resolved.liveChargesINR.toFixed(2)} &nbsp;|&nbsp;
-              <strong>{resolved.liveTradesCount} Live Executions Tracked.</strong>
+              <strong>Current Balance:</strong> <span className={dynamicCapital >= resolved.allocatedCapitalINR ? "text-win font-bold" : "text-loss font-bold"}>₹{dynamicCapital.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span> &nbsp;|&nbsp;
+              <strong>Shark Charges (w/ GST) Paid:</strong> ₹{dynamicTotalFees.toFixed(2)} &nbsp;|&nbsp;
+              <strong>{currentTradeCount} Live Executions Tracked.</strong>
               {resolved.liveTradesCount === 0 ? " 100% Cash preservation safe below 200 SMA regime filter. Zero capital risked." : ""}
               {selectedAsset === "BTCUSDT" ? " Initial test trade booked at -1.025R; remaining period strictly preserved in 100% cash below 200 SMA." : ""}
             </p>
@@ -423,7 +452,7 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
             </div>
             <span className="font-mono text-[10px] text-chrome-dim mt-0.5">
               {isLiveMode
-                ? `Net: ${resolved.liveNetPnLINR >= 0 ? `+₹${resolved.liveNetPnLINR.toFixed(2)}` : `-₹${Math.abs(resolved.liveNetPnLINR).toFixed(2)}`} (Fees: ₹${resolved.liveChargesINR.toFixed(2)})`
+                ? `Net: ${dynamicNetProfit >= 0 ? `+₹${dynamicNetProfit.toFixed(2)}` : `-₹${Math.abs(dynamicNetProfit).toFixed(2)}`} (Fees: ₹${dynamicTotalFees.toFixed(2)})`
                 : (isAll ? `₹${resolved.allocatedCapitalINR.toLocaleString("en-IN")} Allocated across 7 Assets` : `Dedicated ₹${resolved.allocatedCapitalINR.toLocaleString("en-IN")} Capital for ${selectedAsset}`)}
             </span>
           </div>

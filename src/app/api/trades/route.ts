@@ -18,35 +18,51 @@ import { TradeOrder, EnginePerformanceMetrics } from "@/lib/engineTypes";
 
 export const dynamic = "force-dynamic";
 
-function map4HSwingToTradeOrder(t: PaperTrade4HSwingRecord): TradeOrder {
+function map4HSwingToTradeOrder(t: PaperTrade4HSwingRecord | any, feePercent: number = TAKER_BASE_FEE_PERCENT): TradeOrder {
   const riskINR = 100.0; // Standard 1R risk baseline in INR
-  const grossPnL = Number(((t.gross_r ?? 0) * riskINR).toFixed(2));
-  const netPnL = Number(((t.net_r ?? 0) * riskINR).toFixed(2));
-  const feeINR = Number(((t.cost_r ?? 0.03) * riskINR).toFixed(4));
-  const posSize = 1000.00; // Dedicated ₹1,000 capital per asset
+  const posSize = t.positionSizeINR || 1000.00; // Dedicated ₹1,000 capital per asset
+
+  // Calculate gross_r: either from t.gross_r or reconstructed from net_r + cost_r
+  const gross_r = t.gross_r ?? (t.net_r !== undefined && t.cost_r !== undefined ? t.net_r + t.cost_r : 0);
+  const grossPnL = Number((gross_r * riskINR).toFixed(2));
+
+  // Indian regulatory platform friction per trade:
+  // Base Taker/Maker Fee: feePercent (e.g. 0.040%, 0.100%, 0.016%)
+  // GST (18% on fee): gst = feePercent * 0.18
+  // Slippage: 0.010% per side (0.020% round-trip)
+  // Total Round-Trip Friction: roundTripPct = 2 * (feePercent * 1.18 + 0.010) / 100
+  const roundTripPct = (2 * (feePercent * 1.18 + 0.010)) / 100;
+  const totalFeeINR = Number((posSize * roundTripPct).toFixed(2));
+  const netPnLINR = Number((grossPnL - totalFeeINR).toFixed(2));
+  const cost_r = Number((totalFeeINR / riskINR).toFixed(4));
+  const net_r = Number((gross_r - cost_r).toFixed(3));
+
+  const entryFeeINR = Number((totalFeeINR / 2).toFixed(4));
+  const exitFeeINR = Number((totalFeeINR / 2).toFixed(4));
+  const slippageINR = Number((posSize * 0.0002).toFixed(4));
 
   return {
     id: t.id,
-    symbol: t.coin,
+    symbol: t.symbol || t.coin,
     direction: t.side,
-    orderType: "TAKER",
+    orderType: feePercent <= 0.020 ? "MAKER" : "TAKER",
     modelId: "4h-swing-meta-017",
     modelName: "4H Swing Meta (+0.17R)",
     entryPrice: t.entry_price,
     exitPrice: t.exit_price ?? t.entry_price,
     positionSizeINR: posSize,
     coins: t.entry_price > 0 ? posSize / t.entry_price : 0,
-    feePercentage: 0.10,
-    gstPercentage: 0,
-    entryFeeINR: Number((feeINR / 2).toFixed(4)),
-    exitFeeINR: Number((feeINR / 2).toFixed(4)),
-    slippageINR: 0,
-    totalFeeINR: feeINR,
+    feePercentage: feePercent,
+    gstPercentage: Number((feePercent * 0.18).toFixed(4)),
+    entryFeeINR,
+    exitFeeINR,
+    slippageINR,
+    totalFeeINR,
     grossPnLINR: grossPnL,
-    netPnLINR: netPnL,
+    netPnLINR,
     stopLoss: t.stop_loss,
     initialStopLoss: t.stop_loss,
-    stopPct: t.stop_distance_pct,
+    stopPct: t.stop_distance_pct ?? t.stop_dist_pct,
     riskAmountINR: riskINR,
     breakevenTrigger: 0,
     breakevenLocked: 0,
@@ -55,41 +71,52 @@ function map4HSwingToTradeOrder(t: PaperTrade4HSwingRecord): TradeOrder {
     takeProfit2: t.take_profit,
     status: t.status,
     exitReason: t.exit_type || (t.status === "ACTIVE" ? undefined : "TIME"),
-    triggerReason: `4H Donchian Breakout + 200 SMA (P=${(t.probability * 100).toFixed(1)}%)`,
+    triggerReason: `4H Donchian Breakout + 200 SMA (P=${(((t.probability ?? 0.10) * 100)).toFixed(1)}%)`,
     openedAt: t.entry_time_ms || (t.entry_time ? Date.parse(t.entry_time) : Date.now()),
     closedAt: t.exit_time ? Date.parse(t.exit_time) : undefined,
   };
 }
 
-function map1HCommodityToTradeOrder(t: PaperTrade1HCommodityRecord): TradeOrder {
+function map1HCommodityToTradeOrder(t: PaperTrade1HCommodityRecord | any, feePercent: number = TAKER_BASE_FEE_PERCENT): TradeOrder {
   const riskINR = 100.0; // Standard 1R risk baseline in INR
-  const grossPnL = Number(((t.gross_r ?? 0) * riskINR).toFixed(2));
-  const netPnL = Number(((t.net_r ?? 0) * riskINR).toFixed(2));
-  const feeINR = Number(((t.cost_r ?? 0.0125) * riskINR).toFixed(4));
-  const posSize = 1000.00; // Dedicated ₹1,000 capital per asset
+  const posSize = t.positionSizeINR || 1000.00; // Dedicated ₹1,000 capital per asset
+
+  const gross_r = t.gross_r ?? (t.net_r !== undefined && t.cost_r !== undefined ? t.net_r + t.cost_r : 0);
+  const grossPnL = Number((gross_r * riskINR).toFixed(2));
+
+  // Indian regulatory platform friction per trade
+  const roundTripPct = (2 * (feePercent * 1.18 + 0.010)) / 100;
+  const totalFeeINR = Number((posSize * roundTripPct).toFixed(2));
+  const netPnLINR = Number((grossPnL - totalFeeINR).toFixed(2));
+  const cost_r = Number((totalFeeINR / riskINR).toFixed(4));
+  const net_r = Number((gross_r - cost_r).toFixed(3));
+
+  const entryFeeINR = Number((totalFeeINR / 2).toFixed(4));
+  const exitFeeINR = Number((totalFeeINR / 2).toFixed(4));
+  const slippageINR = Number((posSize * 0.0002).toFixed(4));
 
   return {
     id: t.id,
     symbol: t.symbol,
     direction: t.side,
-    orderType: "TAKER",
+    orderType: feePercent <= 0.020 ? "MAKER" : "TAKER",
     modelId: "1h-commodities-rf",
     modelName: "1H Macro Commodities (+0.151R)",
     entryPrice: t.entry_price,
     exitPrice: t.exit_price ?? t.entry_price,
     positionSizeINR: posSize,
     coins: t.entry_price > 0 ? posSize / t.entry_price : 0,
-    feePercentage: 0.05,
-    gstPercentage: 0,
-    entryFeeINR: Number((feeINR / 2).toFixed(4)),
-    exitFeeINR: Number((feeINR / 2).toFixed(4)),
-    slippageINR: 0,
-    totalFeeINR: feeINR,
+    feePercentage: feePercent,
+    gstPercentage: Number((feePercent * 0.18).toFixed(4)),
+    entryFeeINR,
+    exitFeeINR,
+    slippageINR,
+    totalFeeINR,
     grossPnLINR: grossPnL,
-    netPnLINR: netPnL,
+    netPnLINR,
     stopLoss: t.stop_loss,
     initialStopLoss: t.stop_loss,
-    stopPct: t.stop_distance_pct,
+    stopPct: t.stop_distance_pct ?? t.stop_dist_pct,
     riskAmountINR: riskINR,
     breakevenTrigger: 0,
     breakevenLocked: 0,
@@ -98,7 +125,7 @@ function map1HCommodityToTradeOrder(t: PaperTrade1HCommodityRecord): TradeOrder 
     takeProfit2: t.take_profit,
     status: t.status,
     exitReason: t.exit_type || (t.status === "ACTIVE" ? undefined : "TIME"),
-    triggerReason: `1H Donchian Breakout + 200 SMA (P=${(t.probability * 100).toFixed(1)}%)`,
+    triggerReason: `1H Donchian Breakout + 200 SMA (P=${(((t.probability ?? 0.05) * 100)).toFixed(1)}%)`,
     openedAt: t.entry_time_ms || (t.entry_time ? Date.parse(t.entry_time) : Date.now()),
     closedAt: t.exit_time ? Date.parse(t.exit_time) : undefined,
   };
@@ -218,8 +245,8 @@ export async function GET(req: Request) {
         }
       }
 
-      const swingTrades: TradeOrder[] = swingRecords.map(map4HSwingToTradeOrder);
-      const commTrades: TradeOrder[] = commodityRecords.map(map1HCommodityToTradeOrder);
+      const swingTrades: TradeOrder[] = swingRecords.map((t) => map4HSwingToTradeOrder(t, feeOverride));
+      const commTrades: TradeOrder[] = commodityRecords.map((t) => map1HCommodityToTradeOrder(t, feeOverride));
 
       let trades: TradeOrder[] = [];
       if (isCommodities) {

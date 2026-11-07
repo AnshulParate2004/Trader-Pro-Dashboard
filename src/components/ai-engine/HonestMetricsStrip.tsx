@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { EnginePerformanceMetrics } from "@/lib/engineTypes";
+import { EnginePerformanceMetrics, TradeOrder } from "@/lib/engineTypes";
 import { Activity } from "lucide-react";
 import { AssetPerformanceData, ASSET_METRICS_MAP } from "./PaperOnlyBanner";
 
@@ -13,6 +13,7 @@ interface HonestMetricsStripProps {
   selectedAsset?: string;
   assetData?: AssetPerformanceData;
   isLiveMode?: boolean;
+  trades?: TradeOrder[];
 }
 
 export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
@@ -23,6 +24,7 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
   selectedAsset = "ALL",
   assetData,
   isLiveMode = true,
+  trades = [],
 }) => {
   const is4HSwing = selectedModelId === "4h-swing-meta-017";
   const isCommodities = selectedModelId === "1h-commodities-rf";
@@ -31,6 +33,22 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
 
   // Dynamic asset performance data resolution
   const resolved = assetData || ASSET_METRICS_MAP[selectedAsset] || ASSET_METRICS_MAP["ALL"];
+
+  // Dynamic fee, PnL & capital calculations from live trades array
+  const filteredTrades = trades && trades.length > 0
+    ? (selectedAsset && selectedAsset !== "ALL" ? trades.filter(t => t.symbol === selectedAsset) : trades)
+    : [];
+
+  const dynamicTotalFees = filteredTrades.length > 0
+    ? filteredTrades.reduce((acc, t) => acc + (t.totalFeeINR || 0), 0)
+    : (resolved.liveChargesINR ?? 140.20);
+
+  const dynamicNetProfit = filteredTrades.length > 0
+    ? filteredTrades.reduce((acc, t) => acc + (t.netPnLINR || 0), 0)
+    : (resolved.liveNetPnLINR ?? 2354.00);
+
+  const baseAllocated = selectedAsset === "ALL" ? 7000 : 1000;
+  const dynamicCapital = baseAllocated + dynamicNetProfit;
 
   const feeBadge = (
     <span
@@ -221,14 +239,14 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
           </div>
           <div className="font-mono text-xl sm:text-2xl font-bold text-chrome-ink mt-2">
             {isLiveMode
-              ? `₹${resolved.liveCurrentCapitalINR.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              ? `₹${dynamicCapital.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
               : resolved.maxDrawdownR === 0
               ? "0.00 R"
               : `${resolved.maxDrawdownR.toFixed(2)} R`}
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
             {isLiveMode
-              ? `Given: ₹${resolved.allocatedCapitalINR.toLocaleString("en-IN")} • Charges Paid: ₹${resolved.liveChargesINR.toFixed(2)}`
+              ? `Given: ₹${baseAllocated.toLocaleString("en-IN")} • Charges Paid: ₹${dynamicTotalFees.toFixed(2)}`
               : isAll
               ? "Combined Multi-Asset Portfolio"
               : isCommodityAsset
@@ -261,6 +279,44 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Dedicated Indian Regulatory Platform Fee & Friction Breakdown Card */}
+      {isLiveMode && (
+        <div className="w-full bg-white border border-chrome-line rounded-lg p-3 sm:p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs font-mono">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 font-bold text-chrome-ink">
+              <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+              <span className="uppercase tracking-wider text-[11px]">Platform Fee Breakdown:</span>
+            </div>
+            <span className="bg-chrome-field px-2 py-0.5 rounded border border-chrome-line text-chrome-ink">
+              Base Fee: <strong className="text-chrome-ink font-bold">{feePercent.toFixed(3)}%</strong>
+            </span>
+            <span className="bg-chrome-field px-2 py-0.5 rounded border border-chrome-line text-chrome-ink">
+              GST (18%): <strong className="text-chrome-ink font-bold">+{(feePercent * 0.18).toFixed(3)}%</strong>
+            </span>
+            <span className="bg-chrome-field px-2 py-0.5 rounded border border-chrome-line text-chrome-ink">
+              Slippage: <strong className="text-chrome-ink font-bold">0.020% round-trip</strong>
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4 shrink-0">
+            <div className="flex items-baseline gap-1">
+              <span className="text-[10px] text-chrome-dim uppercase">Total Fees Deducted:</span>
+              <span className="text-accent font-bold">₹{dynamicTotalFees.toFixed(2)} INR</span>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[10px] text-chrome-dim uppercase">Current Net Profit:</span>
+              <span className={`font-bold ${dynamicNetProfit >= 0 ? "text-win" : "text-loss"}`}>
+                {dynamicNetProfit >= 0 ? "+" : ""}₹{dynamicNetProfit.toFixed(2)} INR
+              </span>
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-[10px] text-chrome-dim uppercase">Current Total Capital:</span>
+              <span className="text-chrome-ink font-bold text-sm">₹{dynamicCapital.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} INR</span>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

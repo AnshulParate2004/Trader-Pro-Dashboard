@@ -520,6 +520,8 @@ export default function AiEnginePage() {
           selectedAsset={selectedAsset}
           assetData={currentAssetData}
           isLiveMode={tableTab === "live"}
+          trades={trades}
+          tradingFeePercent={config.tradingFeePercent}
         />
 
         {/* =========================================================================
@@ -536,6 +538,7 @@ export default function AiEnginePage() {
           selectedAsset={selectedAsset}
           assetData={currentAssetData}
           isLiveMode={tableTab === "live"}
+          trades={trades}
         />
 
         {/* =========================================================================
@@ -588,6 +591,7 @@ export default function AiEnginePage() {
                 selectedModelId={selectedModelId}
                 onModelChange={handleModelChange}
                 isTaker={isTaker}
+                tradingFeePercent={config.tradingFeePercent}
               />
 
               {/* Autonomous AI Scalp Engine Execution Controls */}
