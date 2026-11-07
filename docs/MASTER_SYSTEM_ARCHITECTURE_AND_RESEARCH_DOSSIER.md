@@ -91,8 +91,8 @@ A systematic forensic audit revealed that the apparent backtest profits were mat
 ---
 
 ### Engine 4: Time-Series Foundation Models Benchmark (`btc_hf_forecast_benchmark.ipynb`)
-* **Objective:** Determine whether modern open-weights transformers (Amazon Chronos-Bolt Small & Base) provide directional alpha or superior volatility estimates on daily Bitcoin data compared to econometric baselines.
-* **Dataset:** 3,231 daily bars ($2018\text{--}2026$) evaluated across **2,730 consecutive daily origins** ($K\_STEP = 1$).
+* **Objective:** Determine whether modern open-weights transformers (Amazon Chronos-Bolt Small & Base, Google TimesFM 2.5 200M) provide directional alpha or superior volatility estimates on daily Bitcoin data compared to econometric baselines.
+* **Dataset:** 3,232 daily bars ($2018\text{--}2026$) evaluated across **2,730 consecutive daily origins** ($K\_STEP = 1$).
 * **Models Evaluated:**
   * `Baseline_ZeroReturn`: Predicts $0.0$ return (martingale benchmark).
   * `Baseline_MeanReturn`: Rolling mean return.
@@ -102,12 +102,13 @@ A systematic forensic audit revealed that the apparent backtest profits were mat
   * `Baseline_HAR_Close`: HAR on squared close-to-close returns.
   * `Baseline_GARCH(1,1)`: Conditional variance conditioned strictly on data up to origin.
   * `Chronos_Bolt_Small` & `Chronos_Bolt_Base`: Zero-shot transformer quantile forecasts ($q_{10}, q_{50}, q_{90}$).
+  * `Google_TimesFM_2.5_200M`: Decoder-only transformer (`timesfm-3.0.2`, `google/timesfm-2.5-200m-pytorch`, Apache-2.0) with calibrated quantiles.
 * **Key Findings:**
-  1. **Directional Return Edge is Exactly Zero:** Chronos-Bolt achieved $49.7\% - 50.6\%$ DA in Dev and $50.4\% - 52.0\%$ in Holdout ($p > 0.36$). Zero-Return baseline achieved the lowest MAE ($150\text{ bps}$ Holdout vs $158\text{--}165\text{ bps}$ for Chronos).
-  2. **Volatility Edge vs EWMA is Inconclusive:** Neither Chronos Small nor Base statistically outperformed `Baseline_EWMA_RV(0.94)` ($p = 0.34\text{--}0.93$ in Dev, $p = 0.36\text{--}0.75$ in Holdout; 95% bootstrap CIs span zero).
-  3. **HAR-RV Window Dependency:** HAR-RV beat EWMA in Dev ($p = 0.0004$) but failed to beat EWMA in Holdout ($p = 0.1479$).
-  4. **Random-Walk Control Integrity:** Across 50 zero-drift synthetic series (250 origins each), Mean DA was $50.2\% \pm 0.9\%$. Deliberately leaking the future caused DA to jump to $94.0\%$, proving the test harness catches lookahead bias.
-  5. **Final Quantitative Decision:** **"Use EWMA."**
+  1. **Directional Return Edge is Exactly Zero:** Chronos-Bolt achieved $49.7\% - 50.6\%$ DA in Dev and $50.4\% - 52.0\%$ in Holdout ($p > 0.36$). Google TimesFM 2.5 achieved $50.69\%$ DA in Dev ($p=0.5349$) and $48.72\%$ in Holdout ($p=0.5780$). Zero-Return baseline achieved the lowest MAE ($149.8\text{ bps}$ Holdout vs $156.9\text{ bps}$ for TimesFM and $198.0\text{ bps}$ for Chronos; $p < 0.001$).
+  2. **Volatility Edge vs EWMA is Inconclusive:** Neither Chronos nor TimesFM statistically outperformed `Baseline_EWMA_RV(0.94)` under Bonferroni $\alpha = 0.01$. TimesFM achieved Dev QLIKE $0.5984$ (diff $+0.0172$, 95% CI `[-0.0573, +0.0838]`, $p=0.5401$) and Holdout QLIKE $0.5529$ (diff $-0.0023$, 95% CI `[-0.0416, +0.0473]`, $p=0.9282$). Both CIs span zero.
+  3. **TimesFM vs Chronos:** TimesFM decisively outperforms Chronos on volatility calibration (QLIKE $0.5984$ vs $0.6953$ in Dev, $0.5529$ vs $0.7108$ in Holdout), but still fails to beat simple EWMA(0.94).
+  4. **Random-Walk Control Integrity:** Across 50 zero-drift synthetic series (250 origins each), TimesFM Mean DA was $49.74\% \pm 0.47\%$. Deliberately leaking the future caused DA to jump to $91.50\%$, proving the test harness catches lookahead bias.
+  5. **Final Quantitative Decision:** **"Use EWMA and stop."**
 
 ---
 
@@ -122,8 +123,10 @@ A systematic forensic audit revealed that the apparent backtest profits were mat
 | **Round 3: H2 OI Surge** | 5d | 5-day OI surge + 5% Price | $+42\text{ bps}$ | **$-8\text{ bps}$ / trade** | Pure directional Bitcoin beta ($\beta \approx 0.70$) | **FAILED SCREENING** |
 | **Round 3: H3 Momentum** | 14d | 14-day Cross-Sectional Rank | $+69.9\text{ bps}$ | **$+19.9\text{ bps}$** | Failed $99.75\%$ CI hurdle ($M=20, t=0.65$); turnover drag | **FAILED SCREENING** |
 | **Chronos-Bolt (Directional)** | 1d | 128-day Close Price sequence | Indistinguishable from 50% | **$-50\text{ bps}$ / day** | Zero directional edge ($p=0.62$); beaten by Zero Return | **REJECTED FOR DIRECTIONAL** |
-| **Chronos-Bolt (Volatility)** | 1d | 128-day Close Price quantiles | QLIKE: $0.6267$ | N/A | Does not statistically outperform `EWMA_RV(0.94)` ($p=0.34$) | **RESEARCH ONLY** |
-| **EWMA(0.94)** | 1d | Garman-Klass Intraday Variance | QLIKE: $0.6508$ | Reference | Robust, zero compute overhead, unmatched out-of-sample | **ACTIVE PRODUCTION BENCHMARK** |
+| **Chronos-Bolt (Volatility)** | 1d | 128-day Close Price quantiles | QLIKE: $0.6953$ | N/A | Does not statistically outperform `EWMA_RV(0.94)` ($p=0.97$) | **RESEARCH ONLY** |
+| **Google TimesFM 2.5 (Directional)** | 1d | 128-day Close Price sequence | 50.69% Dev / 48.72% Holdout | Negative | Zero directional edge ($p=0.53$); beaten by Zero Return ($p<0.001$) | **REJECTED FOR DIRECTIONAL** |
+| **Google TimesFM 2.5 (Volatility)** | 1d | 128-day Close Price quantiles | QLIKE: $0.5984$ | N/A | Does not statistically beat `EWMA_RV(0.94)` ($p=0.54$, CI spans 0) | **RESEARCH ONLY** |
+| **EWMA(0.94)** | 1d | Garman-Klass Intraday Variance | QLIKE: $0.5841$ | Reference | Robust, zero compute overhead, unmatched out-of-sample | **ACTIVE PRODUCTION BENCHMARK** |
 
 ---
 

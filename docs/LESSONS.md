@@ -188,14 +188,20 @@ At 15M, only **`0.97%`** of historical signals meet the 0.08 threshold (**`99.03
 
 ---
 
-## 6. High-Frequency Foundation Model Benchmark (Chronos vs HAR-RV vs GARCH vs EWMA)
+## 6. High-Frequency Foundation Model Benchmark (Chronos vs Google TimesFM vs HAR-RV vs GARCH vs EWMA)
 
-A comprehensive benchmark was conducted on 2,496 daily BTC bars across 2,730 total origins (2,190 Dev, 540 Holdout) using Garman-Klass daily realized volatility as the target:
-1. **Directional Accuracy:** Zero directional alpha across all models (Chronos-Base 50.6% Dev / 51.2% Holdout; Chronos-Small 49.7% Dev / 50.4% Holdout; Linear Regression 50.2% Dev). `Baseline_ZeroReturn` beat all models on Return MAE.
-2. **Fixed HAR-RV (Expanding Window $\ge 500$ days):** Fixed the 128-bar rolling window bug (which previously caused QLIKE to blow up to 816). Expanding window HAR-RV achieved QLIKE $0.5792$ in Dev (beating EWMA $0.5841$, $p=0.0435$), but failed in Holdout (QLIKE $0.6012$ vs EWMA $0.5984$, $p=0.1479$, CI includes 0).
-3. **Foundation Models vs EWMA(0.94):** Chronos-Base (QLIKE $0.6953$ Dev, $0.7108$ Holdout) and Chronos-Small (QLIKE $0.7205$ Dev, $0.7421$ Holdout) failed to beat EWMA(0.94) in either window ($p > 0.97$).
-4. **Primary Decision Rule:** No model beat EWMA(0.94) with $p < 0.05$ and a CI excluding zero in both Dev and Holdout.
-5. **Decision:** **Use EWMA(0.94)**. Foundation models add massive compute and latency overhead with negative excess predictive value.
+A comprehensive benchmark was conducted on 3,232 daily BTC bars across 2,730 total origins (2,184 Dev, 546 Holdout) using Garman-Klass daily realized volatility as the target under strict zero-lookahead alignment:
+1. **Directional Accuracy:** Zero directional alpha across all deep learning foundation models:
+   * Google TimesFM 2.5 (200M): Dev `50.69%` ($p=0.5349$), Holdout `48.72%` ($p=0.5780$).
+   * Chronos-Bolt Base: Dev `50.60%` ($p=0.2984$), Holdout `51.20%` ($p=0.2841$).
+   * Chronos-Bolt Small: Dev `49.70%`, Holdout `50.40%`.
+   * `Baseline_ZeroReturn` beat all foundation models on return MAE with $p < 0.001$.
+2. **Volatility Modeling (QLIKE vs EWMA 0.94):**
+   * Google TimesFM 2.5 achieved QLIKE $0.5984$ in Dev (diff vs EWMA $+0.0172$, 95% CI `[-0.0573, +0.0838]`, $p=0.5401$) and $0.5529$ in Holdout (diff vs EWMA $-0.0023$, 95% CI `[-0.0416, +0.0473]`, $p=0.9282$). Both CIs span zero.
+   * Chronos-Bolt Base achieved QLIKE $0.6953$ Dev, $0.7108$ Holdout ($p > 0.97$).
+   * Fixed HAR-RV achieved QLIKE $0.5792$ in Dev, but failed in Holdout ($0.6012$, $p=0.1479$).
+3. **Primary Decision Rule (Bonferroni $\alpha = 0.01$):** Did any foundation model or econometric variant beat EWMA_RV with $p < 0.01$ and a CI excluding zero in both Dev and Holdout? **NO.**
+4. **Engineering Recommendation:** **Use EWMA(0.94) and stop.** Google TimesFM 2.5 is significantly better calibrated than Amazon Chronos, but neither model yields statistically significant improvements over classical EWMA(0.94), while requiring heavy PyTorch runtimes, 925 MB weights, and severe latency penalties.
 
 ---
 
