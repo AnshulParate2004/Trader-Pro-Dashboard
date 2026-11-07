@@ -229,6 +229,7 @@ export interface TradeOrder {
   totalFeeINR: number; // Including 18% GST and 0.01% slippage per side
   grossPnLINR?: number;
   netPnLINR?: number;
+  runningBalanceINR?: number;
   stopLoss: number;
   initialStopLoss?: number;
   stopPct?: number;
@@ -275,6 +276,7 @@ export interface EnginePerformanceMetrics {
   totalFeesPaidINR: number;
   slippagePaidINR: number;
   netPnLINR: number;
+  netProfitINR?: number;
   profitFactor: number; // Legacy gross profit factor
   averageTradeINR: number;
   feeImpactPercent: number;

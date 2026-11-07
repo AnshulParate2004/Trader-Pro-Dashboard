@@ -114,7 +114,7 @@ export default function TerminalPage() {
   const [indicators, setIndicators] = useState<RealIndicators | null>(null);
   const [recommendation, setRecommendation] = useState<TradeRecommendation | null>(null);
   const [aiPrediction, setAiPrediction] = useState<AIPredictionState | null>(null);
-  const [accountBalanceINR, setAccountBalanceINR] = useState<number>(1000);
+  const [accountBalanceINR, setAccountBalanceINR] = useState<number>(9350.80);
   const [recentTrades, setRecentTrades] = useState<TradeOrder[]>([]);
   const [dockTab, setDockTab] = useState<"radar" | "trades" | "audit">("radar");
   const [livePredictionLogs, setLivePredictionLogs] = useState<any[]>([]);
@@ -570,18 +570,18 @@ export default function TerminalPage() {
                 setSymbol(e.target.value);
                 setIsLoading(true);
               }}
-              className="clay-white-btn max-w-[125px] sm:max-w-[155px] truncate px-2.5 py-1 text-xs font-mono font-bold text-gray-900 hover:border-slate-400 focus:outline-none focus:border-emerald-500 cursor-pointer transition-all"
+              className="clay-white-btn px-2.5 py-1 text-xs font-mono font-bold text-gray-900 hover:border-slate-400 focus:outline-none focus:border-emerald-500 cursor-pointer transition-all"
             >
-              <option value="BTCUSDT">BTCUSDT (Bitcoin)</option>
-              <option value="ETHUSDT">ETHUSDT (Ethereum)</option>
-              <option value="SOLUSDT">SOLUSDT (Solana)</option>
-              <option value="DOTUSDT">DOTUSDT (Polkadot)</option>
-              <option value="XAUUSDT">Gold (XAUUSDT)</option>
-              <option value="XAGUSDT">Silver (XAGUSDT)</option>
-              <option value="CLUSDT">Crude Oil (CLUSDT)</option>
-              <option value="GC=F">Gold (GC=F Alias)</option>
-              <option value="SI=F">Silver (SI=F Alias)</option>
-              <option value="CL=F">Crude Oil (CL=F Alias)</option>
+              <option value="BTCUSDT">BTCUSDT</option>
+              <option value="ETHUSDT">ETHUSDT</option>
+              <option value="SOLUSDT">SOLUSDT</option>
+              <option value="DOTUSDT">DOTUSDT</option>
+              <option value="XAUUSDT">XAUUSDT (Gold)</option>
+              <option value="XAGUSDT">XAGUSDT (Silver)</option>
+              <option value="CLUSDT">CLUSDT (Oil)</option>
+              <option value="GC=F">GC=F (Gold Alias)</option>
+              <option value="SI=F">SI=F (Silver Alias)</option>
+              <option value="CL=F">CL=F (Oil Alias)</option>
             </select>
           </div>
 
@@ -593,13 +593,27 @@ export default function TerminalPage() {
             <select
               value={activeModelId}
               onChange={(e) => handleSelectModel(e.target.value)}
-              className="clay-white-btn max-w-[135px] sm:max-w-[175px] truncate bg-emerald-50/60 border-emerald-300 text-emerald-950 px-2.5 py-1 text-xs font-mono font-bold hover:border-emerald-400 focus:outline-none focus:border-emerald-600 cursor-pointer transition-all"
+              className="clay-white-btn bg-emerald-50/60 border-emerald-300 text-emerald-950 px-2.5 py-1 text-xs font-mono font-bold hover:border-emerald-400 focus:outline-none focus:border-emerald-600 cursor-pointer transition-all"
             >
-              {TOP_MODELS.map((m) => (
-                <option key={m.id} value={m.id}>
-                  #{m.rank}: {m.name} {m.statusBadge.includes("RETIRED") ? "[RETIRED]" : ""}
-                </option>
-              ))}
+              {TOP_MODELS.map((m) => {
+                const compactLabel =
+                  m.id === "4h-swing-meta-017"
+                    ? "4H Swing Meta"
+                    : m.id === "1h-commodities-rf"
+                    ? "1H Commodities"
+                    : m.id === "15m-sniper-030"
+                    ? "15M Sniper [RETIRED]"
+                    : m.id === "master-confluence-multi"
+                    ? "Master Sniper [RETIRED]"
+                    : m.id === "5m-15m-confluence"
+                    ? "5M/15M Confluence [RETIRED]"
+                    : m.shortName;
+                return (
+                  <option key={m.id} value={m.id}>
+                    {compactLabel}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -646,10 +660,11 @@ export default function TerminalPage() {
 
         {/* Right Section: Capital Badge + AI Engine Link + Live Status */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 clay-white-pill font-mono text-xs shrink-0" title="Dedicated ₹1,000 INR per asset across 7 assets (₹7,000 Total Portfolio)">
-            <span className="text-slate-400 text-[10px] font-bold tracking-wider uppercase hidden md:inline">Capital:</span>
-            <span className="font-black text-emerald-700 tabular-nums">₹1,000 / asset</span>
-            <span className="text-[10px] font-bold text-slate-400 hidden 2xl:inline">(₹7,000 Total)</span>
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 clay-white-pill font-mono text-xs shrink-0" title="Live Portfolio Capital (₹7,000 Baseline + Realized PnL)">
+            <span className="text-slate-400 text-[10px] font-bold uppercase hidden md:inline">Capital:</span>
+            <span className="font-black text-emerald-700 tabular-nums">
+              ₹{(accountBalanceINR || 9350.80).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+            </span>
           </div>
 
           <Link

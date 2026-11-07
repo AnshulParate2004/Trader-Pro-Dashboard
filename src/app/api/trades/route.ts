@@ -315,6 +315,7 @@ export async function GET(req: Request) {
         totalFeesPaidINR: Number(totalFees.toFixed(2)),
         slippagePaidINR: 0,
         netPnLINR: netPnL,
+        netProfitINR: netPnL,
         profitFactor,
         averageTradeINR: closedTrades.length > 0 ? Number((netPnL / closedTrades.length).toFixed(2)) : 16.20,
         feeImpactPercent: grossProfit > 0 ? Number(((totalFees / grossProfit) * 100).toFixed(2)) : 0.08,

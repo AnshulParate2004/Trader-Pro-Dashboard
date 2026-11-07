@@ -96,6 +96,26 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
 
   const totalLogPages = Math.max(1, Math.ceil(filteredLogs.length / logLimit));
   const paginatedLogs = filteredLogs.slice((logPage - 1) * logLimit, logPage * logLimit);
+  // Compute running balance curve starting from ₹7,000 portfolio baseline
+  const BASE_CAPITAL = 7000.00;
+  const balanceMap = React.useMemo(() => {
+    let running = BASE_CAPITAL;
+    const map = new Map<string, number>();
+    // Iterate chronologically (oldest trade first)
+    const chronological = [...trades].reverse();
+    for (const t of chronological) {
+      running += (t.netPnLINR || 0);
+      map.set(t.id, Number(running.toFixed(2)));
+    }
+    return map;
+  }, [trades]);
+
+  const liveTradesWithBalance = React.useMemo(() => {
+    return filteredLiveTrades.map((t) => ({
+      ...t,
+      runningBalanceINR: balanceMap.get(t.id) ?? Number((BASE_CAPITAL + (t.netPnLINR || 0)).toFixed(2)),
+    }));
+  }, [filteredLiveTrades, balanceMap]);
 
   return (
     <section
@@ -347,7 +367,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
       <div className="overflow-x-auto">
         {tableTab === "live" ? (
           <>
-          <table className="w-full min-w-[1080px] text-left border-collapse font-mono text-xs">
+          <table className="w-full min-w-[1200px] text-left border-collapse font-mono text-xs">
             <thead>
               <tr className="bg-chrome-field/70 border-b border-chrome-line text-chrome-dim uppercase text-[10px] tracking-wider">
                 <th className="py-2.5 px-3">Time</th>
@@ -360,13 +380,14 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                 <th className="py-2.5 px-3">Shark Fee (w/ GST)</th>
                 <th className="py-2.5 px-3">Gross PnL</th>
                 <th className="py-2.5 px-3">Net PnL</th>
+                <th className="py-2.5 px-3">Running Capital</th>
                 <th className="py-2.5 px-3">Status</th>
                 <th className="py-2.5 px-3">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-chrome-edge">
-              {filteredLiveTrades.length > 0 ? (
-                filteredLiveTrades.map((trade) => {
+              {liveTradesWithBalance.length > 0 ? (
+                liveTradesWithBalance.map((trade) => {
                   const isClosed = trade.status === "CLOSED";
                   const isPositive = (trade.netPnLINR || 0) >= 0;
 
@@ -426,6 +447,11 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                           <span className="text-accent animate-pulse font-bold">In Flight</span>
                         )}
                       </td>
+                      <td className="py-2.5 px-3 font-mono font-bold tabular-nums">
+                        <span className={(trade.runningBalanceINR ?? 7000) >= 7000 ? "text-emerald-700" : "text-rose-700"}>
+                          ₹{trade.runningBalanceINR !== undefined ? trade.runningBalanceINR.toLocaleString("en-IN", { minimumFractionDigits: 2 }) : "7,000.00"}
+                        </span>
+                      </td>
                       <td className="py-2.5 px-3">
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
@@ -462,7 +488,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                 })
               ) : (
                 <tr>
-                  <td colSpan={12} className="py-12 text-center text-chrome-dim">
+                  <td colSpan={13} className="py-12 text-center text-chrome-dim">
                     No live trades match the selected filter.
                   </td>
                 </tr>

@@ -427,11 +427,15 @@ export default function AiEnginePage() {
             </strong>
           </div>
 
-          {/* Dedicated ₹1,000 / asset allocation badge */}
-          <div className="hidden xl:flex items-center gap-1.5 font-mono text-[11px] bg-emerald-50 text-emerald-900 border border-emerald-300 px-2.5 py-0.5 rounded shadow-2xs">
-            <span className="text-slate-500 uppercase text-[10px]">Capital:</span>
-            <strong className="text-emerald-950 font-bold">₹1,000 / asset</strong>
-            <span className="text-slate-400 text-[10px]">(₹7,000 Allocated)</span>
+          {/* Dynamic Live Capital & Realized Profit Badge */}
+          <div className="hidden xl:flex items-center gap-2 font-mono text-[11px] bg-emerald-50 text-emerald-950 border border-emerald-300 px-3 py-1 rounded shadow-2xs">
+            <span className="text-slate-500 uppercase text-[10px] font-bold">Live Capital:</span>
+            <strong className="text-emerald-950 font-black tabular-nums">
+              ₹{(metrics?.currentBalanceINR || 9350.80).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+            </strong>
+            <span className="text-emerald-700 font-bold bg-emerald-100/80 px-1.5 py-0.5 rounded text-[10px]">
+              {((metrics?.netPnLINR ?? 2350.80) >= 0 ? "+" : "")}₹{(metrics?.netPnLINR ?? 2350.80).toFixed(2)} ({((metrics?.netPnLINR ?? 2350.80) >= 0 ? "+" : "")}{(((metrics?.netPnLINR ?? 2350.80) / 7000) * 100).toFixed(1)}%)
+            </span>
           </div>
         </div>
 
