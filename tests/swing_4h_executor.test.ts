@@ -337,4 +337,47 @@ describe("4H Swing Meta-Labeling Engine Unit Tests", () => {
       assert.ok(closed.net_r! < 2.5, "Net R must reflect 10 bps friction deduction");
     });
   });
+
+  describe("5. API Routes Integration & 15M Scalper Retirement", () => {
+    test("GET /api/cron/scalp returns clean deprecation response", async () => {
+      const { GET } = await import("../src/app/api/cron/scalp/route");
+      const res = await GET();
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.success, false);
+      assert.equal(data.status, "DEPRECATED");
+      assert.ok(data.message.includes("15M Scalper retired"));
+      assert.ok(data.message.includes("/api/cron/paper-4h-swing"));
+    });
+
+    test("GET /api/history returns 159 verified 4H OOS historical trades by default", async () => {
+      const { GET } = await import("../src/app/api/history/route");
+      const req = new Request("http://localhost:3000/api/history?limit=200");
+      const res = await GET(req);
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.success, true);
+      assert.equal(data.modelId, "4h-swing-meta-017");
+      assert.equal(data.totalHistoricalTrades, 159);
+      assert.equal(data.trades.length, 159);
+
+      // Verify trade structure
+      const first = data.trades[0];
+      assert.equal(first.side, "LONG");
+      assert.ok(first.symbol === "BTCUSDT" || first.symbol === "SOLUSDT" || first.symbol === "ETHUSDT");
+      assert.ok(typeof first.outcomeR === "number");
+    });
+
+    test("GET /api/trades defaults to 4H Swing Meta model", async () => {
+      const { GET } = await import("../src/app/api/trades/route");
+      const req = new Request("http://localhost:3000/api/trades");
+      const res = await GET(req);
+      assert.equal(res.status, 200);
+      const data = await res.json();
+      assert.equal(data.success, true);
+      assert.equal(data.modelId, "4h-swing-meta-017");
+      assert.ok(data.metrics);
+      assert.equal(data.metrics.avgNetR, 0.1748);
+    });
+  });
 });

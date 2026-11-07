@@ -82,7 +82,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                   : "text-chrome-dim hover:text-chrome-ink"
               }`}
             >
-              🟢 Live Session Scalps ({trades.length})
+              🟢 Live 4H Swing Trades ({trades.length})
             </button>
             <button
               onClick={() => setTableTab("historical")}
@@ -92,14 +92,14 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                   : "text-chrome-dim hover:text-chrome-ink"
               }`}
             >
-              📊 Verified Historical OOS Trades ({totalHistoricalCount ? totalHistoricalCount.toLocaleString() : "6,538+"})
+              📊 Verified Historical OOS Trades ({totalHistoricalCount ? totalHistoricalCount.toLocaleString() : "159"})
             </button>
           </div>
         </div>
 
         <div className="text-xs text-chrome-dim font-mono">
           {tableTab === "live"
-            ? `Live Shark Exchange trades (${feePercent.toFixed(3)}% ${isTaker ? "Taker" : "Maker"} + 18% GST)`
+            ? "4H Swing Execution (0.10% Round-Trip Friction Deducted)"
             : "Verified out-of-sample backtest logs (Point-in-Time execution)"}
         </div>
       </div>
@@ -286,7 +286,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                       </td>
                       <td className="py-2.5 px-3 whitespace-nowrap">
                         <span className="px-2 py-0.5 rounded bg-chrome-field border border-chrome-line font-bold text-[10px] text-chrome-ink">
-                          {trade.modelName || "15M Sniper"}
+                          {trade.modelName || "4H Swing Meta (+0.17R)"}
                         </span>
                       </td>
                       <td className="py-2.5 px-3 font-bold text-chrome-ink">{trade.symbol}</td>
@@ -370,7 +370,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                         No Live Trade Data Available
                       </span>
                       <span className="text-xs text-chrome-dim max-w-sm font-body">
-                        The AI Trading Engine records executions to MongoDB Atlas. Switch to the <strong>&quot;Verified Historical OOS Trades&quot;</strong> tab to explore backtested trade logs.
+                        The 4H Swing Meta Engine records autonomous executions. Switch to the <strong>&quot;Verified Historical OOS Trades&quot;</strong> tab to explore the 159 walk-forward trade logs.
                       </span>
                     </div>
                   </td>

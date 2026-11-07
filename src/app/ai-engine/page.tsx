@@ -36,7 +36,7 @@ import FeeModeToggle from "@/components/ai-engine/FeeModeToggle";
 export default function AiEnginePage() {
   const [trades, setTrades] = useState<TradeOrder[]>([]);
   const [metrics, setMetrics] = useState<EnginePerformanceMetrics | null>(null);
-  const [selectedModelId, setSelectedModelId] = useState<string>("15m-sniper-030");
+  const [selectedModelId, setSelectedModelId] = useState<string>("4h-swing-meta-017");
 
   // Setup 1H-A Frozen Paper Trading State
   const [paperMetrics, setPaperMetrics] = useState<Paper1HAMetrics | null>(null);
@@ -47,14 +47,14 @@ export default function AiEnginePage() {
     autoTradingEnabled: true,
     currency: "INR",
     accountBalanceINR: 1000,
-    tradingFeePercent: 0.040, // Shark Exchange Taker Default (0.040% + 18% GST + 0.010% slippage/side)
-    makerFeePercent: 0.016,   // Shark Exchange Maker (0.016% Optimistic Scenario)
-    gstPercent: 18.0,         // 18% GST
-    slippagePercent: 0.010,   // 0.01% slippage per side
+    tradingFeePercent: 0.100, // 4H Swing Friction Default (0.10% Round-trip)
+    makerFeePercent: 0.050,
+    gstPercent: 0.0,
+    slippagePercent: 0.000,
     riskPerTradePercent: 1.0, // 1% = ₹10
-    ratchetEnabled: true,
-    maxConcurrentTrades: 2,
-    activeModelId: "15m-sniper-030",
+    ratchetEnabled: false,
+    maxConcurrentTrades: 3,
+    activeModelId: "4h-swing-meta-017",
   });
   const [mongoConnected, setMongoConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);

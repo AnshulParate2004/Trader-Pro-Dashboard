@@ -794,7 +794,7 @@ export default function TerminalPage() {
                               {new Date(t.openedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                             </td>
                             <td className="py-2 px-2.5 text-[10px] font-bold text-gray-800 whitespace-nowrap">
-                              {t.modelName || "15M Sniper"}
+                              {t.modelName || "4H Swing Meta (+0.17R)"}
                             </td>
                             <td className="py-2 px-2.5">
                               <span
