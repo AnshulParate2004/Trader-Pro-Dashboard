@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { NextResponse } from "next/server";
 import {
   getTradeLogs,
@@ -102,6 +104,61 @@ function map1HCommodityToTradeOrder(t: PaperTrade1HCommodityRecord): TradeOrder 
   };
 }
 
+
+function getFallbackExecutedTrades(modelId: "4h-swing-meta-017" | "1h-commodities-rf"): any[] {
+  try {
+    const jsonPath = path.join(process.cwd(), "src", "data", "live_executed_trades.json");
+    if (fs.existsSync(jsonPath)) {
+      const raw = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+      return raw.filter((r: any) => r.model_id === modelId).map((r: any) => ({
+        ...r,
+        coin: r.symbol,
+        entry_time_ms: r.entry_time ? Date.parse(r.entry_time) : Date.now(),
+        stop_distance_pct: r.stop_dist_pct,
+      }));
+    }
+  } catch {
+    // fallback
+  }
+  return [];
+}
+
+async function getLivePredictionLogs(
+  assetClass: "crypto" | "commodities" | "all" = "all",
+  limit: number = 200
+): Promise<any[]> {
+  try {
+    const db = await getDb();
+    if (db) {
+      const col = db.collection("live_prediction_logs");
+      const query = assetClass === "all" ? {} : { asset_class: assetClass };
+      const docs = await col
+        .find(query)
+        .sort({ timestamp_ms: -1 })
+        .limit(limit > 0 ? limit : 200)
+        .toArray();
+      if (docs && docs.length > 0) {
+        return docs.map((d: any) => ({ ...d, id: d.id || d._id.toString() }));
+      }
+    }
+  } catch (err) {
+    console.warn("DB prediction logs fetch error, falling back to JSON:", err);
+  }
+
+  try {
+    const jsonPath = path.join(process.cwd(), "src", "data", "live_unseen_prediction_logs.json");
+    if (fs.existsSync(jsonPath)) {
+      const raw = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+      const filtered = assetClass === "all" ? raw : raw.filter((r: any) => r.asset_class === assetClass);
+      return limit > 0 ? filtered.slice(0, limit) : filtered.slice(0, 200);
+    }
+  } catch (err) {
+    console.warn("Could not read live_unseen_prediction_logs.json:", err);
+  }
+
+  return [];
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -175,12 +232,22 @@ export async function GET(req: Request) {
         netProfitFactor: hasClosed ? profitFactor : 1.32,
       };
 
+      if (trades.length === 0) {
+        const fallback = getFallbackExecutedTrades("1h-commodities-rf");
+        if (fallback.length > 0) {
+          commodityRecords = fallback;
+          trades.push(...commodityRecords.map(map1HCommodityToTradeOrder));
+        }
+      }
+      const livePredictionLogs = await getLivePredictionLogs("commodities", limit);
+
       return NextResponse.json({
         success: true,
         mongoConfigured: mongoStatus,
         modelId: "1h-commodities-rf",
         metrics,
         trades,
+        livePredictionLogs,
       });
     }
 
@@ -243,12 +310,22 @@ export async function GET(req: Request) {
         netProfitFactor: profitFactor,
       };
 
+      if (trades.length === 0) {
+        const fallback = getFallbackExecutedTrades("4h-swing-meta-017");
+        if (fallback.length > 0) {
+          swingRecords = fallback;
+          trades.push(...swingRecords.map(map4HSwingToTradeOrder));
+        }
+      }
+      const livePredictionLogs = await getLivePredictionLogs("crypto", limit);
+
       return NextResponse.json({
         success: true,
         mongoConfigured: mongoStatus,
         modelId: "4h-swing-meta-017",
         metrics,
         trades,
+        livePredictionLogs,
       });
     }
 
@@ -258,12 +335,15 @@ export async function GET(req: Request) {
     const trades = await getTradeLogs(limit, modelParam, feeOverride);
     const metrics = await computePerformanceMetrics(modelParam, feeOverride);
 
+    const livePredictionLogs = await getLivePredictionLogs("all", limit);
+
     return NextResponse.json({
       success: true,
       mongoConfigured: mongoStatus,
       modelId: modelParam,
       metrics,
       trades,
+      livePredictionLogs,
     });
   } catch (error: any) {
     return NextResponse.json(

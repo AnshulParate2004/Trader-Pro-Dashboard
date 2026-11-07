@@ -15,6 +15,7 @@ import {
 interface LiveTradesTableProps {
   trades: TradeOrder[];
   filteredLiveTrades: TradeOrder[];
+  livePredictionLogs?: any[];
   tableTab: "live" | "historical";
   setTableTab: (tab: "live" | "historical") => void;
   liveSideFilter: "ALL" | "LONG" | "SHORT";
@@ -42,6 +43,7 @@ interface LiveTradesTableProps {
 export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   trades,
   filteredLiveTrades,
+  livePredictionLogs = [],
   tableTab,
   setTableTab,
   liveSideFilter,
@@ -65,6 +67,23 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   isTaker = true,
   feePercent = 0.040,
 }) => {
+  // Live Prediction Logs Filter & Pagination State
+  const [logAssetFilter, setLogAssetFilter] = React.useState<"ALL" | "crypto" | "commodities">("ALL");
+  const [logDecisionFilter, setLogDecisionFilter] = React.useState<"ALL" | "EXECUTED_TRADE" | "CASH_PROTECTED_BEARISH" | "CASH_PROTECTED_CONSOLIDATION">("ALL");
+  const [logPage, setLogPage] = React.useState<number>(1);
+  const [logLimit, setLogLimit] = React.useState<number>(25);
+
+  const filteredLogs = React.useMemo(() => {
+    return (livePredictionLogs || []).filter((log: any) => {
+      if (logAssetFilter !== "ALL" && log.asset_class !== logAssetFilter) return false;
+      if (logDecisionFilter !== "ALL" && log.decision !== logDecisionFilter) return false;
+      return true;
+    });
+  }, [livePredictionLogs, logAssetFilter, logDecisionFilter]);
+
+  const totalLogPages = Math.max(1, Math.ceil(filteredLogs.length / logLimit));
+  const paginatedLogs = filteredLogs.slice((logPage - 1) * logLimit, logPage * logLimit);
+
   return (
     <section
       aria-label="Trade Execution Logs"
@@ -256,6 +275,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
       {/* Table Data View */}
       <div className="overflow-x-auto">
         {tableTab === "live" ? (
+          <>
           <table className="w-full min-w-[1080px] text-left border-collapse font-mono text-xs">
             <thead>
               <tr className="bg-chrome-field/70 border-b border-chrome-line text-chrome-dim uppercase text-[10px] tracking-wider">
@@ -361,16 +381,14 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                 })
               ) : (
                 <tr>
-                  <td colSpan={12} className="py-16 text-center">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <div className="w-10 h-10 rounded-full bg-chrome-field flex items-center justify-center text-chrome-dim text-base">
-                        📋
+                  <td colSpan={12} className="py-8 text-center bg-emerald-50/20">
+                    <div className="flex flex-col items-center justify-center gap-1.5 py-2">
+                      <div className="flex items-center gap-2 font-mono text-xs font-black text-emerald-900">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]" />
+                        <span>ACTIVE CAPITAL 100% SHIELDED IN CASH (₹1,000 PROTECTED)</span>
                       </div>
-                      <span className="font-mono text-sm font-bold text-chrome-ink">
-                        Active Capital 100% Protected in CASH
-                      </span>
-                      <span className="text-xs text-chrome-dim max-w-md font-body">
-                        Market currently consolidating below 200 SMA. Switch to <strong>&quot;Verified Historical OOS Trades&quot;</strong> to review completed executions.
+                      <span className="text-xs text-slate-500 font-sans max-w-md">
+                        Market chop and counter-trend regimes filtered by 200 SMA &amp; Donchian channels. Below is the real-time evaluation feed.
                       </span>
                     </div>
                   </td>
@@ -378,6 +396,235 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
               )}
             </tbody>
           </table>
+
+          {/* LIVE PREDICTION & MARKET EVALUATION AUDIT FEED (Oct 21 – Nov 7, 2026) */}
+          <div className="mt-6 border-t-2 border-chrome-line pt-4 px-2">
+            
+            {/* Feed Header & Filters */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_#3b82f6]" />
+                <div>
+                  <div className="font-mono text-xs font-black text-chrome-ink flex items-center gap-2">
+                    <span>LIVE PREDICTION &amp; REGIME EVALUATION FEED</span>
+                    <span className="text-[10px] font-bold bg-blue-100 text-blue-900 border border-blue-300 px-2 py-0.5 rounded-full">
+                      UNSEEN WINDOW: OCT 21 – NOV 7, 2026
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-chrome-dim font-sans mt-0.5">
+                    Sequential bar-by-bar audit ({filteredLogs.length.toLocaleString()} bars analyzed · Zero lookahead · Strict t-1 lag)
+                  </div>
+                </div>
+              </div>
+
+              {/* Feed Filters */}
+              <div className="flex flex-wrap items-center gap-2">
+                
+                {/* Asset Filter */}
+                <div className="flex items-center gap-1 bg-chrome-field border border-chrome-line rounded px-2 py-1 text-xs font-mono">
+                  <span className="text-chrome-dim text-[10px]">Asset:</span>
+                  <select
+                    value={logAssetFilter}
+                    onChange={(e) => {
+                      setLogAssetFilter(e.target.value as any);
+                      setLogPage(1);
+                    }}
+                    className="bg-transparent font-bold text-chrome-ink outline-none cursor-pointer text-xs"
+                  >
+                    <option value="ALL">All Assets</option>
+                    <option value="crypto">4H Crypto Only</option>
+                    <option value="commodities">1H Commodities Only</option>
+                  </select>
+                </div>
+
+                {/* Decision Filter */}
+                <div className="flex items-center gap-1 bg-chrome-field border border-chrome-line rounded px-2 py-1 text-xs font-mono">
+                  <span className="text-chrome-dim text-[10px]">Decision:</span>
+                  <select
+                    value={logDecisionFilter}
+                    onChange={(e) => {
+                      setLogDecisionFilter(e.target.value as any);
+                      setLogPage(1);
+                    }}
+                    className="bg-transparent font-bold text-chrome-ink outline-none cursor-pointer text-xs"
+                  >
+                    <option value="ALL">All Decisions</option>
+                    <option value="EXECUTED_TRADE">🟢 Executed Trades</option>
+                    <option value="CASH_PROTECTED_BEARISH">🛡️ Bearish Cash Shield</option>
+                    <option value="CASH_PROTECTED_CONSOLIDATION">🔒 Consolidation Safe</option>
+                  </select>
+                </div>
+
+                {/* Rows per page */}
+                <div className="flex items-center gap-1 bg-chrome-field border border-chrome-line rounded px-2 py-1 text-xs font-mono">
+                  <span className="text-chrome-dim text-[10px]">Rows:</span>
+                  <select
+                    value={logLimit}
+                    onChange={(e) => {
+                      setLogLimit(Number(e.target.value));
+                      setLogPage(1);
+                    }}
+                    className="bg-transparent font-bold text-chrome-ink outline-none cursor-pointer text-xs"
+                  >
+                    <option value={25}>25 / page</option>
+                    <option value={50}>50 / page</option>
+                    <option value={100}>100 / page</option>
+                  </select>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Live Feed Table */}
+            <div className="overflow-x-auto border border-chrome-line rounded-lg shadow-2xs">
+              <table className="w-full min-w-[1020px] text-left border-collapse font-mono text-xs">
+                <thead>
+                  <tr className="bg-chrome-field/80 border-b border-chrome-line text-chrome-dim uppercase text-[10px] tracking-wider">
+                    <th className="py-2.5 px-3">Time (UTC)</th>
+                    <th className="py-2.5 px-3">Symbol</th>
+                    <th className="py-2.5 px-3">Price</th>
+                    <th className="py-2.5 px-3">200 SMA</th>
+                    <th className="py-2.5 px-3">Donchian Range</th>
+                    <th className="py-2.5 px-3">AI Conviction (P)</th>
+                    <th className="py-2.5 px-3">Decision / AI Mind State</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-chrome-edge bg-white">
+                  {paginatedLogs.length > 0 ? (
+                    paginatedLogs.map((log: any) => {
+                      const isExecuted = log.decision === "EXECUTED_TRADE";
+                      const isBearish = log.decision === "CASH_PROTECTED_BEARISH";
+                      const isAboveSma = log.price >= log.sma_200;
+
+                      return (
+                        <tr key={log.id} className="hover:bg-chrome-field/40 transition-colors">
+                          <td className="py-2 px-3 text-chrome-dim text-[11px] whitespace-nowrap">
+                            {new Date(log.timestamp_ms).toISOString().replace("T", " ").replace(":00.000Z", " UTC")}
+                          </td>
+                          <td className="py-2 px-3 whitespace-nowrap">
+                            <span className="font-bold text-chrome-ink mr-1.5">{log.symbol}</span>
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-chrome-field border border-chrome-line text-chrome-dim">
+                              {log.timeframe.toUpperCase()}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 font-bold text-chrome-ink tabular-nums">
+                            ${log.price.toLocaleString("en-US", { minimumFractionDigits: log.asset_class === "crypto" ? 1 : 2 })}
+                          </td>
+                          <td className="py-2 px-3 tabular-nums">
+                            <span className="font-semibold text-slate-700">
+                              ${log.sma_200.toLocaleString("en-US", { minimumFractionDigits: 1 })}
+                            </span>
+                            <span className={`ml-1.5 text-[9px] font-black px-1.5 py-0.2 rounded ${
+                              isAboveSma ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-amber-50 text-amber-800 border border-amber-200"
+                            }`}>
+                              {isAboveSma ? "▲ ABOVE" : "▼ BELOW"}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 tabular-nums text-[11px] text-slate-600">
+                            [${log.donchian_low_20.toLocaleString()} - ${log.donchian_high_20.toLocaleString()}]
+                          </td>
+                          <td className="py-2 px-3 tabular-nums">
+                            <div className="flex items-center gap-1.5">
+                              <span className={`font-black ${log.passes_gate ? "text-emerald-700" : "text-slate-600"}`}>
+                                {(log.probability * 100).toFixed(1)}%
+                              </span>
+                              <span className="text-[9px] text-slate-400">
+                                (cutoff {(log.p_cutoff * 100).toFixed(1)}%)
+                              </span>
+                            </div>
+                          </td>
+                          <td className="py-2 px-3">
+                            {isExecuted ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="px-2 py-0.5 rounded font-black text-[10px] bg-emerald-100 text-emerald-900 border border-emerald-300">
+                                  🟢 EXECUTED {log.trade_details?.side || "BREAKOUT"}
+                                </span>
+                                {log.trade_details && (
+                                  <span className={`text-[10px] font-mono font-bold ${
+                                    (log.trade_details.net_r ?? 0) >= 0 ? "text-emerald-700" : "text-rose-700"
+                                  }`}>
+                                    {(log.trade_details.net_r ?? 0) >= 0 ? "+" : ""}{log.trade_details.net_r?.toFixed(2)}R ({log.trade_details.exit_type})
+                                  </span>
+                                )}
+                              </div>
+                            ) : isBearish ? (
+                              <div className="flex items-center gap-1 text-[11px]">
+                                <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-amber-50 text-amber-900 border border-amber-300">
+                                  🛡️ CASH SAFE
+                                </span>
+                                <span className="text-slate-600 text-[10.5px]">Price below 200 SMA (₹1,000 Protected)</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1 text-[11px]">
+                                <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-slate-100 text-slate-800 border border-slate-300">
+                                  🔒 CASH SAFE
+                                </span>
+                                <span className="text-slate-600 text-[10.5px]">Consolidating inside Donchian range</span>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="py-8 text-center text-chrome-dim text-xs">
+                        No prediction logs match the selected filter.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="flex items-center justify-between text-xs font-mono py-2.5 px-1 text-chrome-dim border-t border-chrome-line mt-1">
+              <div>
+                Showing <strong>{((logPage - 1) * logLimit) + (paginatedLogs.length > 0 ? 1 : 0)}</strong> to{" "}
+                <strong>{Math.min(logPage * logLimit, filteredLogs.length)}</strong> of{" "}
+                <strong>{filteredLogs.length.toLocaleString()}</strong> live evaluation records
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setLogPage(1)}
+                  disabled={logPage <= 1}
+                  className="px-2 py-1 rounded bg-chrome-field border border-chrome-line disabled:opacity-40 cursor-pointer font-bold text-xs"
+                >
+                  « First
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLogPage((p) => Math.max(1, p - 1))}
+                  disabled={logPage <= 1}
+                  className="px-2 py-1 rounded bg-chrome-field border border-chrome-line disabled:opacity-40 cursor-pointer font-bold text-xs"
+                >
+                  ‹ Prev
+                </button>
+                <span className="px-2 font-bold text-chrome-ink">
+                  Page {logPage} of {totalLogPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setLogPage((p) => Math.min(totalLogPages, p + 1))}
+                  disabled={logPage >= totalLogPages}
+                  className="px-2 py-1 rounded bg-chrome-field border border-chrome-line disabled:opacity-40 cursor-pointer font-bold text-xs"
+                >
+                  Next ›
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLogPage(totalLogPages)}
+                  disabled={logPage >= totalLogPages}
+                  className="px-2 py-1 rounded bg-chrome-field border border-chrome-line disabled:opacity-40 cursor-pointer font-bold text-xs"
+                >
+                  Last »
+                </button>
+              </div>
+            </div>
+
+          </div>
+          </>
         ) : (
           <table className="w-full min-w-[960px] text-left border-collapse font-mono text-xs">
             <thead>

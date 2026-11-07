@@ -114,7 +114,8 @@ export default function TerminalPage() {
   const [aiPrediction, setAiPrediction] = useState<AIPredictionState | null>(null);
   const [accountBalanceINR, setAccountBalanceINR] = useState<number>(1000);
   const [recentTrades, setRecentTrades] = useState<TradeOrder[]>([]);
-  const [dockTab, setDockTab] = useState<"radar" | "trades">("radar");
+  const [dockTab, setDockTab] = useState<"radar" | "trades" | "audit">("radar");
+  const [livePredictionLogs, setLivePredictionLogs] = useState<any[]>([]);
   const [scenarioLevelTab, setScenarioLevelTab] = useState<"both" | "resistance" | "support">("both");
   const [isLoading, setIsLoading] = useState(true);
   const [autoTradingEnabled, setAutoTradingEnabled] = useState(true);
@@ -139,6 +140,9 @@ export default function TerminalPage() {
         }
         if (data.trades) {
           setRecentTrades(data.trades);
+        }
+        if (data.livePredictionLogs) {
+          setLivePredictionLogs(data.livePredictionLogs);
         }
       }
     } catch (e) {
@@ -701,6 +705,17 @@ export default function TerminalPage() {
                   {recentTrades.length}
                 </span>
               </button>
+              <button
+                onClick={() => setDockTab("audit")}
+                className={`px-3 py-1 rounded-md font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+                  dockTab === "audit"
+                    ? "bg-white text-gray-950 shadow-2xs border border-slate-200/90 font-black"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                <span>📡 Live Evaluation Feed</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              </button>
             </div>
 
             <div className="text-[10px] text-slate-500 hidden sm:inline font-mono">
@@ -802,7 +817,7 @@ export default function TerminalPage() {
                   </div>
                 </div>
               </div>
-            ) : (
+            ) : dockTab === "trades" ? (
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse font-mono text-xs">
                   <thead>
@@ -893,8 +908,95 @@ export default function TerminalPage() {
                       })
                     ) : (
                       <tr>
-                        <td colSpan={10} className="py-8 text-center text-gray-400 text-xs font-mono">
-                          No active trades currently open. The Autonomous AI Engine is scanning Binance live bars every 12s to automatically execute and hold scalps on your ₹{accountBalanceINR.toFixed(2)} capital!
+                        <td colSpan={10} className="py-6 text-center font-mono text-xs">
+                          <div className="flex flex-col items-center justify-center gap-1">
+                            <span className="font-bold text-emerald-800">
+                              🟢 Active Capital 100% Protected in CASH (₹{accountBalanceINR.toFixed(2)}) · 0 Open Positions
+                            </span>
+                            <span className="text-[11px] text-slate-500">
+                              Market consolidation &amp; counter-trend moves filtered. Switch to &quot;📡 Live Evaluation Feed&quot; tab to inspect bar-by-bar decision logs.
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              /* DOCK TAB 3: LIVE PREDICTION & REGIME EVALUATION FEED */
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse font-mono text-xs">
+                  <thead>
+                    <tr className="bg-gray-100 border-b border-gray-200 text-gray-500 uppercase text-[10px]">
+                      <th className="py-2 px-2.5">Time (UTC)</th>
+                      <th className="py-2 px-2.5">Symbol</th>
+                      <th className="py-2 px-2.5">Price</th>
+                      <th className="py-2 px-2.5">200 SMA</th>
+                      <th className="py-2 px-2.5">Donchian Range</th>
+                      <th className="py-2 px-2.5">AI Conviction (P)</th>
+                      <th className="py-2 px-2.5">Decision / AI Mind State</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200/60 bg-white">
+                    {livePredictionLogs.length > 0 ? (
+                      livePredictionLogs.slice(0, 50).map((log: any) => {
+                        const isExecuted = log.decision === "EXECUTED_TRADE";
+                        const isBearish = log.decision === "CASH_PROTECTED_BEARISH";
+                        const isAbove = log.price >= log.sma_200;
+
+                        return (
+                          <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="py-2 px-2.5 text-gray-400 text-[10px] whitespace-nowrap">
+                              {new Date(log.timestamp_ms).toISOString().replace("T", " ").replace(":00.000Z", " UTC")}
+                            </td>
+                            <td className="py-2 px-2.5 font-bold text-gray-900 whitespace-nowrap">
+                              {log.symbol} <span className="text-[9px] font-normal text-gray-400">({log.timeframe.toUpperCase()})</span>
+                            </td>
+                            <td className="py-2 px-2.5 font-black text-gray-900 tabular-nums">
+                              ${log.price.toLocaleString("en-US", { minimumFractionDigits: 1 })}
+                            </td>
+                            <td className="py-2 px-2.5 tabular-nums">
+                              <span>${log.sma_200.toLocaleString("en-US", { minimumFractionDigits: 1 })}</span>
+                              <span className={`ml-1 text-[8.5px] px-1 py-0.2 rounded font-bold ${
+                                isAbove ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800"
+                              }`}>
+                                {isAbove ? "▲" : "▼"}
+                              </span>
+                            </td>
+                            <td className="py-2 px-2.5 text-gray-600 tabular-nums text-[11px]">
+                              [${log.donchian_low_20.toLocaleString()} - ${log.donchian_high_20.toLocaleString()}]
+                            </td>
+                            <td className="py-2 px-2.5 font-bold tabular-nums">
+                              <span className={log.passes_gate ? "text-emerald-700" : "text-gray-700"}>
+                                {(log.probability * 100).toFixed(1)}%
+                              </span>
+                              <span className="text-[9px] text-gray-400 ml-1">
+                                (cutoff {(log.p_cutoff * 100).toFixed(1)}%)
+                              </span>
+                            </td>
+                            <td className="py-2 px-2.5">
+                              {isExecuted ? (
+                                <span className="px-2 py-0.5 rounded font-black text-[10px] bg-emerald-100 text-emerald-900 border border-emerald-300">
+                                  🟢 EXECUTED TRADE ({log.trade_details?.side || "BREAKOUT"})
+                                </span>
+                              ) : isBearish ? (
+                                <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-amber-50 text-amber-900 border border-amber-300">
+                                  🛡️ CASH SAFE: Below 200 SMA
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded font-bold text-[10px] bg-gray-100 text-gray-700 border border-gray-300">
+                                  🔒 CASH SAFE: In Donchian Range
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={7} className="py-8 text-center text-gray-400 text-xs">
+                          Loading live prediction &amp; evaluation logs...
                         </td>
                       </tr>
                     )}

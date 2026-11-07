@@ -35,6 +35,7 @@ export default function AiEnginePage() {
   const [trades, setTrades] = useState<TradeOrder[]>([]);
   const [metrics, setMetrics] = useState<EnginePerformanceMetrics | null>(null);
   const [selectedModelId, setSelectedModelId] = useState<string>("4h-swing-meta-017");
+  const [livePredictionLogs, setLivePredictionLogs] = useState<any[]>([]);
 
 
   const [config, setConfig] = useState<EngineConfig>({
@@ -164,6 +165,9 @@ export default function AiEnginePage() {
       if (data.success) {
         setTrades(data.trades);
         setMetrics(data.metrics);
+        if (data.livePredictionLogs) {
+          setLivePredictionLogs(data.livePredictionLogs);
+        }
         setMongoConnected(data.mongoConfigured);
         setLastUpdated(new Date().toLocaleTimeString());
       }
@@ -624,6 +628,7 @@ export default function AiEnginePage() {
         <LiveTradesTable
           trades={trades}
           filteredLiveTrades={filteredLiveTrades}
+          livePredictionLogs={livePredictionLogs}
           tableTab={tableTab}
           setTableTab={setTableTab}
           liveSideFilter={liveSideFilter}
