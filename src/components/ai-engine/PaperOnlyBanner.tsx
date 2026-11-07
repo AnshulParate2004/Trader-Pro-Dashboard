@@ -1,5 +1,6 @@
-import { TradeOrder } from "@/lib/engineTypes";
 "use client";
+import { toDisplaySymbol, toRawSymbol, symbolsMatch } from "@/lib/symbolMapper";
+import { TradeOrder } from "@/lib/engineTypes";
 
 import React from "react";
 import { ShieldCheck, ShieldAlert, ArrowDownRight, ArrowUpRight } from "lucide-react";
@@ -255,6 +256,90 @@ export const ASSET_METRICS_MAP: Record<string, AssetPerformanceData> = {
     liveSlPercent: 31.6,
     liveDescription: "Live 1-Hour Donchian breakout / breakdown on Crude Oil Futures (CL=F) gated by calibrated Stage 2 meta-classifier. +5.40R (+₹539.80) net profit.",
   },
+  XAUUSDT: {
+    assetKey: "XAUUSDT",
+    assetLabel: "Gold (XAUUSDT 1H)",
+    timeframe: "1H Commodities",
+    historicalTradesCount: 137,
+    liveTradesCount: 21,
+    avgNetR: 0.151,
+    realizedReturnR: 16.91,
+    netPnLINR: 1691,
+    winRate: 49.7,
+    profitFactor: 1.32,
+    maxDrawdownR: -14.20,
+    tpPercent: 49.7,
+    slPercent: 50.3,
+    allocatedCapitalINR: 1000,
+    totalPortfolioCapitalINR: 7000,
+    description: "Bi-directional 1-Hour Donchian breakout / breakdown on Gold (XAUUSDT) gated by retrained Stage 2 meta-classifier.",
+    liveAvgNetR: 0.580,
+    liveRealizedReturnR: 12.18,
+    liveNetPnLINR: 1218.40,
+    liveChargesINR: 76.07,
+    liveCurrentCapitalINR: 2218.40,
+    liveWinRate: 66.7,
+    liveProfitFactor: 4.81,
+    liveTpPercent: 66.7,
+    liveSlPercent: 33.3,
+    liveDescription: "Live 1-Hour Donchian breakout / breakdown on Gold (XAUUSDT) gated by calibrated Stage 2 meta-classifier. +12.18R (+₹1,218.40) net profit.",
+  },
+  XAGUSDT: {
+    assetKey: "XAGUSDT",
+    assetLabel: "Silver (XAGUSDT 1H)",
+    timeframe: "1H Commodities",
+    historicalTradesCount: 103,
+    liveTradesCount: 29,
+    avgNetR: 0.158,
+    realizedReturnR: 17.70,
+    netPnLINR: 1770,
+    winRate: 46.5,
+    profitFactor: 1.28,
+    maxDrawdownR: -15.40,
+    tpPercent: 46.5,
+    slPercent: 53.5,
+    allocatedCapitalINR: 1000,
+    totalPortfolioCapitalINR: 7000,
+    description: "Bi-directional 1-Hour Donchian breakout / breakdown on Silver (XAGUSDT) gated by retrained Stage 2 meta-classifier.",
+    liveAvgNetR: 0.241,
+    liveRealizedReturnR: 7.00,
+    liveNetPnLINR: 700.00,
+    liveChargesINR: 61.89,
+    liveCurrentCapitalINR: 1700.00,
+    liveWinRate: 51.7,
+    liveProfitFactor: 1.74,
+    liveTpPercent: 51.7,
+    liveSlPercent: 48.3,
+    liveDescription: "Live 1-Hour Donchian breakout / breakdown on Silver (XAGUSDT) gated by calibrated Stage 2 meta-classifier. +7.00R (+₹700.00) net profit.",
+  },
+  CLUSDT: {
+    assetKey: "CLUSDT",
+    assetLabel: "Crude Oil (CLUSDT 1H)",
+    timeframe: "1H Commodities",
+    historicalTradesCount: 96,
+    liveTradesCount: 19,
+    avgNetR: 0.145,
+    realizedReturnR: 16.24,
+    netPnLINR: 1624,
+    winRate: 44.0,
+    profitFactor: 1.24,
+    maxDrawdownR: -18.10,
+    tpPercent: 44.0,
+    slPercent: 56.0,
+    allocatedCapitalINR: 1000,
+    totalPortfolioCapitalINR: 7000,
+    description: "Bi-directional 1-Hour Donchian breakout / breakdown on Crude Oil (CLUSDT) gated by retrained Stage 2 meta-classifier.",
+    liveAvgNetR: 0.284,
+    liveRealizedReturnR: 5.40,
+    liveNetPnLINR: 539.80,
+    liveChargesINR: 33.49,
+    liveCurrentCapitalINR: 1539.80,
+    liveWinRate: 68.4,
+    liveProfitFactor: 3.24,
+    liveTpPercent: 68.4,
+    liveSlPercent: 31.6,
+    liveDescription: "Live 1-Hour Donchian breakout / breakdown on Crude Oil (CLUSDT) gated by calibrated Stage 2 meta-classifier. +5.40R (+₹539.80) net profit.",
+  },
 };
 
 interface PaperOnlyBannerProps {
@@ -288,12 +373,12 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
   const isCommodities = selectedModelId === "1h-commodities-rf";
   const isLegacy = !is4HSwing && !isCommodities;
 
-  // Use dynamic assetData values if provided or lookup from map
-  const resolved = assetData || ASSET_METRICS_MAP[selectedAsset] || ASSET_METRICS_MAP["ALL"];
+  // Use dynamic assetData values if provided or lookup from map with symbol alias fallback
+  const resolved = assetData || ASSET_METRICS_MAP[selectedAsset] || ASSET_METRICS_MAP[toDisplaySymbol(selectedAsset)] || ASSET_METRICS_MAP[toRawSymbol(selectedAsset)] || ASSET_METRICS_MAP["ALL"];
 
-  // Filter live trades array for selected asset
+  // Filter live trades array for selected asset using transparent alias matching
   const filteredLiveTrades = trades && trades.length > 0
-    ? (selectedAsset && selectedAsset !== "ALL" ? trades.filter(t => t.symbol === selectedAsset) : trades)
+    ? (selectedAsset && selectedAsset !== "ALL" ? trades.filter(t => symbolsMatch(t.symbol, selectedAsset)) : trades)
     : [];
 
   const dynamicTotalFees = filteredLiveTrades.length > 0
@@ -321,7 +406,7 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
   const currentTradeCount = isLiveMode ? (filteredLiveTrades.length || resolved.liveTradesCount) : resolved.historicalTradesCount;
 
   const isPositiveExpectancy = !isLegacy && currentAvgNetR >= 0;
-  const isCommodityAsset = ["GC=F", "SI=F", "CL=F"].includes(selectedAsset);
+  const isCommodityAsset = ["GC=F", "SI=F", "CL=F", "XAUUSDT", "XAGUSDT", "CLUSDT"].includes(selectedAsset);
   const isAll = selectedAsset === "ALL";
 
   const feeModeString = isCommodityAsset

@@ -1,4 +1,5 @@
 "use client";
+import { toRawSymbol, toDisplaySymbol } from "@/lib/symbolMapper";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -90,7 +91,8 @@ interface AIPredictionState {
 }
 
 function getTradingViewSymbol(s: string): string {
-  switch (s) {
+  const norm = toRawSymbol(s);
+  switch (norm) {
     case "GC=F":
       return "TVC:GOLD";
     case "SI=F":
@@ -254,7 +256,7 @@ export default function TerminalPage() {
         const intervalParam = intervalMap[timeframe] || "15m";
 
         let candles: any[] = [];
-        const isCommodity = ["GC=F", "SI=F", "CL=F"].includes(symbol);
+        const isCommodity = ["GC=F", "SI=F", "CL=F", "XAUUSDT", "XAGUSDT", "CLUSDT"].includes(symbol);
 
         if (isCommodity) {
           try {
@@ -574,9 +576,12 @@ export default function TerminalPage() {
               <option value="ETHUSDT">ETHUSDT (Ethereum)</option>
               <option value="SOLUSDT">SOLUSDT (Solana)</option>
               <option value="DOTUSDT">DOTUSDT (Polkadot)</option>
-              <option value="GC=F">Gold (XAU/USD - GC=F)</option>
-              <option value="SI=F">Silver (XAG/USD - SI=F)</option>
-              <option value="CL=F">Crude Oil (WTI - CL=F)</option>
+              <option value="XAUUSDT">Gold (XAUUSDT)</option>
+              <option value="XAGUSDT">Silver (XAGUSDT)</option>
+              <option value="CLUSDT">Crude Oil (CLUSDT)</option>
+              <option value="GC=F">Gold (GC=F Alias)</option>
+              <option value="SI=F">Silver (SI=F Alias)</option>
+              <option value="CL=F">Crude Oil (CL=F Alias)</option>
             </select>
           </div>
 

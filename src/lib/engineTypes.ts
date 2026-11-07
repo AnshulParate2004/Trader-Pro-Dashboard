@@ -209,6 +209,10 @@ export const TOP_MODELS: AIStrategyModel[] = [
 export interface TradeOrder {
   id: string;
   symbol: string;
+  rawSymbol?: string;
+  gross_r?: number;
+  cost_r?: number;
+  net_r?: number;
   direction: "LONG" | "SHORT";
   orderType: "TAKER" | "MAKER";
   modelId: string;

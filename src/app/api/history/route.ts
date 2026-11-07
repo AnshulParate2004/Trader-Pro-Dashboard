@@ -1,3 +1,4 @@
+import { toRawSymbol, toDisplaySymbol, symbolsMatch } from "@/lib/symbolMapper";
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
@@ -43,7 +44,9 @@ export async function GET(req: Request) {
           const col = db.collection("historical_trades_multi_asset");
           const query: any = {};
           if (symbolParam && symbolParam !== "ALL") {
-            query.symbol = symbolParam;
+            const raw = toRawSymbol(symbolParam);
+            const disp = toDisplaySymbol(symbolParam);
+            query.symbol = { $in: [symbolParam, raw, disp] };
           }
           if (modelParam === "1h-commodities-rf" && symbolParam === "ALL") {
             query.modelId = "1h-commodities-rf";

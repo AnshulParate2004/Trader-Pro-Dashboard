@@ -1,4 +1,5 @@
 "use client";
+import { toDisplaySymbol, toDisplayName } from "@/lib/symbolMapper";
 
 import React from "react";
 import { TradeOrder } from "@/lib/engineTypes";
@@ -162,9 +163,12 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                   <option value="ETHUSDT">ETHUSDT (Ethereum)</option>
                   <option value="SOLUSDT">SOLUSDT (Solana)</option>
                   <option value="DOTUSDT">DOTUSDT (Polkadot)</option>
-                  <option value="GC=F">Gold (GC=F)</option>
-                  <option value="SI=F">Silver (SI=F)</option>
-                  <option value="CL=F">Crude Oil (CL=F)</option>
+                  <option value="XAUUSDT">Gold (XAUUSDT)</option>
+                  <option value="XAGUSDT">Silver (XAGUSDT)</option>
+                  <option value="CLUSDT">Crude Oil (CLUSDT)</option>
+                  <option value="GC=F">Gold (GC=F Alias)</option>
+                  <option value="SI=F">Silver (SI=F Alias)</option>
+                  <option value="CL=F">Crude Oil (CL=F Alias)</option>
                 </select>
               </div>
 
@@ -292,9 +296,12 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                   <option value="ETHUSDT">ETHUSDT</option>
                   <option value="SOLUSDT">SOLUSDT</option>
                   <option value="DOTUSDT">DOTUSDT</option>
-                  <option value="GC=F">Gold (GC=F)</option>
-                  <option value="SI=F">Silver (SI=F)</option>
-                  <option value="CL=F">Crude Oil (CL=F)</option>
+                  <option value="XAUUSDT">Gold (XAUUSDT)</option>
+                  <option value="XAGUSDT">Silver (XAGUSDT)</option>
+                  <option value="CLUSDT">Crude Oil (CLUSDT)</option>
+                  <option value="GC=F">Gold (GC=F Alias)</option>
+                  <option value="SI=F">Silver (SI=F Alias)</option>
+                  <option value="CL=F">Crude Oil (CL=F Alias)</option>
                 </select>
               </div>
 
@@ -373,7 +380,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                           {trade.modelName || "4H Swing Meta (+0.17R)"}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 font-bold text-chrome-ink">{trade.symbol}</td>
+                      <td className="py-2.5 px-3 font-bold text-chrome-ink">{toDisplaySymbol(trade.symbol)}</td>
                       <td className="py-2.5 px-3">
                         <span
                           className={`px-2 py-0.5 rounded font-bold text-[10px] ${
@@ -569,7 +576,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                           </td>
                           <td className="py-2.5 px-3 font-bold text-chrome-ink whitespace-nowrap">
                             <span className="px-1.5 py-0.5 rounded bg-chrome-field border border-chrome-line text-[11px]">
-                              {log.symbol}
+                              {toDisplaySymbol(log.symbol)}
                             </span>
                           </td>
                           <td className="py-2.5 px-3 font-bold text-chrome-ink tabular-nums">

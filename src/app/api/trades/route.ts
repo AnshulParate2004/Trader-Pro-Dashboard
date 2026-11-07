@@ -1,3 +1,4 @@
+import { toDisplaySymbol } from "@/lib/symbolMapper";
 import fs from "fs";
 import path from "path";
 import { NextResponse } from "next/server";
@@ -41,9 +42,16 @@ function map4HSwingToTradeOrder(t: PaperTrade4HSwingRecord | any, feePercent: nu
   const exitFeeINR = Number((totalFeeINR / 2).toFixed(4));
   const slippageINR = Number((posSize * 0.0002).toFixed(4));
 
+  const rawSym = t.symbol || t.coin;
+  const displaySym = toDisplaySymbol(rawSym);
+
   return {
     id: t.id,
-    symbol: t.symbol || t.coin,
+    symbol: displaySym,
+    rawSymbol: rawSym,
+    gross_r,
+    cost_r,
+    net_r,
     direction: t.side,
     orderType: feePercent <= 0.020 ? "MAKER" : "TAKER",
     modelId: "4h-swing-meta-017",
@@ -95,9 +103,16 @@ function map1HCommodityToTradeOrder(t: PaperTrade1HCommodityRecord | any, feePer
   const exitFeeINR = Number((totalFeeINR / 2).toFixed(4));
   const slippageINR = Number((posSize * 0.0002).toFixed(4));
 
+  const rawSym = t.symbol;
+  const displaySym = toDisplaySymbol(rawSym);
+
   return {
     id: t.id,
-    symbol: t.symbol,
+    symbol: displaySym,
+    rawSymbol: rawSym,
+    gross_r,
+    cost_r,
+    net_r,
     direction: t.side,
     orderType: feePercent <= 0.020 ? "MAKER" : "TAKER",
     modelId: "1h-commodities-rf",
@@ -165,7 +180,12 @@ async function getLivePredictionLogs(
         .limit(limit > 0 ? limit : 200)
         .toArray();
       if (docs && docs.length > 0) {
-        return docs.map((d: any) => ({ ...d, id: d.id || d._id.toString() }));
+        return docs.map((d: any) => ({
+          ...d,
+          id: d.id || d._id.toString(),
+          rawSymbol: d.symbol,
+          symbol: toDisplaySymbol(d.symbol),
+        }));
       }
     }
   } catch (err) {
@@ -177,7 +197,12 @@ async function getLivePredictionLogs(
     if (fs.existsSync(jsonPath)) {
       const raw = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
       const filtered = assetClass === "all" ? raw : raw.filter((r: any) => r.asset_class === assetClass);
-      return limit > 0 ? filtered.slice(0, limit) : filtered.slice(0, 200);
+      const slice = limit > 0 ? filtered.slice(0, limit) : filtered.slice(0, 200);
+      return slice.map((d: any) => ({
+        ...d,
+        rawSymbol: d.symbol,
+        symbol: toDisplaySymbol(d.symbol),
+      }));
     }
   } catch (err) {
     console.warn("Could not read live_unseen_prediction_logs.json:", err);

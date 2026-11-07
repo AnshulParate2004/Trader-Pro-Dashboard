@@ -1,4 +1,5 @@
 "use client";
+import { toDisplaySymbol, toRawSymbol, symbolsMatch } from "@/lib/symbolMapper";
 
 import React from "react";
 import { EnginePerformanceMetrics, TradeOrder } from "@/lib/engineTypes";
@@ -28,15 +29,15 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
 }) => {
   const is4HSwing = selectedModelId === "4h-swing-meta-017";
   const isCommodities = selectedModelId === "1h-commodities-rf";
-  const isCommodityAsset = ["GC=F", "SI=F", "CL=F"].includes(selectedAsset);
+  const isCommodityAsset = ["GC=F", "SI=F", "CL=F", "XAUUSDT", "XAGUSDT", "CLUSDT"].includes(selectedAsset);
   const isAll = selectedAsset === "ALL";
 
-  // Dynamic asset performance data resolution
-  const resolved = assetData || ASSET_METRICS_MAP[selectedAsset] || ASSET_METRICS_MAP["ALL"];
+  // Dynamic asset performance data resolution with alias support
+  const resolved = assetData || ASSET_METRICS_MAP[selectedAsset] || ASSET_METRICS_MAP[toDisplaySymbol(selectedAsset)] || ASSET_METRICS_MAP[toRawSymbol(selectedAsset)] || ASSET_METRICS_MAP["ALL"];
 
-  // Dynamic fee, PnL & capital calculations from live trades array
+  // Dynamic fee, PnL & capital calculations from live trades array using transparent symbol matching
   const filteredTrades = trades && trades.length > 0
-    ? (selectedAsset && selectedAsset !== "ALL" ? trades.filter(t => t.symbol === selectedAsset) : trades)
+    ? (selectedAsset && selectedAsset !== "ALL" ? trades.filter(t => symbolsMatch(t.symbol, selectedAsset)) : trades)
     : [];
 
   const dynamicTotalFees = filteredTrades.length > 0

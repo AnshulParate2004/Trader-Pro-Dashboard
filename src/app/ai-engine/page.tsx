@@ -1,4 +1,5 @@
 "use client";
+import { symbolsMatch, toDisplaySymbol } from "@/lib/symbolMapper";
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
@@ -172,7 +173,7 @@ export default function AiEnginePage() {
     if (liveSideFilter !== "ALL" && t.direction !== liveSideFilter) return false;
     if (liveSymbolFilter !== "ALL") {
       const sym = (t.symbol || "").toUpperCase();
-      if (sym !== liveSymbolFilter.toUpperCase()) return false;
+      if (!symbolsMatch(sym, liveSymbolFilter)) return false;
     }
     return true;
   });
@@ -514,7 +515,7 @@ export default function AiEnginePage() {
           avgNetR={currentAssetData.avgNetR}
           netPnLINR={currentAssetData.netPnLINR}
           isTaker={isTaker}
-          feePercent={["GC=F", "SI=F", "CL=F"].includes(selectedAsset) ? 0.05 : currentFeePercent}
+          feePercent={["GC=F", "SI=F", "CL=F", "XAUUSDT", "XAGUSDT", "CLUSDT"].includes(selectedAsset) ? 0.05 : currentFeePercent}
           closedTradesCount={tableTab === "live" ? currentAssetData.liveTradesCount : currentAssetData.historicalTradesCount}
           selectedModelId={selectedModelId}
           selectedAsset={selectedAsset}
