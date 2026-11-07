@@ -1,13 +1,62 @@
 # Pre-Registration Document: Cross-Sectional & Macro Systematic Quantitative Research (Round 3)
 
-> **Document Type:** Institutional Research Pre-Registration (Amended — Version 2)  
-> **Status:** PRE-REGISTERED & FROZEN (Committed prior to downloading multi-coin data or executing any strategy code)  
+> **Document Type:** Institutional Research Pre-Registration (Amended — Version 3)  
+> **Status:** PRE-REGISTERED & FROZEN (Committed prior to executing any strategy returns or PnL code)  
 > **Repository:** Trader-Pro / Trader-Pro-Dashboard  
 > **Branch:** `feat/cost-aware-engine`  
 > **Initial Commit:** `5322da3` (*prereg round3, before any results*)  
-> **Amendment 1 Commit:** `prereg round3 amendment 1, before any results`  
+> **Amendment 1 Commit:** `4478227` (*prereg round3 amendment 1, before any results*)  
+> **Amendment 2 Commit:** `prereg round3 amendment 2, before any results`  
 > **Date:** November 2026  
 > **Primary Rule:** Zero parameter tuning, zero model searches, zero direction prediction via black-box machine learning. All signals, dynamic universe rules, friction tiers, screening gates, and runtime anti-tampering verification are codified and frozen in this document prior to data access.
+
+---
+
+## Amendment 2 Change Log (Methodological Hardening, Cross-Exchange Disclosure & Portfolio Aggregation)
+
+Prior to executing any backtest return calculations or strategy PnL evaluations, Round 3 pre-registration is amended with six critical methodological clarifications:
+
+1. **Exact Data Provenance & Cross-Exchange Mixing Disclosure:**
+   - **Daily Klines:** Binance USD-M Futures public REST API (`https://fapi.binance.com/fapi/v1/klines?symbol={symbol}&interval=1d&limit=1500`).
+   - **8-Hour Funding Rates:** Binance USD-M Futures public REST API (`https://fapi.binance.com/fapi/v1/fundingRate?symbol={symbol}&limit=500`).
+   - **Daily Open Interest:** Bybit Linear Perpetuals public REST API (`https://api.bybit.com/v5/market/open-interest?category=linear&symbol={symbol}&intervalTime=1d&limit=200`).
+   - > [!WARNING]
+     > **FLAG: CROSS-EXCHANGE MIXING DISCLOSURE:**
+     > Klines and funding rates are sourced from Binance USD-M Futures, while Open Interest is sourced from Bybit Linear Perpetuals. This cross-exchange mixing introduces venue-divergence basis risk: Bybit OI reflects Bybit institutional and retail positioning growth, while execution fills and funding drag are evaluated against Binance. While aggregate leverage trends correlate across venues, venue-specific liquidations and delta-neutral basis trades on Bybit may not perfectly map to Binance order flow.
+2. **Point-in-Time Daily Open Interest Snapshot Definition:**
+   - In Bybit v5 API (`intervalTime=1d`), each daily observation is timestamped at `00:00:00 UTC` of date $t$.
+   - **Snapshot Identification:** This record corresponds to the point-in-time open interest snapshot captured at `00:00:00 UTC` at the start of date $t$.
+   - **Lookahead Verification:** The trading decision for bar $t$ occurs at bar $t$ close (`23:59:59 UTC`), and position entry executes at next-bar open (`00:00:01 UTC` on date $t+1$). Because the date $t$ OI value was snapshot at `00:00:00 UTC` on date $t$, it is **known 24 hours prior to entry** at $t+1$ open. The conservative 5-day delta $\Delta\text{OI}_{5d} = \text{OI}_t / \text{OI}_{t-5} - 1$ is strictly free of lookahead bias ($T_{\text{publish}} < T_{\text{signal}} < T_{\text{entry}}$).
+3. **Dynamic Universe Ranking & Prominent "SURVIVOR-BIASED" Disclosure:**
+   - Universe selection follows the dynamic ranking rule: on each rebalance date $t$, eligible assets are the **Top 20 by trailing 90-day aggregate quote volume** among available coins:
+     $$\text{Volume}_{i, t-1} = \sum_{k=1}^{90} \text{quote\_volume}_{i, t-k}$$
+   - **SURVIVORSHIP BIAS DISCLOSURE:** Because the candidate pool was downloaded from the top 20 liquid perpetual contracts as of November 2026, historically delisted or defunct contracts (e.g., LUNA, FTT) are not present in the historical pool. Consequently, **every backtest result is explicitly labeled "SURVIVOR-BIASED" in all report headers and summaries**.
+4. **Independent Observation Counting via Daily Portfolio Return Aggregation:**
+   - To account for strong cross-sectional correlation across crypto assets and prevent artificial sample-size inflation, independent observations are **NOT counted as individual coin trade signals**.
+   - Instead, on each day $t$, active position returns are aggregated into an **equal-weighted daily portfolio return**:
+     $$R_{p, t} = \begin{cases} \frac{1}{|S_t|} \sum_{i \in S_t} R_{i, t}, & \text{if } |S_t| > 0 \\ 0.0, & \text{if } |S_t| = 0 \text{ (cash)} \end{cases}$$
+     where $S_t$ is the active position set.
+   - The stationary block bootstrap ($L = 20\text{ days}$, $B = 10,000$ resamples) is conducted strictly on the **daily portfolio return series $R_{p, t}$**.
+   - The mandatory minimum power requirement of $N_{\text{indep}} \ge 100$ independent observations counts **distinct calendar days where $|S_t| > 0$** at the portfolio level, not total individual trade tickets.
+5. **Pre-Registered BTC Exclusion from H1 and H2 Headline Screening:**
+   - Because historical BTC derivatives data directly informed the numerical thresholds for H1 ($-0.150\% / +0.300\%$) and H2 ($+10\%$ OI, $\pm 5\%$ price), **BTC is strictly EXCLUDED from the primary headline screening portfolio for H1 and H2**.
+   - Headline statistical significance tests and screening gates are computed solely across the remaining 19 altcoins. BTC results are reported separately for **informational and descriptive purposes only**.
+6. **Empirical Distribution of H1 Short Signals by Calendar Year (Regime Distortion Audit):**
+   - An audit of the H1 short condition ($> +0.300\%$ 3-day cumulative funding) reveals severe regime concentration:
+
+| Year | Total Coin-Days (All 20) | Short Signals | Long Signals | Short Signal Share (%) | Long Signal Share (%) | Altcoin Short Share (Excl. BTC) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **2019** | 151 | 3 | 2 | 1.99% | 1.32% | 0.00% |
+| **2020** | 5,024 | 1,048 | 370 | **20.86%** | 7.36% | **21.36%** |
+| **2021** | 7,300 | 2,393 | 265 | **32.78%** | 3.63% | **32.95%** |
+| **2022** | 7,300 | 0 | 761 | **0.00%** | 10.42% | **0.00%** |
+| **2023** | 7,300 | 93 | 320 | 1.27% | 4.38% | 1.30% |
+| **2024** | 7,320 | 550 | 171 | 7.51% | 2.34% | 7.61% |
+| **2025** | 7,300 | 0 | 210 | **0.00%** | 2.88% | **0.00%** |
+| **2026** | 6,200 | 0 | 181 | **0.00%** | 2.92% | **0.00%** |
+
+   - **Key Finding:** Exactly **3,441 out of 4,087 short signals (84.2%) fired exclusively during the 2020–2021 bull run**. In 2022, 2025, and 2026, the short rule fired **0 times (0.00%)**.
+   - **Conclusion:** The H1 short leg is essentially a **bull-market euphoria filter**. It cannot be relied upon as an all-weather hedge during bear markets or institutional chop regimes.
 
 ---
 
@@ -156,10 +205,18 @@ All candidate rules must report performance across two standardized fee tiers:
 
 ## 4. Historical Screening Bar (Exploratory / Dev Window)
 
-Historical data (January 1, 2020 through November 6, 2026) is classified strictly as the **exploratory / development window**. A candidate rule is eligible for consideration in forward paper testing if and only if it satisfies all three screening hurdles:
+Historical data (January 1, 2020 through November 6, 2026) is classified strictly as the **exploratory / development window**.
+
+> [!IMPORTANT]
+> **SURVIVORSHIP BIAS & BTC EXCLUSION MANDATE:**
+> 1. **Survivor-Biased Data Warning:** All historical results are explicitly classified as **"SURVIVOR-BIASED"** due to evaluating the top 20 contracts surviving in 2026 without incorporating defunct/delisted historical tokens.
+> 2. **BTC Excluded from Headline Screening:** Because BTC derivatives distributions directly informed H1 and H2 parameters, the primary headline screening portfolio for H1 and H2 **strictly excludes BTC**. BTC performance is evaluated separately and presented solely as a descriptive/informational benchmark.
+> 3. **Portfolio-Level Aggregation:** All statistical tests (block bootstrap, Sharpe, HAC regression, turnover) are evaluated strictly on the **daily portfolio return series $R_{p, t}$** (equal-weighted across active coin positions). Distinct signal days ($|S_t| > 0$) must exceed $N_{\text{indep}} \ge 100$. Individual coin trade tickets are not counted as independent bets.
+
+A candidate rule is eligible for consideration in forward paper testing if and only if it satisfies all three screening hurdles:
 
 ### Hurdle 1: Stationary Block-Bootstrap Net Significance at Punishing Tier
-- **Bootstrap Parameters:** Stationary block bootstrap (Politis & Romano, 1994), fixed block length $L = 20\text{ days}$, exactly $B = 10,000$ resamples.
+- **Bootstrap Parameters:** Stationary block bootstrap (Politis & Romano, 1994), fixed block length $L = 20\text{ days}$, exactly $B = 10,000$ resamples executed on daily portfolio return series $R_{p, t}$.
 - **Multiple Testing Family:** Penalized by the **project-wide cumulative macro/derivatives test count**:
   - Donchian 20/10 tests on BTC & ETH: **2**
   - Round 2 Pre-Registered hypotheses: **3**
