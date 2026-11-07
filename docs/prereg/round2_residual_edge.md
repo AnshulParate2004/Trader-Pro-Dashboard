@@ -204,3 +204,24 @@ A strategy counts as having a statistically valid, useful quantitative edge if a
 7. **Stage Y Power & Drawdown Caveats:**
    - With an evaluation window of approximately 365 daily bars, a non-significant null finding ($\text{CI}$ covering zero) must be formally categorized as **"Inconclusive (Underpowered)"**, not as definitive evidence of "No Edge".
    - If the baseline buy-and-hold maximum peak-to-trough drawdown over the Stage Y window is less than $20\%$ ($\text{MaxDD}_{\text{B\&H}} > -0.20$), the drawdown reduction condition is formally classified as **"Not Testable (Insufficient Drawdown Regime)"**.
+
+
+---
+
+## 11. Amendment 3 (2026-11-07)
+
+1. **Correction of Pre-Registered Friction Schedules (Supersedes Amendment 2 Item 2):**
+   - The friction schedule in Amendment 2 item 2 mistakenly specified a 25 bps round-trip primary tier, which inadvertently halved the project's institutional 50 bps standard established in `prereg_round2.md` and Section 3.
+   - The canonical cost per unit of one-way turnover $|\Delta w_t| = |w_t - w_{t-1}|$ is formally restored and corrected to:
+     $$\text{Cost}_t = |\Delta w_t| \times \frac{\text{friction}}{2}$$
+   - Pre-registered fee schedules:
+     - **Primary Evaluation Tier:** **50 bps round-trip** ($25\text{ bps}$ per unit one-way turnover, $\frac{\text{friction}}{2} = 0.002500$).
+     - **Sensitivity Benchmark:** **25 bps round-trip** ($12.5\text{ bps}$ per unit one-way turnover, $\frac{\text{friction}}{2} = 0.001250$).
+     - **Reported TDS Stress Tier:** **100 bps round-trip** ($50\text{ bps}$ per unit one-way turnover, or $1\%$ statutory TDS on sales/turnover, $\frac{\text{friction}}{2} = 0.005000$).
+
+2. **Canonical Evaluator Script Frozen SHA-256:**
+   - The committed canonical evaluation script [`analysis/evaluate_round2_residual_edge.py`](file:///D:/Projects_Main/Trade-Pro/Trader-Pro-Dashboard/analysis/evaluate_round2_residual_edge.py) has the verified cryptographic hash:
+     ```text
+     SHA256: 9CF157E6B2DF7C5F4B59F0CD768FECF8CE9478C7D92DA9C2DDB2726D0EE917BD
+     ```
+   - This script is sealed and frozen prior to any execution on real market data.
