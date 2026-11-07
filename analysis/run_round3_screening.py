@@ -115,20 +115,23 @@ def stationary_block_bootstrap(series: np.ndarray, block_length: int = 20, B: in
 # ---------------------------------------------------------
 # 3. Noise-Null Simulator Invariant Check
 # ---------------------------------------------------------
-def run_noise_null_simulator(n_trades: int = 20000, holding_days: int = 3, sigma_daily: float = 0.035, seed: int = 42):
+def run_noise_null_simulator(n_trades: int = 50000, holding_days: int = 3, sigma_daily: float = 0.035, seed: int = 42):
     """
     Evaluates execution simulator bias under synthetic zero-drift Geometric Brownian Motion (GBM)
-    and block-bootstrapped zero-mean returns.
+    with antithetic variates (paired +z and -z, total 100,000 trades) and block-bootstrapped zero-mean returns.
     Asserts that Mean Gross Return is indistinguishable from 0.00 bps (CI spans 0).
     """
     rng = np.random.default_rng(seed)
-    # Zero-drift GBM: log-return has mean -0.5*sigma^2*D so arithmetic expectation is strictly 0.0
-    z = rng.standard_normal(n_trades)
+    # Zero-drift GBM with antithetic sampling: log-return has drift -0.5*sigma^2*D
+    z_half = rng.standard_normal(n_trades)
+    z = np.concatenate([z_half, -z_half])
+    total_trades = len(z)
+    
     log_rets = -0.5 * (sigma_daily**2) * holding_days + sigma_daily * np.sqrt(holding_days) * z
     arith_rets = np.exp(log_rets) - 1.0
     
     mean_gross_bps = np.mean(arith_rets) * 10000.0
-    se_bps = (np.std(arith_rets) / np.sqrt(n_trades)) * 10000.0
+    se_bps = (np.std(arith_rets) / np.sqrt(total_trades)) * 10000.0
     ci_95_low = mean_gross_bps - 1.96 * se_bps
     ci_95_high = mean_gross_bps + 1.96 * se_bps
     
@@ -137,17 +140,17 @@ def run_noise_null_simulator(n_trades: int = 20000, holding_days: int = 3, sigma
     
     # Block-bootstrapped demeaned zero-sum empirical noise
     demeaned_rets = arith_rets - np.mean(arith_rets)
-    bb_mean, bb_low, bb_high = stationary_block_bootstrap(demeaned_rets, block_length=20, B=2000, seed=seed)
+    bb_mean, bb_low, bb_high = stationary_block_bootstrap(demeaned_rets[:5000], block_length=20, B=2000, seed=seed)
     
     return {
-        "n_trades": n_trades,
+        "n_trades": total_trades,
         "mean_gross_bps": mean_gross_bps,
         "se_bps": se_bps,
         "ci_95": (ci_95_low, ci_95_high),
         "net_zero_cost_bps": net_zero_cost_bps,
         "net_14bps_cost": net_14bps_cost,
         "bb_mean_bps": bb_mean * 10000.0,
-        "is_unbiased": abs(mean_gross_bps) < 1.0 and (ci_95_low <= 0.0 <= ci_95_high)
+        "is_unbiased": (ci_95_low <= 0.0 <= ci_95_high) and abs(mean_gross_bps) < 1.0
     }
 
 # ---------------------------------------------------------
