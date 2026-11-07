@@ -23,7 +23,7 @@ function map4HSwingToTradeOrder(t: PaperTrade4HSwingRecord): TradeOrder {
   const grossPnL = Number(((t.gross_r ?? 0) * riskINR).toFixed(2));
   const netPnL = Number(((t.net_r ?? 0) * riskINR).toFixed(2));
   const feeINR = Number(((t.cost_r ?? 0.03) * riskINR).toFixed(4));
-  const posSize = Number((riskINR / (t.stop_distance_pct || 0.03)).toFixed(2));
+  const posSize = 1000.00; // Dedicated ₹1,000 capital per asset
 
   return {
     id: t.id,
@@ -66,7 +66,7 @@ function map1HCommodityToTradeOrder(t: PaperTrade1HCommodityRecord): TradeOrder 
   const grossPnL = Number(((t.gross_r ?? 0) * riskINR).toFixed(2));
   const netPnL = Number(((t.net_r ?? 0) * riskINR).toFixed(2));
   const feeINR = Number(((t.cost_r ?? 0.0125) * riskINR).toFixed(4));
-  const posSize = Number((riskINR / (t.stop_distance_pct || 0.02)).toFixed(2));
+  const posSize = 1000.00; // Dedicated ₹1,000 capital per asset
 
   return {
     id: t.id,

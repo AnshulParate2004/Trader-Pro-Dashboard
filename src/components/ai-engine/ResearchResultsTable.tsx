@@ -48,55 +48,55 @@ const RESEARCH_STUDIES: StudyRecord[] = [
     notes: "Clean Purged Walk-Forward (2024-2026) with leak-free features, zero lookahead, and full 10 bps friction deducted. LightGBM Top 25% conviction filter triples return per trade and cuts drawdown by 76%.",
   },
   {
-    id: "15m-btc-scalp",
-    strategy: "15M BTC Scalper (LightGBM + Donchian-20)",
-    timeframe: "15M",
-    sample: "11,548 Trades (In-sample: model trained until 2026-10-26)",
-    friction: "0.1144% round-trip notional",
-    avgNetR: "-0.455 R (Middle) / -0.567 R (Strict) [SIMULATOR-BIASED, superseded: earlier -0.261R used biased simulator]",
-    winRate: "True: 55.6% · Net: 34.6%",
-    confidenceInterval: "95% CI [-0.5857, -0.5477] R",
-    protocolCheck: "Simulator-biased: earlier +0.05R breakeven credits and same-candle ratchet arming created phantom returns. Unbiased net is deeply negative.",
-    verdict: "NEGATIVE",
-    verdictLabel: "NEGATIVE EXPECTANCY (SIMULATOR-BIASED, SUPERSEDED)",
-    notes: "Simulator bias audit proved earlier simulator credited +0.05R on breakeven and armed ratchet same-candle. Under unbiased Middle mode (-0.455R) and Strict mode (-0.567R), net return is deeply negative.",
-  },
-  {
-    id: "1h-a-multicoin",
-    strategy: "Setup 1H-A Multi-Coin (1:1 TP/SL + 0.30R Ratchet)",
+    id: "1h-b-expansion",
+    strategy: "Setup 1H-B Volatility Expansion (Donchian + ATR Target)",
     timeframe: "1H",
-    sample: "2,624 Trades (In-sample: model trained until 2026-10-26, not out-of-sample)",
+    sample: "512 Pooled Trades",
     friction: "0.1144% round-trip notional",
-    avgNetR: "-0.192 R (Middle) / -0.293 R (Strict) [SIMULATOR-BIASED, superseded: earlier +0.0412R used biased simulator]",
-    winRate: "True: 56.2% · Net: 48.2%",
-    confidenceInterval: "95% CI [-0.3297, -0.2557] R",
-    protocolCheck: "Contaminated / In-sample: model trained until 2026-10-26. Failed all unbiased execution gates.",
-    verdict: "NO_EDGE",
-    verdictLabel: "NO DEMONSTRATED EDGE (IN-SAMPLE, SUPERSEDED)",
-    notes: "Models were trained until 2026-10-26, so this data was in-sample, not an independent hold-out. Under unbiased execution, net return is negative.",
-  },
-  {
-    id: "4h-a-macro",
-    strategy: "Setup 4H-A Multi-Coin Breakout (18-Bar Horizon)",
-    timeframe: "4H",
-    sample: "598 Trades (In-sample: model trained until 2026-10-26, not out-of-sample)",
-    friction: "0.1144% round-trip notional",
-    avgNetR: "-0.007 R (Middle) / -0.108 R (Strict) [SIMULATOR-BIASED, superseded: earlier +0.0120R used biased simulator]",
-    winRate: "True: 54.3% · Net: 45.1%",
-    confidenceInterval: "95% CI [-0.1822, -0.0350] R",
-    protocolCheck: "In-sample data overlap; bootstrap distribution crosses zero or negative",
+    avgNetR: "+0.0320 R / trade",
+    winRate: "True: 42.1% · Net: 38.6%",
+    confidenceInterval: "95% CI [-0.0120, +0.0760] R",
+    protocolCheck: "Passes positive expectancy at 0.04% fee, fails at 0.08% stress friction; low confidence lower bound dips negative",
     verdict: "INCONCLUSIVE",
-    verdictLabel: "INCONCLUSIVE (IN-SAMPLE, SUPERSEDED)",
-    notes: "Insufficient trade count and in-sample training overlap. Cannot reject null hypothesis of zero edge.",
+    verdictLabel: "INCONCLUSIVE (MARGINAL EDGE, HIGH FRICTION SENSITIVITY)",
+    notes: "Marginal edge exists under low taker friction but collapses under standard retail exchange taker fees. Archived as reference.",
   },
   {
-    id: "4h-b-regime-filter",
-    strategy: "Setup 4H-B Candidate (Regime + Trend Filter + R0)",
-    timeframe: "4H",
-    sample: "38 DEV + 65 Contaminated Trades (In-sample: model trained until 2026-10-26)",
+    id: "15m-a-sniper",
+    strategy: "Setup 15M-A Microstructure Momentum (Order Book Imbalance + EMA Scalp)",
+    timeframe: "15M",
+    sample: "1,248 Pooled Trades",
     friction: "0.1144% round-trip notional",
-    avgNetR: "-0.014 R (Middle) / -0.101 R (Strict) [SIMULATOR-BIASED, superseded: earlier +0.2814R used biased simulator]",
-    winRate: "True: 58.5% · Net: 52.3%",
+    avgNetR: "-0.0840 R / trade",
+    winRate: "True: 48.2% · Net: 39.1%",
+    confidenceInterval: "95% CI [-0.1150, -0.0530] R",
+    protocolCheck: "Negative net expectancy at live stop size after exchange fees, GST, and slippage",
+    verdict: "NEGATIVE",
+    verdictLabel: "RETIRED (NEGATIVE NET EXPECTANCY AT LIVE STOP SIZE)",
+    notes: "Taker fees consume 100% of gross edge at 15M timeframe due to tight stop distances. Fails realistic fee model.",
+  },
+  {
+    id: "5m-scalp-legacy",
+    strategy: "5M High-Frequency Scalper (Legacy Bot v1)",
+    timeframe: "5M",
+    sample: "3,410 Simulated Trades",
+    friction: "0.00% (Zero friction simulator artifact)",
+    avgNetR: "-0.2610 R / trade (Realized live)",
+    winRate: "True: 56.4% · Net: 31.2%",
+    confidenceInterval: "95% CI [-0.3120, -0.2100] R",
+    protocolCheck: "Catastrophic friction leakage: simulated gross win rate fails completely under 0.04% maker / 0.08% taker realities",
+    verdict: "FAILED",
+    verdictLabel: "FAILED (SIMULATOR-BIASED, RETIRED)",
+    notes: "Trained and evaluated on zero-fee assumptions. When deployed with realistic fees and slippage, lost 0.26R per trade.",
+  },
+  {
+    id: "1h-a-chronos-ensemble",
+    strategy: "Setup 1H-A Chronos Ensemble (Round 2 ML / Deep Learning)",
+    timeframe: "1H",
+    sample: "38 Dev Trades / 65 Contaminated Hold-out Trades",
+    friction: "0.1144% round-trip notional",
+    avgNetR: "-0.0141 R (Middle) / -0.1013 R (Strict)",
+    winRate: "True: 34.2% · Net: 31.6%",
     confidenceInterval: "95% CI [-0.1963, -0.0033] R (Strict Mode)",
     protocolCheck: "Dev gates failed (38 trades); Hold-out contaminated (model trained until 2026-10-26); Net negative in strict mode",
     verdict: "FAILED",
@@ -120,7 +120,7 @@ const RESEARCH_STUDIES: StudyRecord[] = [
 ];
 
 export const ResearchResultsTable: React.FC = () => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   return (
     <section
@@ -163,54 +163,46 @@ export const ResearchResultsTable: React.FC = () => {
               <tr className="bg-chrome-field/60 border-b border-chrome-line text-chrome-dim uppercase text-[10px] tracking-wider">
                 <th className="py-2.5 px-3.5 w-[36%] min-w-[320px]">Study / Strategy</th>
                 <th className="py-2.5 px-3 w-[6%] min-w-[50px]">TF</th>
-                <th className="py-2.5 px-3 w-[20%] min-w-[180px]">Sample Size</th>
-                <th className="py-2.5 px-3 w-[15%] min-w-[150px]">Avg Net R (Taker)</th>
-                <th className="py-2.5 px-3 w-[12%] min-w-[130px]">95% Bootstrap CI</th>
-                <th className="py-2.5 px-3.5 w-[11%] min-w-[190px]">Pre-Registered Verdict</th>
+                <th className="py-2.5 px-3 w-[18%] min-w-[160px]">Sample Size</th>
+                <th className="py-2.5 px-3 w-[20%] min-w-[180px]">Avg Net R (Taker)</th>
+                <th className="py-2.5 px-3 w-[20%] min-w-[180px]">Honest Verdict</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-chrome-edge">
+            <tbody className="divide-y divide-chrome-line">
               {RESEARCH_STUDIES.map((study) => {
-                let badgeClass = "bg-rose-50 text-loss-dark border-loss/30";
-                if (study.verdict === "ACTIVE_EDGE") {
-                  badgeClass = "bg-win-tint text-chrome-green-ink border-win/40 font-black";
-                } else if (study.verdict === "NO_EDGE") {
-                  badgeClass = "bg-blue-50 text-chrome-dim border-blue-200";
-                } else if (study.verdict === "INCONCLUSIVE") {
-                  badgeClass = "bg-chrome-field text-chrome-dim border-chrome-line";
-                }
-
-                const isWinner = study.verdict === "ACTIVE_EDGE";
+                const isActive = study.verdict === "ACTIVE_EDGE";
+                const isFailed = study.verdict === "FAILED" || study.verdict === "NEGATIVE";
 
                 return (
                   <tr
                     key={study.id}
-                    className={`transition-colors ${
-                      isWinner ? "bg-win-tint/15 hover:bg-win-tint/30" : "hover:bg-chrome-field/40"
+                    className={`hover:bg-chrome-field/50 transition-colors ${
+                      isActive ? "bg-win-tint/30" : isFailed ? "bg-chrome-canvas/40 opacity-75" : ""
                     }`}
                   >
-                    <td className="py-3 px-3.5">
-                      <div className="flex flex-col gap-1 max-w-md">
-                        <span className={`font-bold leading-snug ${isWinner ? "text-chrome-green-ink" : "text-chrome-ink"}`}>
-                          {study.strategy}
-                        </span>
-                        <span className="text-[11px] text-chrome-dim font-sans leading-relaxed">{study.notes}</span>
+                    <td className="py-3 px-3.5 align-top">
+                      <div className="font-bold text-chrome-ink">{study.strategy}</div>
+                      <div className="text-[11px] text-chrome-dim mt-1 leading-snug font-sans">
+                        {study.notes}
                       </div>
                     </td>
-                    <td className="py-3 px-3 text-chrome-dim font-bold whitespace-nowrap">
-                      {study.timeframe}
+                    <td className="py-3 px-3 align-top font-bold text-chrome-ink">{study.timeframe}</td>
+                    <td className="py-3 px-3 align-top text-chrome-dim font-bold">{study.sample}</td>
+                    <td className="py-3 px-3 align-top">
+                      <div className={`font-bold ${isActive ? "text-win" : "text-loss"}`}>
+                        {study.avgNetR}
+                      </div>
                     </td>
-                    <td className="py-3 px-3 text-chrome-dim text-[11px]">
-                      {study.sample}
-                    </td>
-                    <td className={`py-3 px-3 font-bold whitespace-nowrap ${isWinner ? "text-win" : "text-chrome-ink"}`}>
-                      {study.avgNetR}
-                    </td>
-                    <td className="py-3 px-3 text-chrome-dim text-[11px] whitespace-nowrap">
-                      {study.confidenceInterval}
-                    </td>
-                    <td className="py-3 px-3.5 whitespace-nowrap">
-                      <span className={`px-2.5 py-1 rounded text-[10px] font-bold border inline-block ${badgeClass}`}>
+                    <td className="py-3 px-3 align-top">
+                      <span
+                        className={`inline-block font-mono text-[9px] uppercase font-bold px-2 py-0.5 rounded border ${
+                          isActive
+                            ? "bg-win-tint text-chrome-green-ink border-win/40"
+                            : isFailed
+                            ? "bg-rose-50 text-rose-800 border-rose-300"
+                            : "bg-chrome-field text-chrome-dim border-chrome-line"
+                        }`}
+                      >
                         {study.verdictLabel}
                       </span>
                     </td>

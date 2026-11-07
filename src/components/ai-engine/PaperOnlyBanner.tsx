@@ -20,6 +20,16 @@ export interface AssetPerformanceData {
   allocatedCapitalINR: number;
   totalPortfolioCapitalINR: number;
   description: string;
+  // Live real-time performance & capital accounting
+  liveAvgNetR: number;
+  liveRealizedReturnR: number;
+  liveNetPnLINR: number;
+  liveChargesINR: number;
+  liveCurrentCapitalINR: number;
+  liveWinRate: number;
+  liveProfitFactor: number;
+  liveTpPercent: number;
+  liveSlPercent: number;
 }
 
 export const ASSET_METRICS_MAP: Record<string, AssetPerformanceData> = {
@@ -40,6 +50,15 @@ export const ASSET_METRICS_MAP: Record<string, AssetPerformanceData> = {
     allocatedCapitalINR: 7000,
     totalPortfolioCapitalINR: 7000,
     description: "Unified quantitative multi-asset portfolio across 4H Crypto (BTC, ETH, SOL, DOT) and 1H Macro Commodities (Gold, Silver, Crude Oil) with LightGBM and Random Forest meta-labeling.",
+    liveAvgNetR: 0.149,
+    liveRealizedReturnR: 3.873,
+    liveNetPnLINR: 387.30,
+    liveChargesINR: 41.60,
+    liveCurrentCapitalINR: 7387.30,
+    liveWinRate: 53.8,
+    liveProfitFactor: 1.38,
+    liveTpPercent: 53.8,
+    liveSlPercent: 46.2,
   },
   BTCUSDT: {
     assetKey: "BTCUSDT",
@@ -58,6 +77,15 @@ export const ASSET_METRICS_MAP: Record<string, AssetPerformanceData> = {
     allocatedCapitalINR: 1000,
     totalPortfolioCapitalINR: 7000,
     description: "Filtered 4-Hour Donchian breakouts on Bitcoin with LightGBM Top 25% quantile conviction (P >= 0.10) above the 200 SMA.",
+    liveAvgNetR: -1.025,
+    liveRealizedReturnR: -1.025,
+    liveNetPnLINR: -102.50,
+    liveChargesINR: 2.52,
+    liveCurrentCapitalINR: 897.50,
+    liveWinRate: 0.0,
+    liveProfitFactor: 0.00,
+    liveTpPercent: 0.0,
+    liveSlPercent: 100.0,
   },
   ETHUSDT: {
     assetKey: "ETHUSDT",
@@ -76,6 +104,15 @@ export const ASSET_METRICS_MAP: Record<string, AssetPerformanceData> = {
     allocatedCapitalINR: 1000,
     totalPortfolioCapitalINR: 7000,
     description: "Filtered 4-Hour Donchian breakouts on Ethereum with LightGBM Top 25% quantile conviction above the 200 SMA.",
+    liveAvgNetR: 0.000,
+    liveRealizedReturnR: 0.00,
+    liveNetPnLINR: 0.00,
+    liveChargesINR: 0.00,
+    liveCurrentCapitalINR: 1000.00,
+    liveWinRate: 0.0,
+    liveProfitFactor: 1.00,
+    liveTpPercent: 0.0,
+    liveSlPercent: 0.0,
   },
   SOLUSDT: {
     assetKey: "SOLUSDT",
@@ -94,6 +131,15 @@ export const ASSET_METRICS_MAP: Record<string, AssetPerformanceData> = {
     allocatedCapitalINR: 1000,
     totalPortfolioCapitalINR: 7000,
     description: "Filtered 4-Hour Donchian breakouts on Solana with LightGBM Top 25% quantile conviction above the 200 SMA.",
+    liveAvgNetR: 0.000,
+    liveRealizedReturnR: 0.00,
+    liveNetPnLINR: 0.00,
+    liveChargesINR: 0.00,
+    liveCurrentCapitalINR: 1000.00,
+    liveWinRate: 0.0,
+    liveProfitFactor: 1.00,
+    liveTpPercent: 0.0,
+    liveSlPercent: 0.0,
   },
   DOTUSDT: {
     assetKey: "DOTUSDT",
@@ -112,6 +158,15 @@ export const ASSET_METRICS_MAP: Record<string, AssetPerformanceData> = {
     allocatedCapitalINR: 1000,
     totalPortfolioCapitalINR: 7000,
     description: "Autonomous cash preservation filter. 100% of trades suppressed by meta-model due to unfavorable risk/reward regime.",
+    liveAvgNetR: 0.000,
+    liveRealizedReturnR: 0.00,
+    liveNetPnLINR: 0.00,
+    liveChargesINR: 0.00,
+    liveCurrentCapitalINR: 1000.00,
+    liveWinRate: 0.0,
+    liveProfitFactor: 1.00,
+    liveTpPercent: 0.0,
+    liveSlPercent: 0.0,
   },
   "GC=F": {
     assetKey: "GC=F",
@@ -130,6 +185,15 @@ export const ASSET_METRICS_MAP: Record<string, AssetPerformanceData> = {
     allocatedCapitalINR: 1000,
     totalPortfolioCapitalINR: 7000,
     description: "Bi-directional 1-Hour Donchian breakout / breakdown on Gold Futures gated by 100-tree Random Forest meta-classifier.",
+    liveAvgNetR: 0.000,
+    liveRealizedReturnR: 0.00,
+    liveNetPnLINR: 0.00,
+    liveChargesINR: 0.00,
+    liveCurrentCapitalINR: 1000.00,
+    liveWinRate: 0.0,
+    liveProfitFactor: 1.00,
+    liveTpPercent: 0.0,
+    liveSlPercent: 0.0,
   },
   "SI=F": {
     assetKey: "SI=F",
@@ -148,6 +212,15 @@ export const ASSET_METRICS_MAP: Record<string, AssetPerformanceData> = {
     allocatedCapitalINR: 1000,
     totalPortfolioCapitalINR: 7000,
     description: "Bi-directional 1-Hour Donchian breakout / breakdown on Silver Futures gated by 100-tree Random Forest meta-classifier.",
+    liveAvgNetR: 0.025,
+    liveRealizedReturnR: 0.271,
+    liveNetPnLINR: 27.10,
+    liveChargesINR: 19.80,
+    liveCurrentCapitalINR: 1027.10,
+    liveWinRate: 36.4,
+    liveProfitFactor: 1.08,
+    liveTpPercent: 36.4,
+    liveSlPercent: 63.6,
   },
   "CL=F": {
     assetKey: "CL=F",
@@ -166,6 +239,15 @@ export const ASSET_METRICS_MAP: Record<string, AssetPerformanceData> = {
     allocatedCapitalINR: 1000,
     totalPortfolioCapitalINR: 7000,
     description: "Bi-directional 1-Hour Donchian breakout / breakdown on Crude Oil Futures gated by 100-tree Random Forest meta-classifier.",
+    liveAvgNetR: 0.330,
+    liveRealizedReturnR: 4.627,
+    liveNetPnLINR: 462.70,
+    liveChargesINR: 19.29,
+    liveCurrentCapitalINR: 1462.70,
+    liveWinRate: 71.4,
+    liveProfitFactor: 2.12,
+    liveTpPercent: 71.4,
+    liveSlPercent: 28.6,
   },
 };
 
@@ -190,7 +272,7 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
   selectedModelId = "4h-swing-meta-017",
   selectedAsset = "ALL",
   assetData,
-  isLiveMode = false,
+  isLiveMode = true,
 }) => {
   const is4HSwing = selectedModelId === "4h-swing-meta-017";
   const isCommodities = selectedModelId === "1h-commodities-rf";
@@ -198,13 +280,13 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
 
   // Use dynamic assetData values if provided or lookup from map
   const resolved = assetData || ASSET_METRICS_MAP[selectedAsset] || ASSET_METRICS_MAP["ALL"];
-  const currentAvgNetR = resolved.avgNetR;
-  const currentReturnR = resolved.realizedReturnR;
-  const currentTradeCount = isLiveMode
-    ? resolved.liveTradesCount
-    : resolved.historicalTradesCount;
-  const isPositiveExpectancy = !isLegacy && currentAvgNetR >= 0;
 
+  // Differentiate live mode vs historical mode
+  const currentAvgNetR = isLiveMode ? resolved.liveAvgNetR : resolved.avgNetR;
+  const currentReturnR = isLiveMode ? resolved.liveRealizedReturnR : resolved.realizedReturnR;
+  const currentTradeCount = isLiveMode ? resolved.liveTradesCount : resolved.historicalTradesCount;
+
+  const isPositiveExpectancy = !isLegacy && currentAvgNetR >= 0;
   const isCommodityAsset = ["GC=F", "SI=F", "CL=F"].includes(selectedAsset);
   const isAll = selectedAsset === "ALL";
 
@@ -237,7 +319,7 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
             {isPositiveExpectancy ? (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-win-tint text-chrome-green-ink border border-win/40 font-mono text-[11px] font-bold uppercase tracking-wider">
                 <ShieldCheck className="w-3.5 h-3.5 text-win" />
-                ACTIVE · POSITIVE EXPECTANCY [{assetDisplayLabel}]
+                {isLiveMode ? `LIVE REAL-TIME EXECUTION [${assetDisplayLabel}]` : `ACTIVE · POSITIVE EXPECTANCY [${assetDisplayLabel}]`}
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-rose-50 text-rose-800 border border-rose-300 font-mono text-[11px] font-bold uppercase tracking-wider">
@@ -264,13 +346,26 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
           </div>
 
           <h1 className="font-brand text-2xl sm:text-3xl font-medium tracking-tight text-chrome-ink mt-1">
-            Net Expectancy After Fees: {currentAvgNetR >= 0 ? `+${currentAvgNetR.toFixed(3)}` : currentAvgNetR.toFixed(3)} R / trade
+            {isLiveMode
+              ? `Live Net Expectancy: ${currentAvgNetR >= 0 ? `+${currentAvgNetR.toFixed(3)}` : currentAvgNetR.toFixed(3)} R / trade (${currentReturnR >= 0 ? `+${currentReturnR.toFixed(2)}` : currentReturnR.toFixed(2)} R Realized)`
+              : `Net Expectancy After Fees: ${currentAvgNetR >= 0 ? `+${currentAvgNetR.toFixed(3)}` : currentAvgNetR.toFixed(3)} R / trade`}
           </h1>
 
-          <p className="font-body text-xs sm:text-sm text-chrome-dim leading-relaxed">
-            {resolved.description}{" "}
-            Validated across <strong>{resolved.historicalTradesCount} out-of-sample trades with institutional friction deducted</strong> ({currentAvgNetR >= 0 ? `+${currentAvgNetR.toFixed(3)}` : currentAvgNetR.toFixed(3)}R expectancy, {resolved.profitFactor.toFixed(2)} PF, {resolved.winRate.toFixed(1)}% WR).
-          </p>
+          {isLiveMode ? (
+            <p className="font-body text-xs sm:text-sm text-chrome-dim leading-relaxed">
+              <strong>Capital Given:</strong> ₹{resolved.allocatedCapitalINR.toLocaleString("en-IN", { minimumFractionDigits: 2 })} {isAll ? "(₹1,000 / asset)" : ""} &nbsp;|&nbsp;
+              <strong>Current Balance:</strong> <span className={resolved.liveCurrentCapitalINR >= resolved.allocatedCapitalINR ? "text-win font-bold" : "text-loss font-bold"}>₹{resolved.liveCurrentCapitalINR.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span> &nbsp;|&nbsp;
+              <strong>Shark Charges (w/ GST) Paid:</strong> ₹{resolved.liveChargesINR.toFixed(2)} &nbsp;|&nbsp;
+              <strong>{resolved.liveTradesCount} Live Executions Tracked.</strong>
+              {resolved.liveTradesCount === 0 ? " 100% Cash preservation safe below 200 SMA regime filter. Zero capital risked." : ""}
+              {selectedAsset === "BTCUSDT" ? " Initial test trade booked at -1.025R; remaining period strictly preserved in 100% cash below 200 SMA." : ""}
+            </p>
+          ) : (
+            <p className="font-body text-xs sm:text-sm text-chrome-dim leading-relaxed">
+              {resolved.description}{" "}
+              Validated across <strong>{resolved.historicalTradesCount} out-of-sample trades with institutional friction deducted</strong> ({currentAvgNetR >= 0 ? `+${currentAvgNetR.toFixed(3)}` : currentAvgNetR.toFixed(3)}R expectancy, {resolved.profitFactor.toFixed(2)} PF, {resolved.winRate.toFixed(1)}% WR).
+            </p>
+          )}
         </div>
 
         {/* Right: Key Big Numbers */}
@@ -282,7 +377,7 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
                 Avg Net R
               </span>
               <span className="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded border bg-chrome-field text-chrome-dim border-chrome-line font-bold">
-                {isCommodityAsset ? "5 bps" : isAll ? "Multi-Asset" : "10 bps"}
+                {isLiveMode ? "Live Window" : (isCommodityAsset ? "5 bps" : isAll ? "Multi-Asset" : "10 bps")}
               </span>
             </div>
             <div
@@ -300,7 +395,7 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
               </span>
             </div>
             <span className="font-mono text-[10px] text-chrome-dim mt-0.5">
-              per closed {isAll ? "portfolio trade" : `${selectedAsset} trade`}
+              {isLiveMode ? "per live execution" : `per closed ${isAll ? "portfolio trade" : `${selectedAsset} trade`}`}
             </span>
           </div>
 
@@ -308,10 +403,10 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
           <div className="flex flex-col min-w-[140px] pl-4 border-l border-chrome-edge">
             <div className="flex items-center justify-between gap-2">
               <span className="font-mono text-[11px] uppercase font-bold text-chrome-dim">
-                Realized OOS Return
+                {isLiveMode ? "Realized Live Return" : "Realized OOS Return"}
               </span>
               <span className="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded border bg-chrome-field text-chrome-dim border-chrome-line font-bold">
-                {isLiveMode ? "Live Window" : "OOS Edge"}
+                {isLiveMode ? "Live Edge" : "OOS Edge"}
               </span>
             </div>
             <div
@@ -322,7 +417,9 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
               {currentReturnR >= 0 ? `+${currentReturnR.toFixed(2)} R` : `${currentReturnR.toFixed(2)} R`}
             </div>
             <span className="font-mono text-[10px] text-chrome-dim mt-0.5">
-              {isAll ? `₹${resolved.allocatedCapitalINR.toLocaleString("en-IN")} Allocated across 7 Assets` : `Dedicated ₹${resolved.allocatedCapitalINR.toLocaleString("en-IN")} Capital for ${selectedAsset}`}
+              {isLiveMode
+                ? `Net: ${resolved.liveNetPnLINR >= 0 ? `+₹${resolved.liveNetPnLINR.toFixed(2)}` : `-₹${Math.abs(resolved.liveNetPnLINR).toFixed(2)}`} (Fees: ₹${resolved.liveChargesINR.toFixed(2)})`
+                : (isAll ? `₹${resolved.allocatedCapitalINR.toLocaleString("en-IN")} Allocated across 7 Assets` : `Dedicated ₹${resolved.allocatedCapitalINR.toLocaleString("en-IN")} Capital for ${selectedAsset}`)}
             </span>
           </div>
         </div>

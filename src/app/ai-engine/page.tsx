@@ -64,7 +64,7 @@ export default function AiEnginePage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Table View Tabs & Interactive Filtering / Pagination
-  const [tableTab, setTableTab] = useState<"live" | "historical">("historical");
+  const [tableTab, setTableTab] = useState<"live" | "historical">("live");
   const [liveSideFilter, setLiveSideFilter] = useState<"ALL" | "LONG" | "SHORT">("ALL");
   const [liveSymbolFilter, setLiveSymbolFilter] = useState<string>("ALL");
   const [liveLimit, setLiveLimit] = useState<number>(100);
@@ -535,6 +535,7 @@ export default function AiEnginePage() {
           selectedModelId={selectedModelId}
           selectedAsset={selectedAsset}
           assetData={currentAssetData}
+          isLiveMode={tableTab === "live"}
         />
 
         {/* =========================================================================
