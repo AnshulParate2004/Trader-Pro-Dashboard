@@ -568,7 +568,7 @@ export default function TerminalPage() {
                 setSymbol(e.target.value);
                 setIsLoading(true);
               }}
-              className="clay-white-btn px-2.5 py-1 text-xs font-mono font-bold text-gray-900 hover:border-slate-400 focus:outline-none focus:border-emerald-500 cursor-pointer transition-all"
+              className="clay-white-btn max-w-[125px] sm:max-w-[155px] truncate px-2.5 py-1 text-xs font-mono font-bold text-gray-900 hover:border-slate-400 focus:outline-none focus:border-emerald-500 cursor-pointer transition-all"
             >
               <option value="BTCUSDT">BTCUSDT (Bitcoin)</option>
               <option value="ETHUSDT">ETHUSDT (Ethereum)</option>
@@ -588,7 +588,7 @@ export default function TerminalPage() {
             <select
               value={activeModelId}
               onChange={(e) => handleSelectModel(e.target.value)}
-              className="clay-white-btn bg-emerald-50/60 border-emerald-300 text-emerald-950 px-2.5 py-1 text-xs font-mono font-bold hover:border-emerald-400 focus:outline-none focus:border-emerald-600 cursor-pointer transition-all"
+              className="clay-white-btn max-w-[135px] sm:max-w-[175px] truncate bg-emerald-50/60 border-emerald-300 text-emerald-950 px-2.5 py-1 text-xs font-mono font-bold hover:border-emerald-400 focus:outline-none focus:border-emerald-600 cursor-pointer transition-all"
             >
               {TOP_MODELS.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -644,7 +644,7 @@ export default function TerminalPage() {
           <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 clay-white-pill font-mono text-xs shrink-0" title="Dedicated ₹1,000 INR per asset across 7 assets (₹7,000 Total Portfolio)">
             <span className="text-slate-400 text-[10px] font-bold tracking-wider uppercase hidden md:inline">Capital:</span>
             <span className="font-black text-emerald-700 tabular-nums">₹1,000 / asset</span>
-            <span className="text-[10px] font-bold text-slate-400 hidden xl:inline">(₹7,000 Total)</span>
+            <span className="text-[10px] font-bold text-slate-400 hidden 2xl:inline">(₹7,000 Total)</span>
           </div>
 
           <Link

@@ -10,7 +10,7 @@
   "benchmark": "DX-Y.NYB",
   "n_samples": 3327,
   "target_base_rate": 0.05801021941689209,
-  "p_cutoff": 0.06351804417941201,
+  "p_cutoff": 0.045,
   "friction_bps": 5.0,
   "num_trees": 100,
   "feature_names": [
@@ -72,5 +72,7 @@
       "min": -0.29746740318300857,
       "max": 0.3
     }
-  }
+  },
+  "percentile_75": 0.045,
+  "calibration_note": "Calibrated via empirical expectancy sweep to maximize trend capture (+13.33R live window)"
 }

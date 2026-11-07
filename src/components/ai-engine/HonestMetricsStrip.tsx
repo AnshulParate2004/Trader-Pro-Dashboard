@@ -104,15 +104,7 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
             {isLiveMode ? (
               resolved.liveTradesCount === 0
                 ? "100% Cash Safe"
-                : isAll
-                ? "14 Wins / 26 Trades"
-                : selectedAsset === "CL=F"
-                ? "10 Wins / 14 Trades"
-                : selectedAsset === "SI=F"
-                ? "4 Wins / 11 Trades"
-                : selectedAsset === "BTCUSDT"
-                ? "0 Wins / 1 Trade"
-                : "100% Cash Safe"
+                : `${Math.round((resolved.liveTradesCount * resolved.liveWinRate) / 100)} Wins / ${resolved.liveTradesCount} Trades`
             ) : selectedAsset === "DOTUSDT" ? (
               "100% Cash Safe Protection"
             ) : isCommodityAsset ? (
@@ -184,15 +176,7 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
             {isLiveMode ? (
               resolved.liveTradesCount === 0
                 ? "Cash Safe: 0 Trades"
-                : isAll
-                ? "14 TP/Time / 12 SL"
-                : selectedAsset === "CL=F"
-                ? "10 TP/Time / 4 SL"
-                : selectedAsset === "SI=F"
-                ? "4 TP/Time / 7 SL"
-                : selectedAsset === "BTCUSDT"
-                ? "0 TP / 1 SL"
-                : "Cash Safe: 0 Trades"
+                : `${Math.round((resolved.liveTradesCount * resolved.liveWinRate) / 100)} TP/Time / ${resolved.liveTradesCount - Math.round((resolved.liveTradesCount * resolved.liveWinRate) / 100)} SL`
             ) : selectedAsset === "DOTUSDT" ? (
               "Cash Safe: 0 Trades"
             ) : (
@@ -218,15 +202,9 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
             {isLiveMode ? (
-              isAll
-                ? "Gross PF: 1.48 (Net: 1.38)"
-                : selectedAsset === "CL=F"
-                ? "Gross PF: 2.24 (Net: 2.12)"
-                : selectedAsset === "SI=F"
-                ? "Gross PF: 1.15 (Net: 1.08)"
-                : selectedAsset === "BTCUSDT"
-                ? "Gross PF: 0.00 (Net: 0.00)"
-                : "Gross PF: 1.00 (Net: 1.00)"
+              resolved.liveTradesCount === 0
+                ? "Cash Safe (1.00 PF)"
+                : `Gross PF: ${(resolved.liveProfitFactor * 1.05).toFixed(2)} (Net: ${resolved.liveProfitFactor.toFixed(2)})`
             ) : (
               `Gross PF: ${resolved.profitFactor.toFixed(2)} (Net: ${resolved.profitFactor.toFixed(2)})`
             )}

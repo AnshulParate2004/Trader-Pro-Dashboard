@@ -394,7 +394,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                           : "—"}
                       </td>
                       <td className="py-2.5 px-3 text-chrome-ink font-semibold">
-                        ₹{trade.positionSizeINR.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                        ₹{(trade.positionSizeINR || 1000).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </td>
                       <td className="py-2.5 px-3 text-accent font-semibold">
                         ₹{trade.totalFeeINR?.toFixed(3) || "0.000"}
