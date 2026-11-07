@@ -359,7 +359,7 @@ def evaluate_live_unseen_window():
         model_1h_comm = json.load(f)
     with open(SRC_MODELS_DIR / "swing_1h_commodities" / "metadata.json") as f:
         meta_1h_comm = json.load(f)
-    p_cutoff_comm = meta_1h_comm.get("p_cutoff", 0.063518)
+    p_cutoff_comm = meta_1h_comm.get("p_cutoff", 0.0425)
 
     print(f"[Loaded Models] 4H Swing: {len(model_4h['tree_info'])} trees (P_cutoff={p_cutoff_4h}) | 1H Comm: {len(model_1h_comm['tree_info'])} trees (P_cutoff={p_cutoff_comm:.4f})")
 
@@ -400,6 +400,7 @@ def evaluate_live_unseen_window():
         df["donch_h20"] = df["high"].shift(1).rolling(20, min_periods=5).max()
         df["donch_l20"] = df["low"].shift(1).rolling(20, min_periods=5).min()
 
+        active_trade_until_idx = -1
         # Iterate over unseen window
         for i in range(len(df)):
             t = df["open_time"].iloc[i]
@@ -424,77 +425,90 @@ def evaluate_live_unseen_window():
 
             if is_breakout:
                 if passes_gate:
-                    decision = "EXECUTED_TRADE"
-                    reason = f"4H Donchian Breakout above 200 SMA (P={prob*100:.1f}% >= {p_cutoff_4h*100:.1f}%)"
-                    
-                    # Compute stop & target
-                    prev_low10 = float(df["low"].iloc[max(0, i-10):i].min())
-                    raw_stop_dist = max(c - prev_low10, c * 0.015)
-                    clamped_stop_pct = max(0.015, min(0.060, raw_stop_dist / c))
-                    stop_dist = c * clamped_stop_pct
-                    sl = c - stop_dist
-                    tp = c + 2.5 * stop_dist
+                    if i <= active_trade_until_idx:
+                        decision = "CASH_PROTECTED_POSITION_ACTIVE"
+                        reason = f"Active trade in progress on {sym} until bar {active_trade_until_idx} — capital 100% deployed"
+                        trade_details = None
+                    else:
+                        decision = "EXECUTED_TRADE"
+                        reason = f"4H Donchian Breakout above 200 SMA (P={prob*100:.1f}% >= {p_cutoff_4h*100:.1f}%)"
+                        
+                        # Compute stop & target
+                        prev_low10 = float(df["low"].iloc[max(0, i-10):i].min())
+                        raw_stop_dist = max(c - prev_low10, c * 0.015)
+                        clamped_stop_pct = max(0.015, min(0.060, raw_stop_dist / c))
+                        stop_dist = c * clamped_stop_pct
+                        sl = c - stop_dist
+                        tp = c + 2.5 * stop_dist
 
-                    # Simulate forward over subsequent candles (up to 12 bars = 48h)
-                    exit_type = "TIME"
-                    exit_price = c
-                    bars_held = 0
-                    gross_r = 0.0
-                    for fwd in range(1, 13):
-                        if i + fwd >= len(df):
-                            break
-                        bars_held = fwd
-                        bar_h = float(df["high"].iloc[i + fwd])
-                        bar_l = float(df["low"].iloc[i + fwd])
-                        bar_c = float(df["close"].iloc[i + fwd])
+                        # Simulate forward over subsequent candles (up to 12 bars = 48h)
+                        exit_type = "TIME"
+                        exit_price = c
+                        bars_held = 0
+                        gross_r = 0.0
+                        for fwd in range(1, 13):
+                            if i + fwd >= len(df):
+                                break
+                            bars_held = fwd
+                            bar_h = float(df["high"].iloc[i + fwd])
+                            bar_l = float(df["low"].iloc[i + fwd])
+                            bar_c = float(df["close"].iloc[i + fwd])
 
-                        # Collision precedence invariant: touch both -> STOP (-1R)
-                        if bar_l <= sl and bar_h >= tp:
-                            exit_type = "STOP"
-                            exit_price = sl
-                            gross_r = -1.0
-                            break
-                        elif bar_h >= tp:
-                            exit_type = "TARGET"
-                            exit_price = tp
-                            gross_r = 2.5
-                            break
-                        elif bar_l <= sl:
-                            exit_type = "STOP"
-                            exit_price = sl
-                            gross_r = -1.0
-                            break
-                        else:
-                            exit_price = bar_c
-                            gross_r = (bar_c - c) / stop_dist
+                            # Collision precedence invariant: touch both -> STOP (-1R)
+                            if bar_l <= sl and bar_h >= tp:
+                                exit_type = "STOP"
+                                exit_price = sl
+                                gross_r = -1.0
+                                break
+                            elif bar_h >= tp:
+                                exit_type = "TARGET"
+                                exit_price = tp
+                                gross_r = 2.5
+                                break
+                            elif bar_l <= sl:
+                                exit_type = "STOP"
+                                exit_price = sl
+                                gross_r = -1.0
+                                break
+                            else:
+                                exit_price = bar_c
+                                gross_r = (bar_c - c) / stop_dist
 
-                    friction_r = 0.0010 / clamped_stop_pct
-                    net_r = gross_r - friction_r
+                        active_trade_until_idx = i + bars_held
+                        friction_r = 0.0010 / clamped_stop_pct
+                        net_r = gross_r - friction_r
+                        exit_time = df["open_time"].iloc[min(i + bars_held, len(df)-1)]
 
-                    trade_details = {
-                        "id": f"swing4h_{sym}_{int(df['ot'].iloc[i])}",
-                        "side": "LONG",
-                        "entry_price": round(c, 2),
-                        "stop_loss": round(sl, 2),
-                        "take_profit": round(tp, 2),
-                        "stop_dist_pct": round(clamped_stop_pct, 4),
-                        "exit_type": exit_type,
-                        "exit_price": round(exit_price, 2),
-                        "gross_r": round(gross_r, 3),
-                        "cost_r": round(friction_r, 4),
-                        "net_r": round(net_r, 3),
-                        "bars_held": bars_held,
-                        "status": "CLOSED",
-                    }
-                    executed_trades.append({
-                        **trade_details,
-                        "symbol": sym,
-                        "model_id": "4h-swing-meta-017",
-                        "timeframe": "4h",
-                        "entry_time": t.isoformat(),
-                        "probability": round(prob, 4),
-                        "p_cutoff": p_cutoff_4h,
-                    })
+                        trade_details = {
+                            "id": f"swing4h_{sym}_{int(df['ot'].iloc[i])}",
+                            "side": "LONG",
+                            "entry_price": round(c, 2),
+                            "stop_loss": round(sl, 2),
+                            "take_profit": round(tp, 2),
+                            "stop_dist_pct": round(clamped_stop_pct, 4),
+                            "exit_type": exit_type,
+                            "exit_price": round(exit_price, 2),
+                            "gross_r": round(gross_r, 3),
+                            "cost_r": round(friction_r, 4),
+                            "net_r": round(net_r, 3),
+                            "bars_held": bars_held,
+                            "status": "CLOSED",
+                        }
+                        executed_trades.append({
+                            **trade_details,
+                            "symbol": sym,
+                            "rawSymbol": sym,
+                            "displaySymbol": sym,
+                            "model_id": "4h-swing-meta-017",
+                            "timeframe": "4h",
+                            "entry_time": t.isoformat(),
+                            "entry_time_ms": int(df["ot"].iloc[i]),
+                            "exit_time": exit_time.isoformat(),
+                            "exit_time_ms": int(exit_time.timestamp() * 1000),
+                            "probability": round(prob, 4),
+                            "p_cutoff": p_cutoff_4h,
+                            "positionSizeINR": 1000.0,
+                        })
                 else:
                     decision = "CASH_PROTECTED_CONSOLIDATION"
                     reason = f"Breakout candidate rejected by AI meta-classifier: Conviction P ({prob*100:.1f}%) < P_cutoff ({p_cutoff_4h*100:.1f}%)"
@@ -511,6 +525,8 @@ def evaluate_live_unseen_window():
                 "timeframe": "4h",
                 "price": round(c, 2),
                 "sma_200": round(sma200, 2),
+                "donchian_high": round(donch_h, 2),
+                "donchian_low": round(donch_l, 2),
                 "donchian_high_20": round(donch_h, 2),
                 "donchian_low_20": round(donch_l, 2),
                 "probability": round(prob, 4),
@@ -527,6 +543,9 @@ def evaluate_live_unseen_window():
         df["sma200"] = df["close"].rolling(200, min_periods=30).mean()
         df["donch_h20"] = df["high"].shift(1).rolling(20, min_periods=5).max()
         df["donch_l20"] = df["low"].shift(1).rolling(20, min_periods=5).min()
+
+        active_trade_until_idx = -1
+        disp_sym = sym.replace('GC=F', 'XAUUSDT').replace('SI=F', 'XAGUSDT').replace('CL=F', 'CLUSDT')
 
         for i in range(len(df)):
             t = df["open_time"].iloc[i]
@@ -552,145 +571,171 @@ def evaluate_live_unseen_window():
 
             if is_long_breakout:
                 if passes_gate:
-                    decision = "EXECUTED_TRADE"
-                    reason = f"1H Donchian Breakout above 200 SMA (P={prob*100:.1f}% >= {p_cutoff_comm*100:.2f}%)"
-                    prev_low10 = float(df["low"].iloc[max(0, i-10):i].min())
-                    raw_stop_dist = max(c - prev_low10, c * 0.010)
-                    clamped_stop_pct = max(0.010, min(0.040, raw_stop_dist / c))
-                    stop_dist = c * clamped_stop_pct
-                    sl = c - stop_dist
-                    tp = c + 2.5 * stop_dist
+                    if i <= active_trade_until_idx:
+                        decision = "CASH_PROTECTED_POSITION_ACTIVE"
+                        reason = f"Active trade in progress on {disp_sym} until bar {active_trade_until_idx} — capital 100% deployed"
+                        trade_details = None
+                    else:
+                        decision = "EXECUTED_TRADE"
+                        reason = f"1H Donchian Breakout above 200 SMA (P={prob*100:.1f}% >= {p_cutoff_comm*100:.2f}%)"
+                        prev_low10 = float(df["low"].iloc[max(0, i-10):i].min())
+                        raw_stop_dist = max(c - prev_low10, c * 0.010)
+                        clamped_stop_pct = max(0.010, min(0.040, raw_stop_dist / c))
+                        stop_dist = c * clamped_stop_pct
+                        sl = c - stop_dist
+                        tp = c + 2.5 * stop_dist
 
-                    exit_type = "TIME"
-                    exit_price = c
-                    bars_held = 0
-                    gross_r = 0.0
-                    for fwd in range(1, 25):  # 24 bars time barrier
-                        if i + fwd >= len(df):
-                            break
-                        bars_held = fwd
-                        bar_h = float(df["high"].iloc[i + fwd])
-                        bar_l = float(df["low"].iloc[i + fwd])
-                        bar_c = float(df["close"].iloc[i + fwd])
+                        exit_type = "TIME"
+                        exit_price = c
+                        bars_held = 0
+                        gross_r = 0.0
+                        for fwd in range(1, 13):  # 12 bars time barrier (12 hours)
+                            if i + fwd >= len(df):
+                                break
+                            bars_held = fwd
+                            bar_h = float(df["high"].iloc[i + fwd])
+                            bar_l = float(df["low"].iloc[i + fwd])
+                            bar_c = float(df["close"].iloc[i + fwd])
 
-                        if bar_l <= sl and bar_h >= tp:
-                            exit_type = "STOP"
-                            exit_price = sl
-                            gross_r = -1.0
-                            break
-                        elif bar_h >= tp:
-                            exit_type = "TARGET"
-                            exit_price = tp
-                            gross_r = 2.5
-                            break
-                        elif bar_l <= sl:
-                            exit_type = "STOP"
-                            exit_price = sl
-                            gross_r = -1.0
-                            break
-                        else:
-                            exit_price = bar_c
-                            gross_r = (bar_c - c) / stop_dist
+                            if bar_l <= sl and bar_h >= tp:
+                                exit_type = "STOP"
+                                exit_price = sl
+                                gross_r = -1.0
+                                break
+                            elif bar_h >= tp:
+                                exit_type = "TARGET"
+                                exit_price = tp
+                                gross_r = 2.5
+                                break
+                            elif bar_l <= sl:
+                                exit_type = "STOP"
+                                exit_price = sl
+                                gross_r = -1.0
+                                break
+                            else:
+                                exit_price = bar_c
+                                gross_r = (bar_c - c) / stop_dist
 
-                    friction_r = 0.0005 / clamped_stop_pct
-                    net_r = gross_r - friction_r
+                        active_trade_until_idx = i + bars_held
+                        friction_r = 0.0005 / clamped_stop_pct
+                        net_r = gross_r - friction_r
+                        exit_time = df["open_time"].iloc[min(i + bars_held, len(df)-1)]
 
-                    trade_details = {
-                        "id": f"comm1h_{sym.replace('=F', '')}_{int(df['ot'].iloc[i])}",
-                        "side": "LONG",
-                        "entry_price": round(c, 2),
-                        "stop_loss": round(sl, 2),
-                        "take_profit": round(tp, 2),
-                        "stop_dist_pct": round(clamped_stop_pct, 4),
-                        "exit_type": exit_type,
-                        "exit_price": round(exit_price, 2),
-                        "gross_r": round(gross_r, 3),
-                        "cost_r": round(friction_r, 4),
-                        "net_r": round(net_r, 3),
-                        "bars_held": bars_held,
-                        "status": "CLOSED",
-                    }
-                    executed_trades.append({
-                        **trade_details,
-                        "symbol": sym,
-                        "model_id": "1h-commodities-rf",
-                        "timeframe": "1h",
-                        "entry_time": t.isoformat(),
-                        "probability": round(prob, 4),
-                        "p_cutoff": p_cutoff_comm,
-                    })
+                        trade_details = {
+                            "id": f"comm1h_{sym.replace('=F', '')}_{int(df['ot'].iloc[i])}",
+                            "side": "LONG",
+                            "entry_price": round(c, 2),
+                            "stop_loss": round(sl, 2),
+                            "take_profit": round(tp, 2),
+                            "stop_dist_pct": round(clamped_stop_pct, 4),
+                            "exit_type": exit_type,
+                            "exit_price": round(exit_price, 2),
+                            "gross_r": round(gross_r, 3),
+                            "cost_r": round(friction_r, 4),
+                            "net_r": round(net_r, 3),
+                            "bars_held": bars_held,
+                            "status": "CLOSED",
+                        }
+                        executed_trades.append({
+                            **trade_details,
+                            "symbol": sym,
+                            "rawSymbol": sym,
+                            "displaySymbol": disp_sym,
+                            "model_id": "1h-commodities-rf",
+                            "timeframe": "1h",
+                            "entry_time": t.isoformat(),
+                            "entry_time_ms": int(df["ot"].iloc[i]),
+                            "exit_time": exit_time.isoformat(),
+                            "exit_time_ms": int(exit_time.timestamp() * 1000),
+                            "probability": round(prob, 4),
+                            "p_cutoff": p_cutoff_comm,
+                            "positionSizeINR": 1000.0,
+                        })
                 else:
                     decision = "CASH_PROTECTED_CONSOLIDATION"
                     reason = f"Breakout candidate rejected by AI meta-classifier: Conviction P ({prob*100:.1f}%) < P_cutoff ({p_cutoff_comm*100:.2f}%)"
             elif is_short_breakdown:
                 if passes_gate:
-                    decision = "EXECUTED_TRADE"
-                    reason = f"1H Donchian Breakdown below 200 SMA (P={prob*100:.1f}% >= {p_cutoff_comm*100:.2f}%)"
-                    prev_high10 = float(df["high"].iloc[max(0, i-10):i].max())
-                    raw_stop_dist = max(prev_high10 - c, c * 0.010)
-                    clamped_stop_pct = max(0.010, min(0.040, raw_stop_dist / c))
-                    stop_dist = c * clamped_stop_pct
-                    sl = c + stop_dist
-                    tp = c - 2.5 * stop_dist
+                    if i <= active_trade_until_idx:
+                        decision = "CASH_PROTECTED_POSITION_ACTIVE"
+                        reason = f"Active trade in progress on {disp_sym} until bar {active_trade_until_idx} — capital 100% deployed"
+                        trade_details = None
+                    else:
+                        decision = "EXECUTED_TRADE"
+                        reason = f"1H Donchian Breakdown below 200 SMA (P={prob*100:.1f}% >= {p_cutoff_comm*100:.2f}%)"
+                        prev_high10 = float(df["high"].iloc[max(0, i-10):i].max())
+                        raw_stop_dist = max(prev_high10 - c, c * 0.010)
+                        clamped_stop_pct = max(0.010, min(0.040, raw_stop_dist / c))
+                        stop_dist = c * clamped_stop_pct
+                        sl = c + stop_dist
+                        tp = c - 2.5 * stop_dist
 
-                    exit_type = "TIME"
-                    exit_price = c
-                    bars_held = 0
-                    gross_r = 0.0
-                    for fwd in range(1, 25):
-                        if i + fwd >= len(df):
-                            break
-                        bars_held = fwd
-                        bar_h = float(df["high"].iloc[i + fwd])
-                        bar_l = float(df["low"].iloc[i + fwd])
-                        bar_c = float(df["close"].iloc[i + fwd])
+                        exit_type = "TIME"
+                        exit_price = c
+                        bars_held = 0
+                        gross_r = 0.0
+                        for fwd in range(1, 13):  # 12 bars time barrier (12 hours)
+                            if i + fwd >= len(df):
+                                break
+                            bars_held = fwd
+                            bar_h = float(df["high"].iloc[i + fwd])
+                            bar_l = float(df["low"].iloc[i + fwd])
+                            bar_c = float(df["close"].iloc[i + fwd])
 
-                        if bar_h >= sl and bar_l <= tp:
-                            exit_type = "STOP"
-                            exit_price = sl
-                            gross_r = -1.0
-                            break
-                        elif bar_l <= tp:
-                            exit_type = "TARGET"
-                            exit_price = tp
-                            gross_r = 2.5
-                            break
-                        elif bar_h >= sl:
-                            exit_type = "STOP"
-                            exit_price = sl
-                            gross_r = -1.0
-                            break
-                        else:
-                            exit_price = bar_c
-                            gross_r = (c - bar_c) / stop_dist
+                            if bar_h >= sl and bar_l <= tp:
+                                exit_type = "STOP"
+                                exit_price = sl
+                                gross_r = -1.0
+                                break
+                            elif bar_l <= tp:
+                                exit_type = "TARGET"
+                                exit_price = tp
+                                gross_r = 2.5
+                                break
+                            elif bar_h >= sl:
+                                exit_type = "STOP"
+                                exit_price = sl
+                                gross_r = -1.0
+                                break
+                            else:
+                                exit_price = bar_c
+                                gross_r = (c - bar_c) / stop_dist
 
-                    friction_r = 0.0005 / clamped_stop_pct
-                    net_r = gross_r - friction_r
+                        active_trade_until_idx = i + bars_held
+                        friction_r = 0.0005 / clamped_stop_pct
+                        net_r = gross_r - friction_r
+                        exit_time = df["open_time"].iloc[min(i + bars_held, len(df)-1)]
 
-                    trade_details = {
-                        "id": f"comm1h_{sym.replace('=F', '')}_{int(df['ot'].iloc[i])}",
-                        "side": "SHORT",
-                        "entry_price": round(c, 2),
-                        "stop_loss": round(sl, 2),
-                        "take_profit": round(tp, 2),
-                        "stop_dist_pct": round(clamped_stop_pct, 4),
-                        "exit_type": exit_type,
-                        "exit_price": round(exit_price, 2),
-                        "gross_r": round(gross_r, 3),
-                        "cost_r": round(friction_r, 4),
-                        "net_r": round(net_r, 3),
-                        "bars_held": bars_held,
-                        "status": "CLOSED",
-                    }
-                    executed_trades.append({
-                        **trade_details,
-                        "symbol": sym,
-                        "model_id": "1h-commodities-rf",
-                        "timeframe": "1h",
-                        "entry_time": t.isoformat(),
-                        "probability": round(prob, 4),
-                        "p_cutoff": p_cutoff_comm,
-                    })
+                        trade_details = {
+                            "id": f"comm1h_{sym.replace('=F', '')}_{int(df['ot'].iloc[i])}",
+                            "side": "SHORT",
+                            "entry_price": round(c, 2),
+                            "stop_loss": round(sl, 2),
+                            "take_profit": round(tp, 2),
+                            "stop_dist_pct": round(clamped_stop_pct, 4),
+                            "exit_type": exit_type,
+                            "exit_price": round(exit_price, 2),
+                            "gross_r": round(gross_r, 3),
+                            "cost_r": round(friction_r, 4),
+                            "net_r": round(net_r, 3),
+                            "bars_held": bars_held,
+                            "status": "CLOSED",
+                        }
+                        executed_trades.append({
+                            **trade_details,
+                            "symbol": sym,
+                            "rawSymbol": sym,
+                            "displaySymbol": disp_sym,
+                            "model_id": "1h-commodities-rf",
+                            "timeframe": "1h",
+                            "entry_time": t.isoformat(),
+                            "entry_time_ms": int(df["ot"].iloc[i]),
+                            "exit_time": exit_time.isoformat(),
+                            "exit_time_ms": int(exit_time.timestamp() * 1000),
+                            "probability": round(prob, 4),
+                            "p_cutoff": p_cutoff_comm,
+                            "positionSizeINR": 1000.0,
+                        })
                 else:
                     decision = "CASH_PROTECTED_CONSOLIDATION"
                     reason = f"Breakdown candidate rejected by AI meta-classifier: Conviction P ({prob*100:.1f}%) < P_cutoff ({p_cutoff_comm*100:.2f}%)"
@@ -707,6 +752,8 @@ def evaluate_live_unseen_window():
                 "timeframe": "1h",
                 "price": round(c, 2),
                 "sma_200": round(sma200, 2),
+                "donchian_high": round(donch_h, 2),
+                "donchian_low": round(donch_l, 2),
                 "donchian_high_20": round(donch_h, 2),
                 "donchian_low_20": round(donch_l, 2),
                 "probability": round(prob, 4),
@@ -765,17 +812,23 @@ def evaluate_live_unseen_window():
             trades_4h = [t for t in executed_trades if t.get("timeframe") == "4h"]
             trades_comm = [t for t in executed_trades if t.get("timeframe") == "1h"]
 
+            col_4h = db["paper_trades_4h_swing"]
+            col_4h.delete_many({})
             if trades_4h:
-                col_4h = db["paper_trades_4h_swing"]
-                for t in trades_4h:
-                    col_4h.update_one({"id": t["id"]}, {"$set": t}, upsert=True)
-                print(f"  ✓ Upserted {len(trades_4h)} trades into 'paper_trades_4h_swing'")
+                col_4h.insert_many(trades_4h)
+            print(f"  ✓ Purged stale & inserted {len(trades_4h)} trades into 'paper_trades_4h_swing'")
 
+            col_comm = db["paper_trades_1h_commodities"]
+            col_comm.delete_many({})
             if trades_comm:
-                col_comm = db["paper_trades_1h_commodities"]
-                for t in trades_comm:
-                    col_comm.update_one({"id": t["id"]}, {"$set": t}, upsert=True)
-                print(f"  ✓ Upserted {len(trades_comm)} trades into 'paper_trades_1h_commodities'")
+                col_comm.insert_many(trades_comm)
+            print(f"  ✓ Purged stale & inserted {len(trades_comm)} trades into 'paper_trades_1h_commodities'")
+
+            col_multi = db["paper_trades_1h_multi_asset"]
+            col_multi.delete_many({})
+            if executed_trades:
+                col_multi.insert_many(executed_trades)
+            print(f"  ✓ Purged stale & inserted {len(executed_trades)} trades into 'paper_trades_1h_multi_asset'")
 
         except Exception as e:
             print(f"  ✗ MongoDB update warning: {e}")

@@ -82,7 +82,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
 }) => {
   // Live Prediction Logs Filter & Pagination State
   const [logAssetFilter, setLogAssetFilter] = React.useState<"ALL" | "crypto" | "commodities">("ALL");
-  const [logDecisionFilter, setLogDecisionFilter] = React.useState<"ALL" | "EXECUTED_TRADE" | "CASH_PROTECTED_BEARISH" | "CASH_PROTECTED_CONSOLIDATION">("ALL");
+  const [logDecisionFilter, setLogDecisionFilter] = React.useState<"ALL" | "EXECUTED_TRADE" | "CASH_PROTECTED_BEARISH" | "CASH_PROTECTED_CONSOLIDATION" | "CASH_PROTECTED_POSITION_ACTIVE">("ALL");
   const [logPage, setLogPage] = React.useState<number>(1);
   const [logLimit, setLogLimit] = React.useState<number>(25);
 
@@ -641,6 +641,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                   {displayedLogs.length > 0 ? (
                     displayedLogs.map((log: any) => {
                       const isExecuted = log.decision === "EXECUTED_TRADE";
+                      const isPositionActive = log.decision === "CASH_PROTECTED_POSITION_ACTIVE";
                       const isBearish = log.decision === "CASH_PROTECTED_BEARISH";
                       const isAboveSma = log.price >= log.sma_200;
 
@@ -686,6 +687,13 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                                   🟢 {log.side} EXECUTED
                                 </span>
                                 <span className="text-slate-600 text-[10.5px]">Breakout + Conviction Pass</span>
+                              </div>
+                            ) : isPositionActive ? (
+                              <div className="flex items-center gap-1.5">
+                                <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-300 font-bold text-[10px]">
+                                  ⚡ 1-POS LOCKED
+                                </span>
+                                <span className="text-slate-600 text-[10.5px]">Position running · 100% Capital Deployed</span>
                               </div>
                             ) : isBearish ? (
                               <div className="flex items-center gap-1.5">
