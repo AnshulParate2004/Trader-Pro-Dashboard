@@ -96,9 +96,12 @@ export async function GET(req: Request) {
     } else if (modelParam === "distributed-4h-engine") {
       targetCollection = "historical_trades_distributed_4h";
       fallbackFile = "distributed_4h_historical_trades.json";
-    } else if (modelParam === "pure-rules-baseline") {
-      targetCollection = "historical_trades_pure_rule";
-      fallbackFile = "pure_rule_historical_trades.json";
+    } else if (modelParam === "pure-rules-4h-baseline") {
+      targetCollection = "historical_trades_pure_rules_4h";
+      fallbackFile = "pure_rules_4h_historical_trades.json";
+    } else if (modelParam === "pure-rules-1h-baseline" || modelParam === "pure-rules-baseline") {
+      targetCollection = "historical_trades_pure_rules_1h";
+      fallbackFile = "pure_rules_1h_historical_trades.json";
     } else {
       targetCollection = "historical_trades_unified_1h";
       fallbackFile = "unified_1h_historical_trades.json";

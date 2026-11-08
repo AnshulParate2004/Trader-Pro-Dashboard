@@ -37,19 +37,15 @@ export const dynamic = "force-dynamic";
 async function syncDeltaWatermark(modelId: string, db: any): Promise<void> {
 
   const is4H = modelId === "unified-4h-engine" || modelId === "4h-swing-meta-017";
-
-  const isPure = modelId === "pure-rules-baseline";
-
-
+  const is4HRules = modelId === "pure-rules-4h-baseline";
+  const is1HRules = modelId === "pure-rules-1h-baseline" || modelId === "pure-rules-baseline";
 
   const collectionName = is4H
-
     ? "paper_trades_unified_4h"
-
-    : isPure
-
-    ? "benchmark_pure_rules"
-
+    : is4HRules
+    ? "benchmark_pure_rules_4h"
+    : is1HRules
+    ? "benchmark_pure_rules_1h"
     : "paper_trades_unified_1h";
 
 
@@ -83,29 +79,23 @@ async function syncDeltaWatermark(modelId: string, db: any): Promise<void> {
   if (lastTs === 0) {
 
     if (is4H) {
-
       const p = path.join(process.cwd(), "src", "data", "live_4h_executed_trades.json");
-
       if (fs.existsSync(p)) {
-
         const data = JSON.parse(fs.readFileSync(p, "utf-8"));
-
         if (data.length > 0) await col.insertMany(data);
-
       }
-
-    } else if (isPure) {
-
-      const p = path.join(process.cwd(), "src", "data", "pure_rules_executed_trades.json");
-
+    } else if (is4HRules) {
+      const p = path.join(process.cwd(), "src", "data", "pure_rules_4h_executed_trades.json");
       if (fs.existsSync(p)) {
-
         const data = JSON.parse(fs.readFileSync(p, "utf-8"));
-
         if (data.length > 0) await col.insertMany(data);
-
       }
-
+    } else if (is1HRules) {
+      const p = path.join(process.cwd(), "src", "data", "pure_rules_1h_executed_trades.json");
+      if (fs.existsSync(p)) {
+        const data = JSON.parse(fs.readFileSync(p, "utf-8"));
+        if (data.length > 0) await col.insertMany(data);
+      }
     } else {
 
       const p = path.join(process.cwd(), "src", "data", "live_executed_trades.json");
@@ -491,9 +481,12 @@ export async function GET(req: Request) {
     } else if (activeModelId === "distributed-4h-engine") {
       targetCollection = "paper_trades_distributed_4h";
       fallbackFile = "distributed_4h_live_trades.json";
-    } else if (activeModelId === "pure-rules-baseline") {
-      targetCollection = "benchmark_pure_rules";
-      fallbackFile = "pure_rules_executed_trades.json";
+    } else if (activeModelId === "pure-rules-4h-baseline") {
+      targetCollection = "benchmark_pure_rules_4h";
+      fallbackFile = "pure_rules_4h_executed_trades.json";
+    } else if (activeModelId === "pure-rules-1h-baseline" || activeModelId === "pure-rules-baseline") {
+      targetCollection = "benchmark_pure_rules_1h";
+      fallbackFile = "pure_rules_1h_executed_trades.json";
     } else {
       targetCollection = "paper_trades_unified_1h";
       fallbackFile = "live_executed_trades.json";

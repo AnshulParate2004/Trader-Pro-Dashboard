@@ -52,5 +52,5 @@ __pycache__/
 /scripts/
 analysis/scratch/
 /analysis/
-data/
+/data/
 *.parquet

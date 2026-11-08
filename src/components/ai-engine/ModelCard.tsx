@@ -34,7 +34,7 @@ export const ModelCard: React.FC<ModelCardProps> = ({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-start gap-3">
           <div className="w-8 h-8 rounded bg-chrome-field border border-chrome-line flex items-center justify-center text-sm font-bold shrink-0">
-            {currentModel ? (currentModel.rank === 1 ? "🥇" : currentModel.rank === 2 ? "🥈" : currentModel.rank === 3 ? "🥉" : "🎯") : "🌐"}
+            {currentModel ? (currentModel.rank === 1 ? "🥇" : currentModel.rank === 2 ? "🥈" : currentModel.rank === 3 ? "🥉" : currentModel.rank === 4 ? "🎯" : "📊") : "🌐"}
           </div>
           <div className="flex flex-col">
             <div className="flex flex-wrap items-center gap-2">
@@ -53,7 +53,7 @@ export const ModelCard: React.FC<ModelCardProps> = ({
                 <span className="text-[10px] font-mono font-bold bg-win-tint text-chrome-green-ink px-2 py-0.5 rounded border border-win/40">
                   ACTIVE LIVE
                 </span>
-              ) : currentModel && currentModel.id === "pure-rules-baseline" ? (
+              ) : currentModel && currentModel.id.includes("pure-rules") ? (
                 <span className="text-[10px] font-mono font-bold bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-300">
                   BENCHMARK
                 </span>
