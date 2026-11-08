@@ -6,7 +6,6 @@ import Link from "next/link";
 import UserAuthPill from "@/components/UserAuthPill";
 import {
   ArrowUpRight,
-  Database,
   RotateCw,
   Zap,
   Play,
@@ -25,7 +24,7 @@ import {
 } from "@/lib/engineTypes";
 
 // Modular Clean Components
-import PaperOnlyBanner, { AssetPerformanceData, ASSET_METRICS_MAP } from "@/components/ai-engine/PaperOnlyBanner";
+import PaperOnlyBanner, { AssetPerformanceData, ASSET_METRICS_MAP, getAssetMetrics } from "@/components/ai-engine/PaperOnlyBanner";
 import HonestMetricsStrip from "@/components/ai-engine/HonestMetricsStrip";
 import ResearchResultsTable from "@/components/ai-engine/ResearchResultsTable";
 import LiveTradesTable from "@/components/ai-engine/LiveTradesTable";
@@ -40,7 +39,7 @@ export default function AiEnginePage() {
 
   // Lifted Asset Selection State for dynamic multi-asset reactive dashboard
   const [selectedAsset, setSelectedAsset] = useState<string>("ALL");
-  const currentAssetData = ASSET_METRICS_MAP[selectedAsset] || ASSET_METRICS_MAP["ALL"];
+  const currentAssetData = getAssetMetrics(selectedAsset, selectedModelId);
 
 
   const [config, setConfig] = useState<EngineConfig>({
@@ -420,21 +419,6 @@ export default function AiEnginePage() {
           </Link>
 
           <div className="h-4 w-px bg-chrome-line hidden sm:block" />
-
-          {/* MongoDB Atlas Status */}
-          <div
-            className={`hidden sm:flex items-center gap-1.5 font-mono text-[11px] px-2.5 py-0.5 rounded border ${
-              mongoConnected
-                ? "bg-win-tint text-win-dark border-win/30"
-                : "bg-chrome-field text-chrome-dim border-chrome-line"
-            }`}
-            title="MongoDB Atlas Cluster: cluster0.ilejs4x.mongodb.net"
-          >
-            <Database className="w-3 h-3" />
-            <span className="font-semibold">
-              {mongoConnected ? "ATLAS CONNECTED" : "STANDBY (CACHE)"}
-            </span>
-          </div>
 
           {/* Active Fee Mode Tag */}
           <div className="hidden lg:flex items-center gap-1.5 font-mono text-[11px] bg-chrome-field text-chrome-dim border border-chrome-line px-2.5 py-0.5 rounded">

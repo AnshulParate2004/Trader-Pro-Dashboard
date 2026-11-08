@@ -4,7 +4,7 @@ import { toDisplaySymbol, toRawSymbol, symbolsMatch } from "@/lib/symbolMapper";
 import React from "react";
 import { EnginePerformanceMetrics, TradeOrder } from "@/lib/engineTypes";
 import { Activity } from "lucide-react";
-import { AssetPerformanceData, ASSET_METRICS_MAP } from "./PaperOnlyBanner";
+import { AssetPerformanceData, ASSET_METRICS_MAP, getAssetMetrics } from "./PaperOnlyBanner";
 
 interface HonestMetricsStripProps {
   metrics: EnginePerformanceMetrics | null;
@@ -27,13 +27,14 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
   isLiveMode = true,
   trades = [],
 }) => {
-  const is4HSwing = selectedModelId === "4h-swing-meta-017";
-  const isCommodities = selectedModelId === "1h-commodities-rf";
+  const is4H = selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017";
+  const is1H = selectedModelId === "unified-1h-engine" || selectedModelId === "1h-commodities-rf";
+  const isRules = selectedModelId === "pure-rules-baseline";
   const isCommodityAsset = ["GC=F", "SI=F", "CL=F", "XAUUSDT", "XAGUSDT", "CLUSDT"].includes(selectedAsset);
   const isAll = selectedAsset === "ALL";
 
-  // Dynamic asset performance data resolution with alias support
-  const resolved = assetData || ASSET_METRICS_MAP[selectedAsset] || ASSET_METRICS_MAP[toDisplaySymbol(selectedAsset)] || ASSET_METRICS_MAP[toRawSymbol(selectedAsset)] || ASSET_METRICS_MAP["ALL"];
+  // Dynamic asset performance data resolution with alias and active model support
+  const resolved = assetData || getAssetMetrics(selectedAsset, selectedModelId);
 
   // Dynamic fee, PnL & capital calculations from live trades array using transparent symbol matching
   const filteredTrades = trades && trades.length > 0
@@ -54,23 +55,25 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
   const feeBadge = (
     <span
       className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded border font-semibold ${
-        isCommodities || isCommodityAsset || is4HSwing || isAll
+        is1H || isCommodityAsset || is4H || isRules || isAll
           ? "bg-win-tint text-chrome-green-ink border-win/30"
           : isTaker
           ? "bg-accent-tint text-chrome-green-ink border-accent/30"
           : "bg-blue-50 text-chrome-dim border-blue-200"
       }`}
     >
-      {isLiveMode ? "Live Window" : (isCommodityAsset ? "5 bps" : isAll ? "Multi-Asset" : is4HSwing ? "10 bps" : isTaker ? "Taker" : "Maker")}
+      {isLiveMode ? "Live Window" : (isCommodityAsset || (isAll && is1H) ? "5 bps" : isAll ? (is4H ? "10 bps" : "Multi-Asset") : is4H ? "10 bps" : isTaker ? "Taker" : "Maker")}
     </span>
   );
 
-  const modeString = isCommodityAsset
-    ? "0.05% Round-Trip Institutional Friction Deducted"
+  const modeString = isCommodityAsset || (isAll && is1H)
+    ? "0.05% Institutional Friction Deducted"
+    : (isAll && (is4H || isRules))
+    ? "0.10% Taker Friction Deducted"
     : isAll
     ? "Institutional Multi-Asset Friction Deducted (0.10% Crypto / 0.05% Commodities)"
-    : is4HSwing
-    ? "0.10% Round-Trip Taker Friction Deducted"
+    : is4H || isRules
+    ? "0.10% Taker Friction Deducted"
     : isTaker
     ? `Taker (${feePercent.toFixed(3)}% + GST + Slippage)`
     : `Maker (${feePercent.toFixed(3)}% Optimistic)`;
@@ -89,7 +92,7 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
           </h2>
           <span
             className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
-              isCommodities || isCommodityAsset || is4HSwing || isAll
+              is1H || isCommodityAsset || is4H || isRules || isAll
                 ? "bg-win-tint text-chrome-green-ink border-win/30"
                 : isTaker
                 ? "bg-accent-tint text-chrome-green-ink border-accent/30"

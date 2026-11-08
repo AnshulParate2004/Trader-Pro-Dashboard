@@ -171,7 +171,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                   : "text-chrome-dim hover:text-chrome-ink"
               }`}
             >
-              📊 Verified Historical OOS Trades ({totalHistoricalCount ? totalHistoricalCount.toLocaleString() : (selectedAsset === "ALL" ? (selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017" ? "159" : selectedModelId === "unified-1h-engine" || selectedModelId === "1h-commodities-rf" ? "336" : "495") : "0")})
+              📊 Verified Historical OOS Trades ({totalHistoricalCount ? totalHistoricalCount.toLocaleString() : (selectedAsset === "ALL" ? (selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017" ? "159" : selectedModelId === "pure-rules-baseline" ? "262" : "336") : "0")})
             </button>
           </div>
         </div>
@@ -398,22 +398,22 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
       <div className="overflow-x-auto">
         {tableTab === "live" ? (
           <>
-          <table className="w-full min-w-[1200px] text-left border-collapse font-mono text-xs">
+          <table className="w-full min-w-full lg:min-w-0 text-left border-collapse font-mono text-xs">
             <thead>
               <tr className="bg-chrome-field/70 border-b border-chrome-line text-chrome-dim uppercase text-[10px] tracking-wider">
-                <th className="py-2.5 px-3">Time</th>
-                <th className="py-2.5 px-3">AI Model</th>
-                <th className="py-2.5 px-3">Pair</th>
-                <th className="py-2.5 px-3">Type</th>
-                <th className="py-2.5 px-3">Entry Price</th>
-                <th className="py-2.5 px-3">Exit Price</th>
-                <th className="py-2.5 px-3">Position (INR)</th>
-                <th className="py-2.5 px-3">Shark Fee (w/ GST)</th>
-                <th className="py-2.5 px-3">Gross PnL</th>
-                <th className="py-2.5 px-3">Net PnL</th>
-                <th className="py-2.5 px-3">Running Capital</th>
-                <th className="py-2.5 px-3">Status</th>
-                <th className="py-2.5 px-3">Action</th>
+                <th className="py-2 px-2 sm:px-2.5">Time</th>
+                <th className="py-2 px-2 sm:px-2.5">AI Model</th>
+                <th className="py-2 px-2 sm:px-2.5">Pair</th>
+                <th className="py-2 px-2 sm:px-2.5">Type</th>
+                <th className="py-2 px-2 sm:px-2.5">Entry Price</th>
+                <th className="py-2 px-2 sm:px-2.5">Exit Price</th>
+                <th className="py-2 px-2 sm:px-2.5">Position</th>
+                <th className="py-2 px-2 sm:px-2.5">Fee (w/ GST)</th>
+                <th className="py-2 px-2 sm:px-2.5">Gross PnL</th>
+                <th className="py-2 px-2 sm:px-2.5">Net PnL</th>
+                <th className="py-2 px-2 sm:px-2.5">Capital</th>
+                <th className="py-2 px-2 sm:px-2.5">Status</th>
+                <th className="py-2 px-2 sm:px-2.5">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-chrome-edge">
@@ -424,16 +424,16 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
 
                   return (
                     <tr key={trade.id} className="hover:bg-chrome-field/50 transition-colors">
-                      <td className="py-2.5 px-3 text-chrome-dim text-[11px] whitespace-nowrap">
+                      <td className="py-2 px-2 sm:px-2.5 text-chrome-dim text-[11px] whitespace-nowrap">
                         {new Date(trade.openedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                       </td>
-                      <td className="py-2.5 px-3 whitespace-nowrap">
+                      <td className="py-2 px-2 sm:px-2.5 whitespace-nowrap">
                         <span className="px-2 py-0.5 rounded bg-chrome-field border border-chrome-line font-bold text-[10px] text-chrome-ink">
                           {trade.modelName || "4H Swing Meta (+0.17R)"}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 font-bold text-chrome-ink">{toDisplaySymbol(trade.symbol)}</td>
-                      <td className="py-2.5 px-3">
+                      <td className="py-2 px-2 sm:px-2.5 font-bold text-chrome-ink">{toDisplaySymbol(trade.symbol)}</td>
+                      <td className="py-2 px-2 sm:px-2.5">
                         <span
                           className={`px-2 py-0.5 rounded font-bold text-[10px] ${
                             trade.direction === "LONG"
@@ -444,21 +444,21 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                           {trade.direction}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 font-bold text-chrome-ink">
+                      <td className="py-2 px-2 sm:px-2.5 font-bold text-chrome-ink">
                         ${trade.entryPrice.toLocaleString(undefined, { minimumFractionDigits: 1 })}
                       </td>
-                      <td className="py-2.5 px-3 font-bold text-chrome-ink">
+                      <td className="py-2 px-2 sm:px-2.5 font-bold text-chrome-ink">
                         {trade.exitPrice
                           ? `$${trade.exitPrice.toLocaleString(undefined, { minimumFractionDigits: 1 })}`
                           : "—"}
                       </td>
-                      <td className="py-2.5 px-3 text-chrome-ink font-semibold">
+                      <td className="py-2 px-2 sm:px-2.5 text-chrome-ink font-semibold">
                         ₹{(trade.positionSizeINR || 1000).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="py-2.5 px-3 text-accent font-semibold">
+                      <td className="py-2 px-2 sm:px-2.5 text-accent font-semibold">
                         ₹{trade.totalFeeINR?.toFixed(3) || "0.000"}
                       </td>
-                      <td className="py-2.5 px-3 font-semibold">
+                      <td className="py-2 px-2 sm:px-2.5 font-semibold">
                         {isClosed ? (
                           <span className={trade.grossPnLINR && trade.grossPnLINR >= 0 ? "text-win" : "text-loss"}>
                             {trade.grossPnLINR && trade.grossPnLINR >= 0 ? "+" : ""}
@@ -468,7 +468,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                           <span className="text-chrome-dim">Open</span>
                         )}
                       </td>
-                      <td className="py-2.5 px-3 font-bold">
+                      <td className="py-2 px-2 sm:px-2.5 font-bold">
                         {isClosed ? (
                           <span className={isPositive ? "text-win" : "text-loss"}>
                             {isPositive ? "+" : ""}
@@ -478,12 +478,12 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                           <span className="text-accent animate-pulse font-bold">In Flight</span>
                         )}
                       </td>
-                      <td className="py-2.5 px-3 font-mono font-bold tabular-nums">
+                      <td className="py-2 px-2 sm:px-2.5 font-mono font-bold tabular-nums">
                         <span className={(trade.runningBalanceINR ?? 7000) >= 7000 ? "text-emerald-700" : "text-rose-700"}>
                           ₹{trade.runningBalanceINR !== undefined ? trade.runningBalanceINR.toLocaleString("en-IN", { minimumFractionDigits: 2 }) : "7,000.00"}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3">
+                      <td className="py-2 px-2 sm:px-2.5">
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
                             trade.status === "ACTIVE"
@@ -496,7 +496,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                           {trade.status}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3">
+                      <td className="py-2 px-2 sm:px-2.5">
                         {trade.status === "ACTIVE" ? (
                           <button
                             onClick={() => handleCloseTrade(trade.id, trade.entryPrice, trade.direction)}
@@ -631,16 +631,16 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
 
             {/* Live Feed Table */}
             <div className="overflow-x-auto border border-chrome-line rounded-lg shadow-2xs">
-              <table className="w-full min-w-[1020px] text-left border-collapse font-mono text-xs">
+              <table className="w-full min-w-full lg:min-w-0 text-left border-collapse font-mono text-xs">
                 <thead>
                   <tr className="bg-chrome-field/80 border-b border-chrome-line text-chrome-dim uppercase text-[10px] tracking-wider">
-                    <th className="py-2.5 px-3">Time (UTC)</th>
-                    <th className="py-2.5 px-3">Symbol</th>
-                    <th className="py-2.5 px-3">Price</th>
-                    <th className="py-2.5 px-3">200 SMA</th>
-                    <th className="py-2.5 px-3">Donchian Range</th>
-                    <th className="py-2.5 px-3">AI Conviction (P)</th>
-                    <th className="py-2.5 px-3">Decision / AI Mind State</th>
+                    <th className="py-2 px-2 sm:px-2.5">Time (UTC)</th>
+                    <th className="py-2 px-2 sm:px-2.5">Symbol</th>
+                    <th className="py-2 px-2 sm:px-2.5">Price</th>
+                    <th className="py-2 px-2 sm:px-2.5">200 SMA</th>
+                    <th className="py-2 px-2 sm:px-2.5">Donchian Range</th>
+                    <th className="py-2 px-2 sm:px-2.5">AI Conviction (P)</th>
+                    <th className="py-2 px-2 sm:px-2.5">Decision / AI Mind State</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-chrome-edge bg-white">
@@ -653,27 +653,27 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
 
                       return (
                         <tr key={log.id} className="hover:bg-chrome-field/40 transition-colors">
-                          <td className="py-2.5 px-3 text-chrome-dim text-[11px] whitespace-nowrap">
+                          <td className="py-2 px-2 sm:px-2.5 text-chrome-dim text-[11px] whitespace-nowrap">
                             {log.time_utc}
                           </td>
-                          <td className="py-2.5 px-3 font-bold text-chrome-ink whitespace-nowrap">
+                          <td className="py-2 px-2 sm:px-2.5 font-bold text-chrome-ink whitespace-nowrap">
                             <span className="px-1.5 py-0.5 rounded bg-chrome-field border border-chrome-line text-[11px]">
                               {toDisplaySymbol(log.symbol)}
                             </span>
                           </td>
-                          <td className="py-2.5 px-3 font-bold text-chrome-ink tabular-nums">
+                          <td className="py-2 px-2 sm:px-2.5 font-bold text-chrome-ink tabular-nums">
                             ${log.price?.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
                           </td>
-                          <td className="py-2.5 px-3 text-chrome-dim tabular-nums">
+                          <td className="py-2 px-2 sm:px-2.5 text-chrome-dim tabular-nums">
                             <span className={isAboveSma ? "text-emerald-700 font-semibold" : "text-amber-700 font-semibold"}>
                               ${log.sma_200?.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
                               {" "}({isAboveSma ? "Bullish ▲" : "Bearish ▼"})
                             </span>
                           </td>
-                          <td className="py-2.5 px-3 text-chrome-dim text-[11px] tabular-nums whitespace-nowrap">
+                          <td className="py-2 px-2 sm:px-2.5 text-chrome-dim text-[11px] tabular-nums whitespace-nowrap">
                             ${(log.donchian_low ?? log.donchian_low_20)?.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })} – ${(log.donchian_high ?? log.donchian_high_20)?.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
                           </td>
-                          <td className="py-2.5 px-3 whitespace-nowrap">
+                          <td className="py-2 px-2 sm:px-2.5 whitespace-nowrap">
                             <div className="flex items-center gap-1.5">
                               <div className="w-12 bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200">
                                 <div
@@ -686,7 +686,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                               </span>
                             </div>
                           </td>
-                          <td className="py-2.5 px-3 whitespace-nowrap">
+                          <td className="py-2 px-2 sm:px-2.5 whitespace-nowrap">
                             {isExecuted ? (
                               <div className="flex items-center gap-1.5">
                                 <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold text-[10px]">
@@ -780,17 +780,17 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
           </div>
           </>
         ) : (
-          <table className="w-full min-w-[960px] text-left border-collapse font-mono text-xs">
+          <table className="w-full min-w-full lg:min-w-0 text-left border-collapse font-mono text-xs">
             <thead>
               <tr className="bg-chrome-field/70 border-b border-chrome-line text-chrome-dim uppercase text-[10px] tracking-wider">
-                <th className="py-2.5 px-3">Entry Time (UTC)</th>
-                <th className="py-2.5 px-3">Exit Time (UTC)</th>
-                <th className="py-2.5 px-3">Pair</th>
-                <th className="py-2.5 px-3">Direction</th>
-                <th className="py-2.5 px-3">R-Multiple</th>
-                <th className="py-2.5 px-3">Net Return %</th>
-                <th className="py-2.5 px-3">Outcome Trigger</th>
-                <th className="py-2.5 px-3">Causality Check</th>
+                <th className="py-2 px-2 sm:px-2.5">Entry Time (UTC)</th>
+                <th className="py-2 px-2 sm:px-2.5">Exit Time (UTC)</th>
+                <th className="py-2 px-2 sm:px-2.5">Pair</th>
+                <th className="py-2 px-2 sm:px-2.5">Direction</th>
+                <th className="py-2 px-2 sm:px-2.5">R-Multiple</th>
+                <th className="py-2 px-2 sm:px-2.5">Net Return %</th>
+                <th className="py-2 px-2 sm:px-2.5">Outcome Trigger</th>
+                <th className="py-2 px-2 sm:px-2.5">Causality Check</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-chrome-edge">
@@ -801,14 +801,14 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
 
                   return (
                     <tr key={t.id} className="hover:bg-chrome-field/50 transition-colors">
-                      <td className="py-2.5 px-3 text-chrome-dim text-[11px] whitespace-nowrap">
+                      <td className="py-2 px-2 sm:px-2.5 text-chrome-dim text-[11px] whitespace-nowrap">
                         {t.entryTime}
                       </td>
-                      <td className="py-2.5 px-3 text-chrome-dim text-[11px] whitespace-nowrap">
+                      <td className="py-2 px-2 sm:px-2.5 text-chrome-dim text-[11px] whitespace-nowrap">
                         {t.exitTime}
                       </td>
-                      <td className="py-2.5 px-3 font-bold text-chrome-ink">{toDisplaySymbol(t.symbol || "BTCUSDT")}</td>
-                      <td className="py-2.5 px-3">
+                      <td className="py-2 px-2 sm:px-2.5 font-bold text-chrome-ink">{toDisplaySymbol(t.symbol || "BTCUSDT")}</td>
+                      <td className="py-2 px-2 sm:px-2.5">
                         <span
                           className={`px-2 py-0.5 rounded font-bold text-[10px] ${
                             t.side === "LONG"
@@ -819,7 +819,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                           {t.side}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 font-bold">
+                      <td className="py-2 px-2 sm:px-2.5 font-bold">
                         <span
                           className={
                             isTP
@@ -833,13 +833,13 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                           {t.outcomeR.toFixed(2)}R
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 font-bold">
+                      <td className="py-2 px-2 sm:px-2.5 font-bold">
                         <span className={t.returnPct >= 0 ? "text-win" : "text-loss"}>
                           {t.returnPct >= 0 ? "+" : ""}
                           {t.returnPct.toFixed(2)}%
                         </span>
                       </td>
-                      <td className="py-2.5 px-3">
+                      <td className="py-2 px-2 sm:px-2.5">
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
                             isTP
@@ -856,7 +856,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                             : `🛑 Stop Loss (${t.outcomeR.toFixed(2)}R)`}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-[10px] text-chrome-dim">
+                      <td className="py-2 px-2 sm:px-2.5 text-[10px] text-chrome-dim">
                         <span className="text-chrome-dim bg-chrome-field border border-chrome-line px-1.5 py-0.5 rounded font-mono font-semibold">
                           ✔ Point-in-Time (No Leakage)
                         </span>

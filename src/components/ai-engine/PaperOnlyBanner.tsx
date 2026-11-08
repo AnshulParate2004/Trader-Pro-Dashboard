@@ -64,6 +64,90 @@ export const ASSET_METRICS_MAP: Record<string, AssetPerformanceData> = {
     liveSlPercent: 33.3,
     liveDescription: "Live paper trading executions on unseen real-time feeds with ₹1,000 allocated per asset (₹7,000 portfolio). Net profit of +₹925.90 (+9.26R) after all platform friction and fees deducted.",
   },
+  ALL_1H: {
+    assetKey: "ALL",
+    assetLabel: "Unified 1H Multi-Asset (Commodities)",
+    timeframe: "1H Commodities",
+    historicalTradesCount: 336,
+    liveTradesCount: 27,
+    avgNetR: 0.151,
+    realizedReturnR: 50.90,
+    netPnLINR: 5090,
+    winRate: 45.2,
+    profitFactor: 1.32,
+    maxDrawdownR: -13.85,
+    tpPercent: 45.2,
+    slPercent: 54.8,
+    allocatedCapitalINR: 7000,
+    totalPortfolioCapitalINR: 7000,
+    description: "Unified 1-Hour quantitative macro commodities engine (Gold, Silver, Crude Oil) with LightGBM and Random Forest meta-labeling. Validated across 336 out-of-sample trades with institutional friction deducted (+0.151R expectancy, 1.32 PF, 45.2% WR).",
+    liveAvgNetR: 0.343,
+    liveRealizedReturnR: 9.26,
+    liveNetPnLINR: 925.90,
+    liveChargesINR: 63.45,
+    liveCurrentCapitalINR: 7925.90,
+    liveWinRate: 66.7,
+    liveProfitFactor: 3.14,
+    liveTpPercent: 66.7,
+    liveSlPercent: 33.3,
+    liveDescription: "Live paper trading executions on unseen real-time feeds with ₹1,000 allocated per asset (₹7,000 portfolio). Net profit of +₹925.90 (+9.26R) after all platform friction and fees deducted.",
+  },
+  ALL_4H: {
+    assetKey: "ALL",
+    assetLabel: "Unified 4H Swing (Crypto)",
+    timeframe: "4H Swing Crypto",
+    historicalTradesCount: 159,
+    liveTradesCount: 8,
+    avgNetR: 0.175,
+    realizedReturnR: 27.80,
+    netPnLINR: 2780,
+    winRate: 52.8,
+    profitFactor: 1.46,
+    maxDrawdownR: -11.59,
+    tpPercent: 52.8,
+    slPercent: 47.2,
+    allocatedCapitalINR: 7000,
+    totalPortfolioCapitalINR: 7000,
+    description: "Unified 4-Hour quantitative crypto swing engine (Bitcoin, Ethereum, Solana, Polkadot) with LightGBM meta-labeling. Validated across 159 out-of-sample trades with taker friction deducted (+0.175R expectancy, 1.46 PF, 52.8% WR).",
+    liveAvgNetR: 0.179,
+    liveRealizedReturnR: 1.43,
+    liveNetPnLINR: 143.20,
+    liveChargesINR: 20.48,
+    liveCurrentCapitalINR: 7143.20,
+    liveWinRate: 52.8,
+    liveProfitFactor: 1.46,
+    liveTpPercent: 52.8,
+    liveSlPercent: 47.2,
+    liveDescription: "Live 4H swing paper trading executions on unseen real-time feeds with ₹1,000 allocated per asset (₹7,000 portfolio). 8 verified executions.",
+  },
+  ALL_RULES: {
+    assetKey: "ALL",
+    assetLabel: "Rule-Based Engine (No AI)",
+    timeframe: "4H / 1H Baseline",
+    historicalTradesCount: 262,
+    liveTradesCount: 37,
+    avgNetR: 0.141,
+    realizedReturnR: 36.96,
+    netPnLINR: 3695,
+    winRate: 20.2,
+    profitFactor: 1.78,
+    maxDrawdownR: -11.12,
+    tpPercent: 20.2,
+    slPercent: 79.8,
+    allocatedCapitalINR: 7000,
+    totalPortfolioCapitalINR: 7000,
+    description: "Multi-year mechanical Donchian-20 breakout benchmark above/below 200 SMA across all 7 assets with zero AI gating (262 historical trades, +0.141R expectancy, 1.78 PF).",
+    liveAvgNetR: 0.089,
+    liveRealizedReturnR: 3.30,
+    liveNetPnLINR: 330.00,
+    liveChargesINR: 88.50,
+    liveCurrentCapitalINR: 7330.00,
+    liveWinRate: 51.4,
+    liveProfitFactor: 1.15,
+    liveTpPercent: 51.4,
+    liveSlPercent: 48.6,
+    liveDescription: "Live mechanical Donchian-20 breakouts evaluated across all 7 assets with zero AI gating (37 executions).",
+  },
   BTCUSDT: {
     assetKey: "BTCUSDT",
     assetLabel: "Bitcoin (BTC/USDT 4H)",
@@ -342,6 +426,30 @@ export const ASSET_METRICS_MAP: Record<string, AssetPerformanceData> = {
   },
 };
 
+
+export function getAssetMetrics(
+  selectedAsset: string = "ALL",
+  selectedModelId: string = "unified-1h-engine"
+): AssetPerformanceData {
+  if (selectedAsset && selectedAsset !== "ALL") {
+    return (
+      ASSET_METRICS_MAP[selectedAsset] ||
+      ASSET_METRICS_MAP[toDisplaySymbol(selectedAsset)] ||
+      ASSET_METRICS_MAP[toRawSymbol(selectedAsset)] ||
+      ASSET_METRICS_MAP["ALL"]
+    );
+  }
+
+  const is4H = selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017";
+  const is1H = selectedModelId === "unified-1h-engine" || selectedModelId === "1h-commodities-rf";
+  const isRules = selectedModelId === "pure-rules-baseline";
+
+  if (is4H) return ASSET_METRICS_MAP["ALL_4H"];
+  if (is1H) return ASSET_METRICS_MAP["ALL_1H"];
+  if (isRules) return ASSET_METRICS_MAP["ALL_RULES"];
+  return ASSET_METRICS_MAP["ALL"];
+}
+
 interface PaperOnlyBannerProps {
   avgNetR?: number;
   netPnLINR?: number;
@@ -369,12 +477,13 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
   trades = [],
   tradingFeePercent,
 }) => {
-  const is4HSwing = selectedModelId === "4h-swing-meta-017";
-  const isCommodities = selectedModelId === "1h-commodities-rf";
-  const isLegacy = !is4HSwing && !isCommodities;
+  const is4H = selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017";
+  const is1H = selectedModelId === "unified-1h-engine" || selectedModelId === "1h-commodities-rf";
+  const isRules = selectedModelId === "pure-rules-baseline";
+  const isLegacy = !is4H && !is1H && !isRules;
 
-  // Use dynamic assetData values if provided or lookup from map with symbol alias fallback
-  const resolved = assetData || ASSET_METRICS_MAP[selectedAsset] || ASSET_METRICS_MAP[toDisplaySymbol(selectedAsset)] || ASSET_METRICS_MAP[toRawSymbol(selectedAsset)] || ASSET_METRICS_MAP["ALL"];
+  // Use dynamic assetData values if provided or lookup from map with symbol alias & active model fallback
+  const resolved = assetData || getAssetMetrics(selectedAsset, selectedModelId);
 
   // Filter live trades array for selected asset using transparent alias matching
   const filteredLiveTrades = trades && trades.length > 0
@@ -409,11 +518,15 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
   const isCommodityAsset = ["GC=F", "SI=F", "CL=F", "XAUUSDT", "XAGUSDT", "CLUSDT"].includes(selectedAsset);
   const isAll = selectedAsset === "ALL";
 
-  const feeModeString = isCommodityAsset
-    ? "0.05% Round-Trip Institutional Friction Deducted"
+  const feeModeString = isCommodityAsset || (isAll && is1H)
+    ? "0.05% Institutional Friction Deducted"
+    : (isAll && (is4H || isRules))
+    ? "0.10% Taker Friction Deducted"
     : isAll
     ? "Institutional Multi-Asset Friction Deducted (0.10% Crypto / 0.05% Commodities)"
-    : "0.10% Round-Trip Taker Friction Deducted";
+    : is4H || isRules
+    ? "0.10% Taker Friction Deducted"
+    : "0.05% Institutional Friction Deducted";
 
   const assetDisplayLabel = resolved.assetLabel || (isAll ? "Portfolio - All 7 Assets" : selectedAsset);
 
