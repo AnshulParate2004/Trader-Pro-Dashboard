@@ -82,14 +82,43 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   onAssetChange,
   selectedModelId = "unified-1h-engine",
 }) => {
+  const getFallbackCount = (mId: string) => {
+    switch (mId) {
+      case "v1-distributed-4h-engine": return "336";
+      case "v1-stacking-meta-engine": return "1,669";
+      case "v1-distributed-1h-engine": return "1,659";
+      case "v1-unified-1h-engine": return "2,527";
+      case "v1-consensus-committee-engine": return "1,404";
+      case "v1-unified-4h-engine": return "53";
+      case "unified-4h-engine":
+      case "4h-swing-meta-017": return "511";
+      case "distributed-4h-engine": return "1,086";
+      case "new-consensus-committee-engine": return "3,381";
+      case "new-stacking-meta-engine": return "3,678";
+      case "distributed-1h-engine": return "4,376";
+      case "pure-rules-4h-baseline": return "2,005";
+      case "pure-rules-1h-baseline":
+      case "pure-rules-baseline": return "6,217";
+      default: return "4,403";
+    }
+  };
+
   const getDisplayModelName = (t: TradeOrder) => {
-    if (selectedModelId === "distributed-4h-engine") return "Distributed 4H Specialists [7 Models]";
-    if (selectedModelId === "distributed-1h-engine") return "Distributed 1H Specialists [7 Models]";
-    if (selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017") return "Unified 4H Swing Engine [ACTIVE LIVE]";
+    if (selectedModelId === "v1-distributed-4h-engine") return "[v1] Distributed 4H Specialists [7 Models]";
+    if (selectedModelId === "v1-stacking-meta-engine") return "[v1] Stacking Meta-Learner";
+    if (selectedModelId === "v1-distributed-1h-engine") return "[v1] Distributed 1H Specialists [7 Models]";
+    if (selectedModelId === "v1-unified-1h-engine") return "[v1] Unified 1H Multi-Asset";
+    if (selectedModelId === "v1-consensus-committee-engine") return "[v1] Consensus Committee";
+    if (selectedModelId === "v1-unified-4h-engine") return "[v1] Unified 4H Swing";
+    if (selectedModelId === "new-consensus-committee-engine") return "[New] Consensus Committee";
+    if (selectedModelId === "new-stacking-meta-engine") return "[New] Stacking Meta-Learner";
+    if (selectedModelId === "distributed-4h-engine") return "[New] Distributed 4H Specialists [7 Models]";
+    if (selectedModelId === "distributed-1h-engine") return "[New] Distributed 1H Specialists [7 Models]";
+    if (selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017") return "[New] Unified 4H Swing Engine [ACTIVE LIVE]";
     if (selectedModelId === "pure-rules-4h-baseline") return "Rule-Based Engine (4H) [BENCHMARK]";
     if (selectedModelId === "pure-rules-1h-baseline" || selectedModelId === "pure-rules-baseline") return "Rule-Based Engine (1H) [BENCHMARK]";
     if (t.modelName && !t.modelName.includes("4H Swing Meta")) return t.modelName;
-    return "Unified 1H Multi-Asset Engine [ACTIVE LIVE]";
+    return "[New] Unified 1H Multi-Asset Engine [ACTIVE LIVE]";
   };
   // Live Prediction Logs Filter & Pagination State
   const [logAssetFilter, setLogAssetFilter] = React.useState<"ALL" | "crypto" | "commodities">("ALL");
@@ -180,23 +209,43 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                   : "text-chrome-dim hover:text-chrome-ink"
               }`}
             >
-              📊 Verified Historical OOS Trades ({totalHistoricalCount ? totalHistoricalCount.toLocaleString() : (selectedAsset === "ALL" ? (selectedModelId === "distributed-1h-engine" ? "4,376" : selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017" ? "511" : selectedModelId === "distributed-4h-engine" ? "1,086" : selectedModelId === "pure-rules-baseline" ? "6,217" : "4,403") : "0")})
+              📊 Unseen Trades ({totalHistoricalCount ? totalHistoricalCount.toLocaleString() : (selectedAsset === "ALL" ? getFallbackCount(selectedModelId) : "0")})
             </button>
           </div>
         </div>
 
         <div className="text-xs text-chrome-dim font-mono">
           {tableTab === "live"
-            ? selectedModelId === "distributed-1h-engine"
-            ? "Distributed 1H Specialists Execution (7 Dedicated Models | Platform Friction Deducted)"
-            : selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017"
-            ? "Unified 4H Swing Execution (7 Assets on 4-Hour Candles | Platform Friction Deducted)"
-            : selectedModelId === "distributed-4h-engine"
-            ? "Distributed 4H Specialists Swing Execution (7 Dedicated Models | Platform Friction Deducted)"
-            : selectedModelId === "pure-rules-baseline"
-            ? "Pure Mechanical Rules Execution (Zero AI Filter Benchmark | Platform Friction Deducted)"
-            : "Unified 1H Multi-Asset Execution (7 Assets on 1-Hour Candles | Platform Friction Deducted)"
-            : "Verified out-of-sample backtest logs (Point-in-Time execution across 7 assets)"}
+            ? selectedModelId === "v1-distributed-4h-engine"
+              ? "[v1] Distributed 4H Specialists (Train 2020-2023 | Forward Live: Oct 21 - Nov 07, 2026)"
+              : selectedModelId === "v1-stacking-meta-engine"
+              ? "[v1] Stacking Meta-Learner (Train 2020-2023 | Forward Live: Oct 21 - Nov 07, 2026)"
+              : selectedModelId === "v1-distributed-1h-engine"
+              ? "[v1] Distributed 1H Specialists (Train 2020-2023 | Forward Live: Oct 21 - Nov 07, 2026)"
+              : selectedModelId === "v1-unified-1h-engine"
+              ? "[v1] Unified 1H Multi-Asset (Train 2020-2023 | Forward Live: Oct 21 - Nov 07, 2026)"
+              : selectedModelId === "v1-consensus-committee-engine"
+              ? "[v1] Consensus Committee (Train 2020-2023 | Forward Live: Oct 21 - Nov 07, 2026)"
+              : selectedModelId === "v1-unified-4h-engine"
+              ? "[v1] Unified 4H Swing (Train 2020-2023 | Forward Live: Oct 21 - Nov 07, 2026)"
+              : selectedModelId === "new-consensus-committee-engine"
+              ? "[New] Consensus Committee (Train 2024-2025 | Forward Live: Oct 21 - Nov 07, 2026)"
+              : selectedModelId === "new-stacking-meta-engine"
+              ? "[New] Stacking Meta-Learner (Train 2024-2025 | Forward Live: Oct 21 - Nov 07, 2026)"
+              : selectedModelId === "distributed-1h-engine"
+              ? "Distributed 1H Specialists Execution (7 Dedicated Models | Platform Friction Deducted)"
+              : selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017"
+              ? "Unified 4H Swing Execution (7 Assets on 4-Hour Candles | Platform Friction Deducted)"
+              : selectedModelId === "distributed-4h-engine"
+              ? "Distributed 4H Specialists Swing Execution (7 Dedicated Models | Platform Friction Deducted)"
+              : selectedModelId === "pure-rules-4h-baseline"
+              ? "Pure Mechanical 4H Rules Execution (Zero AI Filter Benchmark | Platform Friction Deducted)"
+              : selectedModelId === "pure-rules-baseline" || selectedModelId === "pure-rules-1h-baseline"
+              ? "Pure Mechanical Rules Execution (Zero AI Filter Benchmark | Platform Friction Deducted)"
+              : "Unified 1H Multi-Asset Execution (7 Assets on 1-Hour Candles | Platform Friction Deducted)"
+            : selectedModelId.startsWith("v1-")
+              ? "Unseen Holdout Trades (2024-01-01 to 2025-12-31 | 2-Year Out-Of-Sample Holdout)"
+              : "Unseen Holdout Trades (2020-01-01 to 2023-12-31 | 4-Year Out-Of-Sample Holdout)"}
         </div>
       </div>
 

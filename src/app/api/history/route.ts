@@ -87,7 +87,31 @@ export async function GET(req: Request) {
     let targetCollection = "historical_trades_unified_1h";
     let fallbackFile = "unified_1h_historical_trades.json";
 
-    if (modelParam === "distributed-1h-engine") {
+    if (modelParam === "v1-distributed-4h-engine") {
+      targetCollection = "historical_trades_v1_distributed_4h";
+      fallbackFile = "v1_distributed_4h_unseen_trades.json";
+    } else if (modelParam === "v1-stacking-meta-engine") {
+      targetCollection = "historical_trades_v1_stacking_1h";
+      fallbackFile = "v1_stacking_1h_unseen_trades.json";
+    } else if (modelParam === "v1-distributed-1h-engine") {
+      targetCollection = "historical_trades_v1_distributed_1h";
+      fallbackFile = "v1_distributed_1h_unseen_trades.json";
+    } else if (modelParam === "v1-unified-1h-engine") {
+      targetCollection = "historical_trades_v1_unified_1h";
+      fallbackFile = "v1_unified_1h_unseen_trades.json";
+    } else if (modelParam === "v1-consensus-committee-engine") {
+      targetCollection = "historical_trades_v1_consensus_1h";
+      fallbackFile = "v1_consensus_1h_unseen_trades.json";
+    } else if (modelParam === "v1-unified-4h-engine") {
+      targetCollection = "historical_trades_v1_unified_4h";
+      fallbackFile = "v1_unified_4h_unseen_trades.json";
+    } else if (modelParam === "new-consensus-committee-engine") {
+      targetCollection = "historical_trades_new_consensus_1h";
+      fallbackFile = "new_consensus_1h_unseen_trades.json";
+    } else if (modelParam === "new-stacking-meta-engine") {
+      targetCollection = "historical_trades_new_stacking_1h";
+      fallbackFile = "new_stacking_1h_unseen_trades.json";
+    } else if (modelParam === "distributed-1h-engine") {
       targetCollection = "historical_trades_distributed_1h";
       fallbackFile = "distributed_1h_historical_trades.json";
     } else if (modelParam === "unified-4h-engine" || modelParam === "4h-swing-meta-017") {

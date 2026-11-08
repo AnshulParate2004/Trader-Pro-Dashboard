@@ -27,11 +27,11 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
   isLiveMode = true,
   trades = [],
 }) => {
-  const isDistributed1H = selectedModelId === "distributed-1h-engine";
-  const isDistributed4H = selectedModelId === "distributed-4h-engine";
-  const is4H = selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017";
-  const is1H = selectedModelId === "unified-1h-engine" || selectedModelId === "1h-commodities-rf";
-  const isRules = selectedModelId === "pure-rules-baseline";
+  const isDistributed1H = selectedModelId === "distributed-1h-engine" || selectedModelId === "v1-distributed-1h-engine";
+  const isDistributed4H = selectedModelId === "distributed-4h-engine" || selectedModelId === "v1-distributed-4h-engine";
+  const is4H = selectedModelId.includes("4h");
+  const is1H = selectedModelId.includes("1h");
+  const isRules = selectedModelId.includes("pure-rules") || selectedModelId === "pure-rules-baseline";
   const isCommodityAsset = ["GC=F", "SI=F", "CL=F", "XAUUSDT", "XAGUSDT", "CLUSDT"].includes(selectedAsset);
   const isAll = selectedAsset === "ALL";
 
