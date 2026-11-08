@@ -37,7 +37,7 @@
   "friction_bps": 8.0,
   "n_samples": 9094,
   "target_base_rate": 0.06542775456344843,
-  "p_cutoff": 0.12,
+  "p_cutoff": 0.09,
   "num_trees": 100,
   "feature_names": [
     "feat_atr_pct",

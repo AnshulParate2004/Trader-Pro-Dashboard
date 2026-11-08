@@ -171,7 +171,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                   : "text-chrome-dim hover:text-chrome-ink"
               }`}
             >
-              📊 Verified Historical OOS Trades ({totalHistoricalCount ? totalHistoricalCount.toLocaleString() : (selectedAsset === "ALL" ? (selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017" ? "159" : selectedModelId === "pure-rules-baseline" ? "262" : "336") : "0")})
+              📊 Verified Historical OOS Trades ({totalHistoricalCount ? totalHistoricalCount.toLocaleString() : (selectedAsset === "ALL" ? (selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017" ? "706" : selectedModelId === "pure-rules-baseline" ? "4,448" : "509") : "0")})
             </button>
           </div>
         </div>

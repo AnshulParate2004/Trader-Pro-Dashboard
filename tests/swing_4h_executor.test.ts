@@ -350,15 +350,15 @@ describe("4H Swing Meta-Labeling Engine Unit Tests", () => {
       assert.ok(data.message.includes("/api/cron/paper-4h-swing"));
     });
 
-    test("GET /api/history returns 495 verified multi-asset historical trades by default", async () => {
+    test("GET /api/history returns verified multi-asset historical trades by default", async () => {
       const { GET } = await import("../src/app/api/history/route");
-      const req = new Request("http://localhost:3000/api/history?limit=500");
+      const req = new Request("http://localhost:3000/api/history?limit=1000");
       const res = await GET(req);
       assert.equal(res.status, 200);
       const data = await res.json();
       assert.equal(data.success, true);
-      assert.equal(data.totalHistoricalTrades, 495);
-      assert.equal(data.trades.length, 495);
+      assert.equal(data.totalHistoricalTrades, 509);
+      assert.equal(data.trades.length, 509);
 
       // Verify trade structure and multi-asset coverage (Crypto + Commodities)
       const symbols = new Set(data.trades.map((t: any) => t.symbol));
@@ -386,7 +386,7 @@ describe("4H Swing Meta-Labeling Engine Unit Tests", () => {
       assert.equal(data.success, true);
       assert.equal(data.modelId, "4h-swing-meta-017");
       assert.ok(data.metrics);
-      assert.equal(data.metrics.avgNetR, 0.1748);
+      assert.equal(data.metrics.avgNetR, 0.0968);
     });
   });
 });
