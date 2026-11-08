@@ -47,7 +47,7 @@ async function syncDeltaWatermark(modelId: string, db: any): Promise<void> {
         if (data.length > 0) await col.insertMany(data);
       }
     } else if (isPure) {
-      const p = path.join(process.cwd(), "src", "data", "stage1_candidate_trades.json");
+      const p = path.join(process.cwd(), "src", "data", "pure_rules_executed_trades.json");
       if (fs.existsSync(p)) {
         const data = JSON.parse(fs.readFileSync(p, "utf-8"));
         if (data.length > 0) await col.insertMany(data);
@@ -249,7 +249,7 @@ export async function GET(req: Request) {
         } catch {}
       }
       if (rawRecords.length === 0) {
-        const p = path.join(process.cwd(), "src", "data", "stage1_candidate_trades.json");
+        const p = path.join(process.cwd(), "src", "data", "pure_rules_executed_trades.json");
         if (fs.existsSync(p)) {
           rawRecords = JSON.parse(fs.readFileSync(p, "utf-8"));
         }
