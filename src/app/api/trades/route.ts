@@ -1,7 +1,7 @@
-import { toDisplaySymbol, symbolsMatch } from "@/lib/symbolMapper";
 import fs from "fs";
 import path from "path";
 import { NextResponse } from "next/server";
+import { toDisplaySymbol, symbolsMatch } from "@/lib/symbolMapper";
 import { isMongoConfigured, getDb } from "@/lib/mongodb";
 import { TAKER_BASE_FEE_PERCENT } from "@/lib/feeModel";
 import { getInMemorySwingTrades } from "@/lib/paperExecutor4HSwing";
@@ -17,12 +17,14 @@ export const dynamic = "force-dynamic";
  * evaluates and syncs the delta period into MongoDB.
  */
 async function syncDeltaWatermark(modelId: string, db: any): Promise<void> {
-  const collectionName =
-    modelId === "4h-swing-meta-017"
-      ? "paper_trades_4h_swing"
-      : modelId === "pure-rules-baseline"
-      ? "benchmark_pure_rules"
-      : "paper_trades_1h_multi_asset";
+  const is4H = modelId === "unified-4h-engine" || modelId === "4h-swing-meta-017";
+  const isPure = modelId === "pure-rules-baseline";
+
+  const collectionName = is4H
+    ? "paper_trades_unified_4h"
+    : isPure
+    ? "benchmark_pure_rules"
+    : "paper_trades_unified_1h";
 
   const col = db.collection(collectionName);
   const latest = await col.find({}).sort({ entry_time_ms: -1 }).limit(1).toArray();
@@ -34,17 +36,17 @@ async function syncDeltaWatermark(modelId: string, db: any): Promise<void> {
         (latest[0].openedAt || 0)
       : 0;
   const now = Date.now();
-  const intervalMs = modelId === "4h-swing-meta-017" ? 4 * 3600 * 1000 : 3600 * 1000;
+  const intervalMs = is4H ? 4 * 3600 * 1000 : 3600 * 1000;
 
   // Initial seeding if collection is empty
   if (lastTs === 0) {
-    if (modelId === "4h-swing-meta-017") {
+    if (is4H) {
       const p = path.join(process.cwd(), "src", "data", "verified_4h_historical_trades.json");
       if (fs.existsSync(p)) {
         const data = JSON.parse(fs.readFileSync(p, "utf-8"));
         if (data.length > 0) await col.insertMany(data);
       }
-    } else if (modelId === "pure-rules-baseline") {
+    } else if (isPure) {
       const p = path.join(process.cwd(), "src", "data", "stage1_candidate_trades.json");
       if (fs.existsSync(p)) {
         const data = JSON.parse(fs.readFileSync(p, "utf-8"));
@@ -73,16 +75,14 @@ function mapRecordToTradeOrder(
   modelId: string,
   feePercent: number = TAKER_BASE_FEE_PERCENT
 ): TradeOrder {
-  const riskINR = 100.0; // Standard 1R risk baseline in INR
+  const riskINR = 100.0;
   const posSize = t.positionSizeINR || t.position_size_inr || 1000.0;
 
-  // Gross R and Gross PnL
   const gross_r =
     t.gross_r ??
     (t.net_r !== undefined && t.cost_r !== undefined ? t.net_r + t.cost_r : 0);
   const grossPnL = Number((gross_r * riskINR).toFixed(2));
 
-  // Dynamic Indian regulatory platform friction per trade
   const roundTripPct = (2 * (feePercent * 1.18 + 0.010)) / 100;
   const totalFeeINR = Number((posSize * roundTripPct).toFixed(2));
   const netPnLINR = Number((grossPnL - totalFeeINR).toFixed(2));
@@ -109,18 +109,20 @@ function mapRecordToTradeOrder(
     (t.exitTime ? Date.parse(t.exitTime) : undefined) ||
     t.closedAt;
 
-  const modelName =
-    modelId === "1h-commodities-rf"
-      ? "1H Macro Commodities & Multi-Asset Engine [ACTIVE LIVE]"
-      : modelId === "4h-swing-meta-017"
-      ? "4H Swing Meta Engine (+0.17R)"
-      : "Pure Mechanical Rules Engine [NO AI]";
+  const is4H = modelId === "unified-4h-engine" || modelId === "4h-swing-meta-017";
+  const isPure = modelId === "pure-rules-baseline";
+
+  const modelName = is4H
+    ? "Unified 4H Swing Engine [INCREMENTAL SYNC]"
+    : isPure
+    ? "Rule-Based Engine (No AI Filter) [BENCHMARK]"
+    : "Unified 1H Multi-Asset Engine [ACTIVE LIVE]";
 
   const triggerReason =
     t.triggerReason ||
-    (modelId === "pure-rules-baseline"
+    (isPure
       ? "Pure 20-bar Donchian Breakout (No AI Filter)"
-      : `${modelId === "4h-swing-meta-017" ? "4H" : "1H"} Donchian Breakout + 200 SMA (P=${(((t.probability ?? 0.10) * 100)).toFixed(1)}%)`);
+      : `${is4H ? "4H" : "1H"} Donchian Breakout + 200 SMA (P=${(((t.probability ?? 0.10) * 100)).toFixed(1)}%)`);
 
   return {
     id: t.id || t.trade_id || `trade_${openedAt}_${rawSym}`,
@@ -235,8 +237,11 @@ export async function GET(req: Request) {
       }
     }
 
+    const is4H = activeModelId === "unified-4h-engine" || activeModelId === "4h-swing-meta-017";
+    const isPure = activeModelId === "pure-rules-baseline";
+
     // 2. Fetch records based on requested engine
-    if (activeModelId === "pure-rules-baseline") {
+    if (isPure) {
       if (db) {
         try {
           const col = db.collection("benchmark_pure_rules");
@@ -249,15 +254,20 @@ export async function GET(req: Request) {
           rawRecords = JSON.parse(fs.readFileSync(p, "utf-8"));
         }
       }
-    } else if (activeModelId === "4h-swing-meta-017") {
+    } else if (is4H) {
       let dbRecords: any[] = [];
       if (db) {
         try {
-          const col = db.collection("paper_trades_4h_swing");
+          const col = db.collection("paper_trades_unified_4h");
           dbRecords = await col.find({}).sort({ entry_time_ms: -1 }).toArray();
         } catch {}
+        if (dbRecords.length === 0) {
+          try {
+            const colOld = db.collection("paper_trades_4h_swing");
+            dbRecords = await colOld.find({}).sort({ entry_time_ms: -1 }).toArray();
+          } catch {}
+        }
       }
-      // If DB has fewer than 159 records (e.g. only 1 live swing trade), merge with verified 4H historical trades
       const p = path.join(process.cwd(), "src", "data", "verified_4h_historical_trades.json");
       let histRecords: any[] = [];
       if (fs.existsSync(p)) {
@@ -274,12 +284,18 @@ export async function GET(req: Request) {
         rawRecords = getInMemorySwingTrades();
       }
     } else {
-      // Primary Active Live Paper Engine (1h-commodities-rf or "all")
+      // Primary Active Live Paper Engine (unified-1h-engine / 1h-commodities-rf / all)
       if (db) {
         try {
-          const colMulti = db.collection("paper_trades_1h_multi_asset");
-          rawRecords = await colMulti.find({}).sort({ entry_time_ms: -1 }).toArray();
+          const colUnified = db.collection("paper_trades_unified_1h");
+          rawRecords = await colUnified.find({}).sort({ entry_time_ms: -1 }).toArray();
         } catch {}
+        if (rawRecords.length === 0) {
+          try {
+            const colMulti = db.collection("paper_trades_1h_multi_asset");
+            rawRecords = await colMulti.find({}).sort({ entry_time_ms: -1 }).toArray();
+          } catch {}
+        }
         if (rawRecords.length === 0) {
           try {
             const colComm = db.collection("paper_trades_1h_commodities");
@@ -354,8 +370,12 @@ export async function GET(req: Request) {
         : 1.38;
 
     const targetModel =
-      TOP_MODELS.find((m) => m.id === activeModelId) ||
-      (activeModelId === "4h-swing-meta-017" ? TOP_MODELS[1] : TOP_MODELS[0]);
+      TOP_MODELS.find(
+        (m) =>
+          m.id === activeModelId ||
+          (activeModelId === "1h-commodities-rf" && m.id === "unified-1h-engine") ||
+          (activeModelId === "4h-swing-meta-017" && m.id === "unified-4h-engine")
+      ) || (is4H ? TOP_MODELS[1] : TOP_MODELS[0]);
 
     const metrics: EnginePerformanceMetrics = {
       totalTrades: trades.length,
@@ -412,7 +432,7 @@ export async function GET(req: Request) {
     };
 
     const livePredictionLogs = await getLivePredictionLogs(
-      activeModelId === "1h-commodities-rf" ? "commodities" : "all",
+      !is4H && !isPure ? "commodities" : "all",
       limit
     );
 

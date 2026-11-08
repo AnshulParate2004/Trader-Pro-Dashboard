@@ -49,7 +49,7 @@ export const ModelCard: React.FC<ModelCardProps> = ({
               <span className="text-[10px] font-mono font-bold bg-accent-tint text-chrome-green-ink px-2 py-0.5 rounded border border-accent/30">
                 {currentModel ? currentModel.timeframe.toUpperCase() : "MULTI-TIMEFRAME"}
               </span>
-              {currentModel && currentModel.id === "1h-commodities-rf" ? (
+              {currentModel && (currentModel.id === "unified-1h-engine" || currentModel.id === "1h-commodities-rf") ? (
                 <span className="text-[10px] font-mono font-bold bg-win-tint text-chrome-green-ink px-2 py-0.5 rounded border border-win/40">
                   ACTIVE LIVE
                 </span>
@@ -140,20 +140,20 @@ export const ModelCard: React.FC<ModelCardProps> = ({
           </div>
 
           <div className={`border rounded p-2 flex flex-col overflow-hidden ${
-            currentModel.id === "1h-commodities-rf"
+            (currentModel.id === "unified-1h-engine" || currentModel.id === "1h-commodities-rf")
               ? "bg-win-tint border-win/40"
               : "bg-slate-50 border-slate-300"
           }`}>
             <span className={`text-[10px] uppercase font-bold ${
-              currentModel.id === "1h-commodities-rf" ? "text-chrome-green-ink" : "text-slate-600"
+              (currentModel.id === "unified-1h-engine" || currentModel.id === "1h-commodities-rf") ? "text-chrome-green-ink" : "text-slate-600"
             }`}>Live Status</span>
             <span className={`text-xs font-bold mt-1 ${
-              currentModel.id === "1h-commodities-rf" ? "text-win-dark" : "text-slate-700 font-mono"
+              (currentModel.id === "unified-1h-engine" || currentModel.id === "1h-commodities-rf") ? "text-win-dark" : "text-slate-700 font-mono"
             }`}>
-              {currentModel.id === "1h-commodities-rf" ? "ACTIVE LIVE" : "SYNCED DB"}
+              {(currentModel.id === "unified-1h-engine" || currentModel.id === "1h-commodities-rf") ? "ACTIVE LIVE" : "SYNCED DB"}
             </span>
             <span className="text-[9px] text-chrome-dim font-sans">
-              {currentModel.id === "1h-commodities-rf" ? "Primary Live Paper Engine" : "Watermark Delta Cached"}
+              {(currentModel.id === "unified-1h-engine" || currentModel.id === "1h-commodities-rf") ? "Primary Live Paper Engine" : "Watermark Delta Cached"}
             </span>
           </div>
         </div>
