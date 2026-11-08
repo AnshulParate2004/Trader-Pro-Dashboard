@@ -103,6 +103,13 @@ def main():
         json_path=DATA_DIR / "distributed_4h_live_trades.json"
     )
 
+    # 8. Live Unified 4H (8 trades)
+    seed_collection(
+        db=db,
+        collection_name="paper_trades_unified_4h",
+        json_path=DATA_DIR / "live_4h_executed_trades.json"
+    )
+
     print("\n" + "=" * 80)
     print("ALL MONGODB COLLECTIONS SEEDED AND VERIFIED IN ATLAS ('that' database)")
     print("=" * 80)
