@@ -1,0 +1,30 @@
+{
+  "architectures": [
+    "unified_alone",
+    "specialists_alone",
+    "dual_gating_consensus",
+    "stacking_meta_learner"
+  ],
+  "stacking_weights": {
+    "w_unified": 4.189229433574342,
+    "w_specialist": 12.560947352175335,
+    "intercept": -8.014440308213013
+  },
+  "consensus_rules": {
+    "unified_cutoff": 0.45,
+    "specialist_cutoff": 0.45,
+    "logic": "AND"
+  },
+  "feature_names": [
+    "feat_donchian_pos",
+    "feat_sma200_dist",
+    "feat_atr_pct",
+    "feat_vol_zscore",
+    "feat_stop_pct",
+    "feat_cost_r",
+    "feat_return_1d",
+    "feat_return_3d",
+    "feat_high_low_ratio",
+    "feat_trend_slope"
+  ]
+}
