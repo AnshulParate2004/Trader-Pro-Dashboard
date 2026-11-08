@@ -82,6 +82,15 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   onAssetChange,
   selectedModelId = "unified-1h-engine",
 }) => {
+  const getDisplayModelName = (t: TradeOrder) => {
+    if (selectedModelId === "distributed-4h-engine") return "Distributed 4H Specialists [7 Models]";
+    if (selectedModelId === "distributed-1h-engine") return "Distributed 1H Specialists [7 Models]";
+    if (selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017") return "Unified 4H Swing Engine [ACTIVE LIVE]";
+    if (selectedModelId === "pure-rules-4h-baseline") return "Rule-Based Engine (4H) [BENCHMARK]";
+    if (selectedModelId === "pure-rules-1h-baseline" || selectedModelId === "pure-rules-baseline") return "Rule-Based Engine (1H) [BENCHMARK]";
+    if (t.modelName && !t.modelName.includes("4H Swing Meta")) return t.modelName;
+    return "Unified 1H Multi-Asset Engine [ACTIVE LIVE]";
+  };
   // Live Prediction Logs Filter & Pagination State
   const [logAssetFilter, setLogAssetFilter] = React.useState<"ALL" | "crypto" | "commodities">("ALL");
   const [logDecisionFilter, setLogDecisionFilter] = React.useState<"ALL" | "EXECUTED_TRADE" | "CASH_PROTECTED_BEARISH" | "CASH_PROTECTED_CONSOLIDATION" | "CASH_PROTECTED_POSITION_ACTIVE">("ALL");
@@ -433,7 +442,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                       </td>
                       <td className="py-2 px-2 sm:px-2.5 whitespace-nowrap">
                         <span className="px-2 py-0.5 rounded bg-chrome-field border border-chrome-line font-bold text-[10px] text-chrome-ink">
-                          {trade.modelName || "4H Swing Meta (+0.17R)"}
+                          {getDisplayModelName(trade)}
                         </span>
                       </td>
                       <td className="py-2 px-2 sm:px-2.5 font-bold text-chrome-ink">{toDisplaySymbol(trade.symbol)}</td>

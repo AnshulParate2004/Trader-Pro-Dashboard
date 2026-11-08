@@ -604,6 +604,8 @@ export default function AiEnginePage() {
                 onModelChange={handleModelChange}
                 isTaker={isTaker}
                 tradingFeePercent={config.tradingFeePercent}
+                trades={trades}
+                isLiveMode={true}
               />
 
               {/* Autonomous AI Scalp Engine Execution Controls */}

@@ -36,11 +36,17 @@ export const dynamic = "force-dynamic";
 
 async function syncDeltaWatermark(modelId: string, db: any): Promise<void> {
 
+  const isDistributed1H = modelId === "distributed-1h-engine";
+  const isDistributed4H = modelId === "distributed-4h-engine";
   const is4H = modelId === "unified-4h-engine" || modelId === "4h-swing-meta-017";
   const is4HRules = modelId === "pure-rules-4h-baseline";
   const is1HRules = modelId === "pure-rules-1h-baseline" || modelId === "pure-rules-baseline";
 
-  const collectionName = is4H
+  const collectionName = isDistributed4H
+    ? "paper_trades_distributed_4h"
+    : isDistributed1H
+    ? "paper_trades_distributed_1h"
+    : is4H
     ? "paper_trades_unified_4h"
     : is4HRules
     ? "benchmark_pure_rules_4h"
@@ -70,7 +76,7 @@ async function syncDeltaWatermark(modelId: string, db: any): Promise<void> {
 
   const now = Date.now();
 
-  const intervalMs = is4H ? 4 * 3600 * 1000 : 3600 * 1000;
+  const intervalMs = (is4H || isDistributed4H || is4HRules) ? 4 * 3600 * 1000 : 3600 * 1000;
 
 
 
@@ -78,7 +84,19 @@ async function syncDeltaWatermark(modelId: string, db: any): Promise<void> {
 
   if (lastTs === 0) {
 
-    if (is4H) {
+    if (isDistributed4H) {
+      const p = path.join(process.cwd(), "src", "data", "distributed_4h_live_trades.json");
+      if (fs.existsSync(p)) {
+        const data = JSON.parse(fs.readFileSync(p, "utf-8"));
+        if (data.length > 0) await col.insertMany(data);
+      }
+    } else if (isDistributed1H) {
+      const p = path.join(process.cwd(), "src", "data", "distributed_1h_live_trades.json");
+      if (fs.existsSync(p)) {
+        const data = JSON.parse(fs.readFileSync(p, "utf-8"));
+        if (data.length > 0) await col.insertMany(data);
+      }
+    } else if (is4H) {
       const p = path.join(process.cwd(), "src", "data", "live_4h_executed_trades.json");
       if (fs.existsSync(p)) {
         const data = JSON.parse(fs.readFileSync(p, "utf-8"));
