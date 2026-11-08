@@ -41,19 +41,15 @@ Thumbs.db
 .vscode/
 *.sw?
 
-# Python
+# Python & Testing Caches
 __pycache__/
 *.py[cod]
 *$py.class
 *.ipynb_checkpoints/
 .pytest_cache/
 
-# Scratch & test verification assets
+# Binary & Data Artifacts
 *.png
 *.zip
-research/*.json
-/scripts/
-analysis/scratch/
-/analysis/
 /data/
 *.parquet

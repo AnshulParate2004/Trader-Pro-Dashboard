@@ -1,112 +1,125 @@
-# System Architecture: 4H / Daily Swing Meta-Labeling Engine
+# System Architecture: Multi-Asset Unified & Distributed Meta-Labeling Engines (1H & 4H)
 
 > **Canonical Document**: `docs/ARCHITECTURE.md`  
-> **Repository**: `Trader-Pro` / `Trader-Pro-Dashboard`  
-> **Status**: Architectural Blueprint for Current Development (`feat/daily-4h-swing-engine`)
+> **Repository**: `Trader-Pro-Dashboard` (Runtime & Web Terminal) & `Trader-Pro` (ML Research & Ingestion)  
+> **Status**: Production System Architecture  
+> **Date**: November 2026
 
 ---
 
 ## 1. System Overview & Rationale
 
-Trader-Pro's core algorithmic pipeline is fundamentally pivoted away from high-frequency intraday churn (5m/15m) toward a macro-aware **4-Hour (4H) / Daily (1D) Swing Meta-Labeling Architecture**. 
+Trader-Pro has evolved from single-coin high-frequency experiments into an institutional **Multi-Asset Quantitative Ecosystem**. The platform operates across a **7-asset multi-market universe** (Crypto + Macro Commodities) on **1-Hour (1H)** and **4-Hour (4H)** timeframes.
 
-At the 4H/Daily timeframe:
-- **Fee Drag is Negligible**: Average stop distances are $2.5\% - 5.5\%$, reducing round-trip exchange friction to **$\text{cost\_R} \le 0.04\text{R}$** (compared to $0.45\text{R}$ on 5m bars).
-- **Tax (TDS) Efficiency**: Daily holding periods dramatically curtail annual trade count ($< 60$ trades per asset/year), preventing capital erosion under Indian 1% TDS rules.
-- **Signal Quality**: Macro trend structure, funding rate extremes, and relative strength divergence provide genuine economic information rather than high-frequency microstructure noise.
+### Why 1H and 4H Horizons Over Intraday (5m/15m)?
+1. **Fee Drag Elimination**: Average stop distances on 1H ($1.0\% - 4.0\%$) and 4H ($1.5\% - 6.0\%$) compress round-trip exchange friction to $\text{cost\_R} \le 0.08\text{R}$ (vs. $0.45\text{R}$ on 5m intraday bars).
+2. **Economic Signal Quality**: 1H and 4H candles filter microstructure noise and capture genuine macroeconomic flow, multi-day institutional momentum, and Donchian channel expansions.
+3. **Tax & Churn Efficiency**: Slower holding periods (up to 24 bars on 1H, up to 12 bars on 4H) reduce annual transaction volume, avoiding capital destruction from statutory taxation and high turnover.
 
 ---
 
-## 2. End-to-End Architectural Flow
+## 2. Decoupled Two-Repository Architecture
+
+To maintain zero runtime bloat and optimal separation of concerns, the project is decoupled into two specialized repositories:
 
 ```mermaid
 flowchart TD
-    subgraph DataIngestion ["1. Data Ingestion & Storage"]
-        Binance["Binance Public & Futures API"]
-        OHLCV["4H & Daily OHLCV"]
-        Derivatives["Funding Rates & Open Interest"]
-        LocalParquet["Local Parquet Store (DATA_ROOT)"]
-        Binance --> OHLCV
-        Binance --> Derivatives
-        OHLCV --> LocalParquet
-        Derivatives --> LocalParquet
+    subgraph ResearchRepo ["Trader-Pro (Python ML & Quantitative Research)"]
+        Ingest["Data Ingestion<br/>Binance Futures + Dukascopy / MT5"]
+        EDA["Visual Exploratory Data Analysis<br/>Correlation, Regime Shifts, Volatility"]
+        FeatEng["10-Feature Pipeline<br/>Donchian, ATR%, Vol Z-Score, Trend Divergence"]
+        TrainOpt["LightGBM & XGBoost Pipelines<br/>Cross-Validation & Hyperparameter Sweeps"]
+        TreeExport["Model Tree Exporter<br/>Export to JSON Decision Trees & Metadata"]
+        Ingest --> EDA --> FeatEng --> TrainOpt --> TreeExport
     end
 
-    subgraph SignalPipeline ["2. Candidate Rule Generator (Primary Model)"]
-        LocalParquet --> Regime["200-Day SMA Macro Regime Filter"]
-        Regime -->|"Bullish Regime (Close > 200 SMA)"| RuleGen{"Candidate Entry Trigger"}
-        RuleGen -->|"Option A"| Breakout["20-Day Donchian Breakout"]
-        RuleGen -->|"Option B"| Pullback["50-EMA Trend Pullback"]
-        Breakout --> Candidate["Raw Candidate Trade (Direction, SL, TP)"]
-        Pullback --> Candidate
+    subgraph DashboardRepo ["Trader-Pro-Dashboard (Next.js 14 Production Web Platform)"]
+        TreeEngine["TypeScript Tree Runner (treeInference.ts)<br/>Zero-Dependency In-Memory Inference"]
+        APIRoutes["Next.js App Router API<br/>/api/trades · /api/history · /api/cron/*"]
+        RiskEngine["Risk Engine & Governance Guardrails<br/>Friction Filter · Daily Loss Stop · Kill Switch"]
+        MongoAtlas["MongoDB Atlas Cloud Storage<br/>Watermark Delta Caching & Execution Logs"]
+        WebUI["Interactive Trading Terminal<br/>/terminal · /ai-engine · Real-time Metrics"]
+        TreeEngine --> APIRoutes --> RiskEngine --> MongoAtlas --> WebUI
     end
 
-    subgraph MetaLabeling ["3. AI Meta-Classifier (Secondary Model)"]
-        Features["Leak-Free Feature Extraction\n(RS vs BTC, Funding Z-score, Vol Ratio)"]
-        LocalParquet --> Features
-        Candidate --> MetaGate{"AI Meta-Classifier (LightGBM/CatBoost)"}
-        Features --> MetaGate
-        MetaGate -->|"P(Net Win >= 2R) < 0.65"| Discard["Filter Out Candidate (No Trade)"]
-        MetaGate -->|"P(Net Win >= 2R) >= 0.65"| Approved["Approved High-Quality Trade"]
-    end
-
-    subgraph SizingAndRisk ["4. Sizing & Risk Management"]
-        Approved --> VolTarget["EWMA(0.94) Volatility Sizing Engine\n(Targets 35% Ann Vol)"]
-        VolTarget --> RiskGate{"Risk Engine Check\n(Cost_R <= 0.08, DD Stop)"}
-        RiskGate -->|"Passes Checks"| TargetOrder["Target Position Size ($ / Units)"]
-        RiskGate -->|"Fails Checks"| Discard
-    end
-
-    subgraph Execution ["5. Execution & Lifecycle Management"]
-        TargetOrder --> CronJob["Vercel / GitHub Actions Cron\n(Executed at Bar Close)"]
-        CronJob --> MongoDB["MongoDB Atlas (Audit Logging)"]
-        CronJob --> UI["Trader-Pro Dashboard (/ai-engine)"]
-    end
+    TreeExport -.->|"Serialized JSON Trees"| TreeEngine
 ```
 
 ---
 
-## 3. Component Specifications
+## 3. The 6 Production Trading Engines
 
-### Component 1: Candidate Rule Generator (Primary Model)
-- **Role**: Discovers structural market opportunities with positive gross asymmetry (high profit-to-loss ratio).
-- **Macro Filter**:
-  - Longs permitted only when $\text{Close}_t > \text{SMA}_{200}(\text{Close})_t$.
-  - Shorts permitted only when $\text{Close}_t < \text{SMA}_{200}(\text{Close})_t$.
-- **Triggers**:
-  1. *20-Day Breakout*: New 20-day high close with expansion in 20-period volume.
-  2. *50-EMA Pullback*: In an established trend ($\text{Close} > \text{EMA}_{50} > \text{SMA}_{200}$), price pulls back into the $1.5 \times \text{ATR}$ channel around $\text{EMA}_{50}$ and prints a reversal candle.
+Trader-Pro deploys 6 live production engines running side-by-side to benchmark AI gating against pure mechanical rules:
 
-### Component 2: AI Meta-Classifier (Secondary Model)
-- **Concept (Marcos López de Prado)**: The machine learning model does NOT predict price direction directly. Instead, it acts as a **trade quality filter (meta-labeler)**:
-  $$\text{Given a primary candidate trade } c \text{ with direction } d \in \{+1, -1\}, \quad \text{predict } P(R_{\text{net}} \ge 2.0\text{R})$$
-- **Model**: LightGBM / CatBoost gradient boosted decision trees.
-- **Classification Threshold**:
-  $$P(\text{Trade Quality} = 1) \ge 0.65$$
-  Trades with predicted probability $< 0.65$ are skipped, filtering out false breakouts and choppy consolidation whipsaws.
+```mermaid
+flowchart LR
+    A["Raw Market Candle Close (t-1)"] --> B{"Setup Detection:<br/>20-Donchian Breakout<br/>+ 200 SMA Macro Filter"}
+    B -->|"Candidate Signal"| C{"Engine Selection"}
+    
+    C -->|"Engine #1 & #2 (4H)"| D1["4H Meta Classifier<br/>(Unified vs. 7 Specialists)"]
+    C -->|"Engine #3 & #4 (1H)"| D2["1H Meta Classifier<br/>(Unified vs. 7 Specialists)"]
+    C -->|"Engine #5 (1H Rules)"| D3["Pure Mechanical 1H Execution<br/>(Zero AI Filtering)"]
+    C -->|"Engine #6 (4H Rules)"| D4["Pure Mechanical 4H Execution<br/>(Zero AI Filtering)"]
 
-### Component 3: Volatility Sizing Engine
-- **Target Annualized Volatility**: $\sigma_{\text{target}} = 35.0\%$.
-- **Current Volatility Estimation**:
-  $$\sigma_t^2 = 0.94\,\sigma_{t-1}^2 + 0.06\,r_{t-1}^2$$
-  $$\hat{\sigma}_{\text{ann}, t} = \sqrt{\sigma_t^2 \times 365}$$
-- **Position Sizing Formula**:
-  $$\text{Weight}_t = \text{clamp}\left(\frac{\sigma_{\text{target}}}{\hat{\sigma}_{\text{ann}, t}}, 0.20, 1.50\right)$$
-- When market volatility spikes, the position size contracts automatically; during quiet, steady trends, position size expands within conservative bounds.
+    D1 -->|"P >= P_cutoff"| E["Execute Trade with Clamped Stop"]
+    D2 -->|"P >= P_cutoff"| E
+    D3 -->|"Always Executes"| E
+    D4 -->|"Always Executes"| E
+```
 
-### Component 4: Execution & Lifecycle Cadence
-- **Cadence**: 4-Hour bars ($00:00, 04:00, 08:00, 12:00, 16:00, 20:00\text{ UTC}$) and Daily bar ($00:00\text{ UTC}$).
-- **In-Browser Animated AI Cursor**: Visual DOM cursor streams executions seamlessly across the dashboard terminal while maintaining full sandboxing.
-- **Trade Lifecycle Monitoring**:
-  - *Upper Target*: $+2.5\text{R}$ (Limit or trailing trigger).
-  - *Initial Stop Loss*: $-1.0\text{R}$ (Structural swing high/low or $2.0 \times \text{ATR}$).
-  - *Time Barrier*: $12 \times 4\text{H}$ bars ($48\text{ hours}$ max holding period if neither barrier is touched).
-  - *Collision Protection*: Same-bar touches are booked strictly as Stop-Loss ($-1.0\text{R}$).
+### Engine Specifications
+
+| # | Engine Key | Timeframe | Architecture | Filter / Gating Mechanism | Live Net R (Oct 21 – Nov 7) |
+| :-: | :--- | :-: | :--- | :--- | :-: |
+| **1** | `swing-4h` | **4H** | Unified 7-Asset | LightGBM Meta-Classifier ($P \ge 0.50$) | **+10.95 R** (80% Win) |
+| **2** | `distributed-4h-specialist` | **4H** | 7 Distributed Specialists | Asset-Specific LightGBM ($P \ge 0.50$) | **+10.95 R** (80% Win) |
+| **3** | `unified-1h-7assets` | **1H** | Unified 7-Asset | LightGBM Meta-Classifier ($P \ge 0.45$) | **+13.68 R** (56.1% Win) |
+| **4** | `distributed-1h-specialist` | **1H** | 7 Distributed Specialists | Asset-Specific LightGBM ($P \ge 0.45$) | **+15.54 R** (58.1% Win) |
+| **5** | `pure-rules-1h-baseline` | **1H** | Pure Mechanical Rules | Zero AI Filter (20-Donchian + 200 SMA) | **+5.32 R** (44.7% Win) |
+| **6** | `pure-rules-4h-baseline` | **4H** | Pure Mechanical Rules | Zero AI Filter (20-Donchian + 200 SMA) | **+0.42 R** (47.6% Win) |
 
 ---
 
-## 4. Leakage-Free Design Invariants
+## 4. Multi-Asset Universe & Feature Specification
 
-1. **Zero Intra-Bar Lookahead**: Inferences occur strictly at candle close using data from bars $t-1$ and earlier.
-2. **Proper HTF Alignment**: Daily/weekly trend filters are calculated on completed calendar days, never open intraday bars.
-3. **Turnover & Slippage Reality**: All strategy evaluations assume realistic exchange taker fees ($0.1144\%$), GST, and slippage.
+The portfolio covers 7 non-correlated liquid instruments:
+- **Crypto Perps**: `BTCUSDT`, `ETHUSDT`, `SOLUSDT`, `DOTUSDT`
+- **Macro Commodities**: `XAUUSDT` (Gold), `XAGUSDT` (Silver), `CLUSDT` (WTI Crude Oil)
+
+### The 10 Core Input Features
+Both 1H and 4H models evaluate candidates using 10 causal, point-in-time features computed identically across all assets:
+
+1. `feat_donchian_pos`: Distance from current close to 20-bar Donchian channel midline normalized by channel width.
+2. `feat_sma200_dist`: Percentage distance from close to 200-bar simple moving average ($\frac{\text{Close} - \text{SMA}_{200}}{\text{SMA}_{200}}$).
+3. `feat_atr_pct`: Normalized Average True Range over 14 bars ($\frac{\text{ATR}_{14}}{\text{Close}}$).
+4. `feat_vol_zscore`: Z-score of trading volume relative to 50-bar rolling mean and standard deviation.
+5. `feat_stop_pct`: Raw structural distance from entry price to the 20-bar lowest low (for longs) or highest high (for shorts).
+6. `feat_cost_r`: Mathematical fee drag ratio ($\frac{\text{round\_trip\_friction}}{\text{stop\_pct}}$).
+7. `feat_return_1d`: Trailing return over 24 1H bars (or 6 4H bars).
+8. `feat_return_3d`: Trailing return over 72 1H bars (or 18 4H bars).
+9. `feat_high_low_ratio`: Ratio of current candle range to rolling 14-bar mean candle range.
+10. `feat_trend_slope`: 10-bar linear regression slope of the 50-bar exponential moving average.
+
+---
+
+## 5. In-Memory TypeScript Inference Engine
+
+To guarantee zero latency and absolute reliability without requiring Python runtime dependencies in production, `Trader-Pro-Dashboard` implements a native TypeScript decision tree inference engine (`src/lib/treeInference.ts`):
+
+- **Zero External Dependencies**: Traverses binary decision trees directly in Node.js / V8 memory.
+- **Microsecond Evaluation**: Computes full ensemble tree voting in `< 0.2ms`.
+- **Fault-Tolerant NaN Handling**: Automatically follows tree default missing-value paths if any feature is undefined.
+- **Sigmoid Output**: Computes mathematically bounded probabilities $P \in [0, 1]$:
+  $$P(\text{Success}) = \frac{1}{1 + e^{-\sum \text{leaf\_values}}}$$
+
+---
+
+## 6. Execution Cadence & Point-in-Time Causality
+
+- **1-Hour Execution**: Triggers exactly at the close of every hourly bar ($xx:00:00\text{ UTC}$).
+- **4-Hour Execution**: Triggers exactly at the close of 4-hour bars ($00:00, 04:00, 08:00, 12:00, 16:00, 20:00\text{ UTC}$).
+- **Trade Lifecycle Invariants**:
+  - *Upper Target (Take Profit)*: $+2.5\text{R}$ (Fixed target based on structural stop risk).
+  - *Lower Barrier (Stop Loss)*: $-1.0\text{R}$ (Structural swing boundary clamped between `[1.0%, 4.0%]` on 1H and `[1.5%, 6.0%]` on 4H).
+  - *Time Barrier Expiry*: Maximum holding period of 24 bars on 1H (24 hours) or 12 bars on 4H (48 hours). If neither barrier is touched, exit at market close of the final bar.
+  - *Simultaneous Touch Collision*: If both Take Profit and Stop Loss levels are breached within the same candle, governance invariant strictly books the trade as a **Stop Loss ($-1.0\text{R}$)**.
