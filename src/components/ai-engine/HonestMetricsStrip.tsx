@@ -43,11 +43,11 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
 
   const dynamicTotalFees = filteredTrades.length > 0
     ? filteredTrades.reduce((acc, t) => acc + (t.totalFeeINR || 0), 0)
-    : (resolved.liveChargesINR ?? 63.45);
+    : (resolved.liveChargesINR ?? 60.93);
 
   const dynamicNetProfit = filteredTrades.length > 0
     ? filteredTrades.reduce((acc, t) => acc + (t.netPnLINR || 0), 0)
-    : (resolved.liveNetPnLINR ?? 925.90);
+    : (resolved.liveNetPnLINR ?? 1028.40);
 
   const baseAllocated = selectedAsset === "ALL" ? 7000 : 1000;
   const dynamicCapital = baseAllocated + dynamicNetProfit;

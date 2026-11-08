@@ -432,10 +432,10 @@ export default function AiEnginePage() {
           <div className="hidden xl:flex items-center gap-2 font-mono text-[11px] bg-emerald-50 text-emerald-950 border border-emerald-300 px-3 py-1 rounded shadow-2xs">
             <span className="text-slate-500 uppercase text-[10px] font-bold">Live Capital:</span>
             <strong className="text-emerald-950 font-black tabular-nums">
-              ₹{(metrics?.currentBalanceINR || 7925.90).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+              ₹{(metrics?.currentBalanceINR || 8028.40).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
             </strong>
             <span className="text-emerald-700 font-bold bg-emerald-100/80 px-1.5 py-0.5 rounded text-[10px]">
-              {((metrics?.netPnLINR ?? 925.90) >= 0 ? "+" : "")}₹{(metrics?.netPnLINR ?? 925.90).toFixed(2)} ({((metrics?.netPnLINR ?? 925.90) >= 0 ? "+" : "")}{(((metrics?.netPnLINR ?? 925.90) / 7000) * 100).toFixed(1)}%)
+              {((metrics?.netPnLINR ?? 1028.40) >= 0 ? "+" : "")}₹{(metrics?.netPnLINR ?? 1028.40).toFixed(2)} ({((metrics?.netPnLINR ?? 1028.40) >= 0 ? "+" : "")}{(((metrics?.netPnLINR ?? 1028.40) / 7000) * 100).toFixed(1)}%)
             </span>
           </div>
         </div>
