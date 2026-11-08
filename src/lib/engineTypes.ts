@@ -27,9 +27,9 @@ export interface AIStrategyModel {
 
 export const TOP_MODELS: AIStrategyModel[] = [
   {
-    id: "1h-commodities-rf",
-    name: "1H Macro Commodities & Multi-Asset Engine [ACTIVE LIVE]",
-    shortName: "1H Macro Engine (+0.151R) [LIVE]",
+    id: "unified-1h-engine",
+    name: "Unified 1H Multi-Asset Engine [ACTIVE LIVE]",
+    shortName: "Unified 1H Engine [LIVE]",
     rank: 1,
     timeframe: "1h",
     trueWinRate: 66.7,
@@ -50,12 +50,12 @@ export const TOP_MODELS: AIStrategyModel[] = [
     ratchetTriggerR: 0,
     requires4HMacro: false,
     requires5MMicro: false,
-    description: "ACTIVE LIVE ENGINE: 1-Hour Donchian breakout on Gold (XAUUSDT), Silver (XAGUSDT), and Crude Oil (CLUSDT) gated by LightGBM meta-classifier (tau* = 0.0425) with strict 1-position lock. Platform friction and GST fully deducted.",
+    description: "ACTIVE LIVE ENGINE: All 7 assets (Gold, Silver, Crude Oil, BTC, ETH, SOL, DOT) executed on 1-Hour candles gated by unified LightGBM meta-model. Strict 1-position lock, platform fees & GST fully deducted.",
   },
   {
-    id: "4h-swing-meta-017",
-    name: "4H Swing Meta Engine (+0.17R) [INCREMENTAL SYNC]",
-    shortName: "4H Swing Meta (+0.17R)",
+    id: "unified-4h-engine",
+    name: "Unified 4H Swing Engine [INCREMENTAL SYNC]",
+    shortName: "Unified 4H Swing Engine",
     rank: 2,
     timeframe: "4h",
     trueWinRate: 52.8,
@@ -76,12 +76,12 @@ export const TOP_MODELS: AIStrategyModel[] = [
     ratchetTriggerR: 0,
     requires4HMacro: true,
     requires5MMicro: false,
-    description: "SWING STUDY: 4-Hour Donchian breakout + 200 SMA regime gated by LightGBM meta-classifier. Synchronizes incrementally from the last stored watermark timestamp.",
+    description: "SWING ENGINE: All 7 assets executed on 4-Hour candles gated by unified 4H meta-model. Synchronizes incrementally from the last stored watermark timestamp.",
   },
   {
     id: "pure-rules-baseline",
-    name: "Pure Mechanical Rules Engine (No AI Filter) [BENCHMARK]",
-    shortName: "Pure Mechanical Rules [NO AI]",
+    name: "Rule-Based Engine (No AI Filter) [BENCHMARK]",
+    shortName: "Rule-Based Engine [No AI]",
     rank: 3,
     timeframe: "1h",
     trueWinRate: 49.3,
@@ -102,7 +102,7 @@ export const TOP_MODELS: AIStrategyModel[] = [
     ratchetTriggerR: 0,
     requires4HMacro: false,
     requires5MMicro: false,
-    description: "BENCHMARK STUDY: Evaluates raw mechanical 20-bar Donchian breakouts above/below 200 SMA without AI probability filtering. Automatically checks watermark and updates missing delta.",
+    description: "BENCHMARK ENGINE: Evaluates raw mechanical 20-bar Donchian breakouts above/below 200 SMA without AI probability filtering. Automatically checks watermark and updates missing delta.",
   },
 ];
 

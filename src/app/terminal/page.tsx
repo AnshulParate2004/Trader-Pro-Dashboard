@@ -597,11 +597,11 @@ export default function TerminalPage() {
             >
               {TOP_MODELS.map((m) => {
                 const compactLabel =
-                  m.id === "1h-commodities-rf"
-                    ? "1H Macro Engine [LIVE]"
-                    : m.id === "4h-swing-meta-017"
-                    ? "4H Swing Meta"
-                    : "Pure Rules [No AI]";
+                  m.id === "unified-1h-engine" || m.id === "1h-commodities-rf"
+                    ? "Unified 1H Multi-Asset Engine [LIVE]"
+                    : m.id === "unified-4h-engine" || m.id === "4h-swing-meta-017"
+                    ? "Unified 4H Swing Engine"
+                    : "Rule-Based Engine [No AI]";
                 return (
                   <option key={m.id} value={m.id}>
                     {compactLabel}
