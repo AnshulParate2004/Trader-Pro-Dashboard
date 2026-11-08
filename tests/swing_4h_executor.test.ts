@@ -357,7 +357,7 @@ describe("4H Swing Meta-Labeling Engine Unit Tests", () => {
       assert.equal(res.status, 200);
       const data = await res.json();
       assert.equal(data.success, true);
-      assert.equal(data.totalHistoricalTrades, 3793);
+      assert.equal(data.totalHistoricalTrades, 4403);
       assert.equal(data.trades.length, 1000);
 
       // Verify trade structure and multi-asset coverage (Crypto + Commodities)

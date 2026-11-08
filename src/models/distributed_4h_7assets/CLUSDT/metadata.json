@@ -1,20 +1,20 @@
 {
-  "model_name": "distributed_4h_CL=F",
-  "symbol": "CL=F",
+  "model_name": "specialist_4h_CLUSDT",
   "timeframe": "4h",
-  "n_samples": 149,
-  "tau_star": 0.03,
-  "num_trees": 100,
   "feature_names": [
+    "feat_donchian_pos",
+    "feat_sma200_dist",
     "feat_atr_pct",
     "feat_vol_zscore",
-    "feat_volatility_ratio",
-    "feat_donchian_pos",
-    "feat_trend_dist_200",
-    "feat_mom_24h",
-    "feat_mom_72h",
-    "feat_rsi_14",
-    "feat_dist_ema20",
-    "feat_dist_ema50"
-  ]
+    "feat_stop_pct",
+    "feat_cost_r",
+    "feat_return_1d",
+    "feat_return_3d",
+    "feat_high_low_ratio",
+    "feat_trend_slope"
+  ],
+  "cutoff_threshold": 0.5,
+  "tree_count": 100,
+  "created_at_utc": "2026-11-08T09:38:43.041140+00:00",
+  "performance": {}
 }
