@@ -111,6 +111,24 @@ export async function GET(req: Request) {
     } else if (modelParam === "new-stacking-meta-engine") {
       targetCollection = "historical_trades_new_stacking_1h";
       fallbackFile = "new_stacking_1h_unseen_trades.json";
+    } else if (modelParam === "om-distributed-4h-engine") {
+      targetCollection = "historical_trades_om_distributed_4h";
+      fallbackFile = "om_distributed_4h_unseen_trades.json";
+    } else if (modelParam === "om-stacking-meta-engine") {
+      targetCollection = "historical_trades_om_stacking_1h";
+      fallbackFile = "om_stacking_1h_unseen_trades.json";
+    } else if (modelParam === "om-distributed-1h-engine") {
+      targetCollection = "historical_trades_om_distributed_1h";
+      fallbackFile = "om_distributed_1h_unseen_trades.json";
+    } else if (modelParam === "om-unified-1h-engine") {
+      targetCollection = "historical_trades_om_unified_1h";
+      fallbackFile = "om_unified_1h_unseen_trades.json";
+    } else if (modelParam === "om-consensus-committee-engine") {
+      targetCollection = "historical_trades_om_consensus_1h";
+      fallbackFile = "om_consensus_1h_unseen_trades.json";
+    } else if (modelParam === "om-unified-4h-engine") {
+      targetCollection = "historical_trades_om_unified_4h";
+      fallbackFile = "om_unified_4h_unseen_trades.json";
     } else if (modelParam === "distributed-1h-engine") {
       targetCollection = "historical_trades_distributed_1h";
       fallbackFile = "distributed_1h_historical_trades.json";

@@ -66,6 +66,26 @@ async function syncDeltaWatermark(modelId: string, db: any): Promise<void> {
   } else if (modelId === "new-stacking-meta-engine") {
     collectionName = "paper_trades_new_stacking_1h";
     seedFile = "new_stacking_1h_live_trades.json";
+  } else if (modelId === "om-distributed-4h-engine") {
+    collectionName = "paper_trades_om_distributed_4h";
+    seedFile = "om_distributed_4h_live_trades.json";
+    is4H = true;
+  } else if (modelId === "om-stacking-meta-engine") {
+    collectionName = "paper_trades_om_stacking_1h";
+    seedFile = "om_stacking_1h_live_trades.json";
+  } else if (modelId === "om-distributed-1h-engine") {
+    collectionName = "paper_trades_om_distributed_1h";
+    seedFile = "om_distributed_1h_live_trades.json";
+  } else if (modelId === "om-unified-1h-engine") {
+    collectionName = "paper_trades_om_unified_1h";
+    seedFile = "om_unified_1h_live_trades.json";
+  } else if (modelId === "om-consensus-committee-engine") {
+    collectionName = "paper_trades_om_consensus_1h";
+    seedFile = "om_consensus_1h_live_trades.json";
+  } else if (modelId === "om-unified-4h-engine") {
+    collectionName = "paper_trades_om_unified_4h";
+    seedFile = "om_unified_4h_live_trades.json";
+    is4H = true;
   } else if (modelId === "distributed-4h-engine") {
     collectionName = "paper_trades_distributed_4h";
     seedFile = "distributed_4h_live_trades.json";
@@ -218,12 +238,25 @@ function mapRecordToTradeOrder(
 
 
 
+  const isOM = modelId.startsWith("om-");
   const isDistributed1H = modelId === "distributed-1h-engine";
   const isDistributed4H = modelId === "distributed-4h-engine";
-  const is4H = modelId === "unified-4h-engine" || modelId === "4h-swing-meta-017";
+  const is4H = modelId === "unified-4h-engine" || modelId === "4h-swing-meta-017" || modelId.includes("4h");
   const isPure = modelId === "pure-rules-baseline" || modelId === "pure-rules-1h-baseline" || modelId === "pure-rules-4h-baseline";
 
-  const modelName = isDistributed4H
+  const modelName = isOM
+    ? modelId === "om-distributed-4h-engine"
+      ? "[OM] Distributed 4H Specialists [7 Models]"
+      : modelId === "om-stacking-meta-engine"
+      ? "[OM] Stacking Meta-Learner"
+      : modelId === "om-distributed-1h-engine"
+      ? "[OM] Distributed 1H Specialists [7 Models]"
+      : modelId === "om-unified-1h-engine"
+      ? "[OM] Unified 1H Multi-Asset"
+      : modelId === "om-consensus-committee-engine"
+      ? "[OM] Consensus Committee"
+      : "[OM] Unified 4H Swing"
+    : isDistributed4H
     ? "Distributed 4H Specialists [7 Models]"
     : isDistributed1H
     ? "Distributed 1H Specialists [7 Models]"
@@ -466,6 +499,24 @@ export async function GET(req: Request) {
     } else if (activeModelId === "new-stacking-meta-engine") {
       targetCollection = "paper_trades_new_stacking_1h";
       fallbackFile = "new_stacking_1h_live_trades.json";
+    } else if (activeModelId === "om-distributed-4h-engine") {
+      targetCollection = "paper_trades_om_distributed_4h";
+      fallbackFile = "om_distributed_4h_live_trades.json";
+    } else if (activeModelId === "om-stacking-meta-engine") {
+      targetCollection = "paper_trades_om_stacking_1h";
+      fallbackFile = "om_stacking_1h_live_trades.json";
+    } else if (activeModelId === "om-distributed-1h-engine") {
+      targetCollection = "paper_trades_om_distributed_1h";
+      fallbackFile = "om_distributed_1h_live_trades.json";
+    } else if (activeModelId === "om-unified-1h-engine") {
+      targetCollection = "paper_trades_om_unified_1h";
+      fallbackFile = "om_unified_1h_live_trades.json";
+    } else if (activeModelId === "om-consensus-committee-engine") {
+      targetCollection = "paper_trades_om_consensus_1h";
+      fallbackFile = "om_consensus_1h_live_trades.json";
+    } else if (activeModelId === "om-unified-4h-engine") {
+      targetCollection = "paper_trades_om_unified_4h";
+      fallbackFile = "om_unified_4h_live_trades.json";
     } else if (activeModelId === "distributed-1h-engine") {
       targetCollection = "paper_trades_distributed_1h";
       fallbackFile = "distributed_1h_live_trades.json";

@@ -1,0 +1,20 @@
+{
+  "model_name": "unified_1h_7assets",
+  "timeframe": "1h",
+  "feature_names": [
+    "feat_donchian_pos",
+    "feat_sma200_dist",
+    "feat_atr_pct",
+    "feat_vol_zscore",
+    "feat_stop_pct",
+    "feat_cost_r",
+    "feat_return_1d",
+    "feat_return_3d",
+    "feat_high_low_ratio",
+    "feat_trend_slope"
+  ],
+  "cutoff_threshold": 0.45,
+  "tree_count": 100,
+  "created_at_utc": "2026-11-08T23:25:02.088473+00:00",
+  "performance": {}
+}

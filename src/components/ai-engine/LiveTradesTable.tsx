@@ -85,6 +85,12 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   const activeModelMeta = TOP_MODELS.find((m) => m.id === selectedModelId);
   const getFallbackCount = (mId: string) => {
     switch (mId) {
+      case "om-distributed-4h-engine": return "364";
+      case "om-stacking-meta-engine": return "1,315";
+      case "om-distributed-1h-engine": return "1,369";
+      case "om-unified-1h-engine": return "1,414";
+      case "om-consensus-committee-engine": return "811";
+      case "om-unified-4h-engine": return "196";
       case "v1-distributed-4h-engine": return "336";
       case "v1-stacking-meta-engine": return "1,669";
       case "v1-distributed-1h-engine": return "1,659";
@@ -105,6 +111,12 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   };
 
   const getDisplayModelName = (t: TradeOrder) => {
+    if (selectedModelId === "om-distributed-4h-engine") return "[OM] Distributed 4H Specialists [7 Models]";
+    if (selectedModelId === "om-stacking-meta-engine") return "[OM] Stacking Meta-Learner";
+    if (selectedModelId === "om-distributed-1h-engine") return "[OM] Distributed 1H Specialists [7 Models]";
+    if (selectedModelId === "om-unified-1h-engine") return "[OM] Unified 1H Multi-Asset";
+    if (selectedModelId === "om-consensus-committee-engine") return "[OM] Consensus Committee";
+    if (selectedModelId === "om-unified-4h-engine") return "[OM] Unified 4H Swing";
     if (selectedModelId === "v1-distributed-4h-engine") return "[v1] Distributed 4H Specialists [7 Models]";
     if (selectedModelId === "v1-stacking-meta-engine") return "[v1] Stacking Meta-Learner";
     if (selectedModelId === "v1-distributed-1h-engine") return "[v1] Distributed 1H Specialists [7 Models]";
@@ -217,7 +229,19 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
 
         <div className="text-xs text-chrome-dim font-mono">
           {tableTab === "live"
-            ? selectedModelId === "v1-distributed-4h-engine"
+            ? selectedModelId === "om-distributed-4h-engine"
+              ? "[OM] Distributed 4H Specialists (Train 2020-2023 | Forward Live: Oct 21 - Nov 07, 2026)"
+              : selectedModelId === "om-stacking-meta-engine"
+              ? "[OM] Stacking Meta-Learner (Train 2020-2023 | Forward Live: Oct 21 - Nov 07, 2026)"
+              : selectedModelId === "om-distributed-1h-engine"
+              ? "[OM] Distributed 1H Specialists (Train 2020-2023 | Forward Live: Oct 21 - Nov 07, 2026)"
+              : selectedModelId === "om-unified-1h-engine"
+              ? "[OM] Unified 1H Multi-Asset (Train 2020-2023 | Forward Live: Oct 21 - Nov 07, 2026)"
+              : selectedModelId === "om-consensus-committee-engine"
+              ? "[OM] Consensus Committee (Train 2020-2023 | Forward Live: Oct 21 - Nov 07, 2026)"
+              : selectedModelId === "om-unified-4h-engine"
+              ? "[OM] Unified 4H Swing (Train 2020-2023 | Forward Live: Oct 21 - Nov 07, 2026)"
+              : selectedModelId === "v1-distributed-4h-engine"
               ? "[v1] Distributed 4H Specialists (Train 2020-2023 | Forward Live: Oct 21 - Nov 07, 2026)"
               : selectedModelId === "v1-stacking-meta-engine"
               ? "[v1] Stacking Meta-Learner (Train 2020-2023 | Forward Live: Oct 21 - Nov 07, 2026)"
@@ -244,7 +268,9 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
               : selectedModelId === "pure-rules-baseline" || selectedModelId === "pure-rules-1h-baseline"
               ? "Pure Mechanical Rules Execution (Zero AI Filter Benchmark | Platform Friction Deducted)"
               : "Unified 1H Multi-Asset Execution (7 Assets on 1-Hour Candles | Platform Friction Deducted)"
-            : selectedModelId.startsWith("v1-")
+            : selectedModelId.startsWith("om-")
+              ? "Unseen Holdout Trades (2025-01-01 to 2026-10-20 | ~22-Month Out-Of-Sample Holdout)"
+              : selectedModelId.startsWith("v1-")
               ? "Unseen Holdout Trades (2024-01-01 to 2025-12-31 | 2-Year Out-Of-Sample Holdout)"
               : "Unseen Holdout Trades (2020-01-01 to 2023-12-31 | 4-Year Out-Of-Sample Holdout)"}
         </div>

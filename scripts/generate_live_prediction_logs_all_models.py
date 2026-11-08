@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Generate Model-Specific Live Prediction Feed Logs for ALL 14 Models
+Generate Model-Specific Live Prediction Feed Logs for ALL Engines
+(v1, New, and OM 6-Year Segmentation Architecture)
 using live unseen bars and model inference.
 
 Seeds MongoDB Atlas collection 'live_prediction_logs' with:
@@ -28,6 +29,7 @@ ROOT_DIR = Path("D:/Projects_Main/Trade-Pro/Trader-Pro-Dashboard")
 SRC_DATA_DIR = ROOT_DIR / "src" / "data"
 MODELS_NEW_DIR = ROOT_DIR / "src" / "models"
 MODELS_V1_DIR = ROOT_DIR / "src" / "models_v1_old"
+MODELS_OM_DIR = ROOT_DIR / "src" / "models_om"
 
 MONGO_URI = "mongodb+srv://aibot:N8VrpfZ1w3UnbTge@cluster0.ilejs4x.mongodb.net/that?retryWrites=true&w=majority"
 
@@ -60,7 +62,7 @@ def predict(m: Dict[str, Any], f: List[float]) -> float:
 
 def main():
     print("=" * 80)
-    print("GENERATING MODEL-SPECIFIC LIVE PREDICTION LOGS FOR ALL 14 ENGINES")
+    print("GENERATING MODEL-SPECIFIC LIVE PREDICTION LOGS FOR ALL ENGINES (V1, NEW, OM)")
     print("=" * 80)
 
     # 1. Load base 336 hourly bars
@@ -87,7 +89,14 @@ def main():
     v1_dist_4h = {s: json.load(open(MODELS_V1_DIR / "distributed_4h" / s / "model.json")) for s in SYMBOLS}
     v1_meta = json.load(open(MODELS_V1_DIR / "ensemble_meta.json"))
 
-    # 4. Helper for live trades
+    # 4. Load Models - OM Suite (Optimal Model - 6-Year Segmentation)
+    om_uni_1h = json.load(open(MODELS_OM_DIR / "unified_1h_7assets" / "model.json"))
+    om_uni_4h = json.load(open(MODELS_OM_DIR / "unified_4h_7assets" / "model.json"))
+    om_dist_1h = {s: json.load(open(MODELS_OM_DIR / "distributed_1h" / s / "model.json")) for s in SYMBOLS}
+    om_dist_4h = {s: json.load(open(MODELS_OM_DIR / "distributed_4h" / s / "model.json")) for s in SYMBOLS}
+    om_meta = json.load(open(MODELS_OM_DIR / "ensemble_meta.json"))
+
+    # Helper for live trades
     def load_trades(filename: str):
         p = SRC_DATA_DIR / filename
         if p.exists():
@@ -96,12 +105,14 @@ def main():
 
     # Map modelId to live trades file
     live_trades_map = {
+        # v1 Suite
         "v1-distributed-4h-engine": load_trades("v1_distributed_4h_live_trades.json"),
         "v1-stacking-meta-engine": load_trades("v1_stacking_1h_live_trades.json"),
         "v1-distributed-1h-engine": load_trades("v1_distributed_1h_live_trades.json"),
         "v1-unified-1h-engine": load_trades("v1_unified_1h_live_trades.json"),
         "v1-consensus-committee-engine": load_trades("v1_consensus_1h_live_trades.json"),
         "v1-unified-4h-engine": load_trades("v1_unified_4h_live_trades.json"),
+        # New Suite
         "unified-4h-engine": load_trades("live_4h_executed_trades.json"),
         "4h-swing-meta-017": load_trades("live_4h_executed_trades.json"),
         "distributed-4h-engine": load_trades("distributed_4h_live_trades.json"),
@@ -109,6 +120,14 @@ def main():
         "distributed-1h-engine": load_trades("distributed_1h_live_trades.json"),
         "new-consensus-committee-engine": load_trades("new_consensus_1h_live_trades.json"),
         "new-stacking-meta-engine": load_trades("new_stacking_1h_live_trades.json"),
+        # OM Suite
+        "om-distributed-4h-engine": load_trades("om_distributed_4h_live_trades.json"),
+        "om-stacking-meta-engine": load_trades("om_stacking_1h_live_trades.json"),
+        "om-distributed-1h-engine": load_trades("om_distributed_1h_live_trades.json"),
+        "om-unified-1h-engine": load_trades("om_unified_1h_live_trades.json"),
+        "om-consensus-committee-engine": load_trades("om_consensus_1h_live_trades.json"),
+        "om-unified-4h-engine": load_trades("om_unified_4h_live_trades.json"),
+        # Benchmarks
         "pure-rules-4h-baseline": load_trades("pure_rules_4h_executed_trades.json"),
         "pure-rules-1h-baseline": load_trades("pure_rules_1h_executed_trades.json"),
         "pure-rules-baseline": load_trades("pure_rules_1h_executed_trades.json"),
@@ -122,6 +141,10 @@ def main():
     w_uni_new = new_meta["stacking_weights"]["w_unified"]
     w_sp_new = new_meta["stacking_weights"]["w_specialist"]
     b_new = new_meta["stacking_weights"]["intercept"]
+
+    w_uni_om = om_meta["stacking_weights"]["w_unified"]
+    w_sp_om = om_meta["stacking_weights"]["w_specialist"]
+    b_om = om_meta["stacking_weights"]["intercept"]
 
     def compute_features(c: float, sma: float, d_h: float, d_l: float) -> List[float]:
         mid = (d_h + d_l) / 2.0
@@ -158,7 +181,14 @@ def main():
         ("distributed-1h-engine", "1h", 0.45, False),
         ("new-consensus-committee-engine", "1h", 0.45, False),
         ("new-stacking-meta-engine", "1h", 0.45, False),
-        # Suite 3: Rule-Based Baselines (Zero AI Filter)
+        # Suite 3: [OM] Models (6-Year Segmentation Architecture)
+        ("om-distributed-4h-engine", "4h", 0.50, False),
+        ("om-stacking-meta-engine", "1h", 0.48, False),
+        ("om-distributed-1h-engine", "1h", 0.45, False),
+        ("om-unified-1h-engine", "1h", 0.45, False),
+        ("om-consensus-committee-engine", "1h", 0.45, False),
+        ("om-unified-4h-engine", "4h", 0.50, False),
+        # Suite 4: Rule-Based Baselines (Zero AI Filter)
         ("pure-rules-4h-baseline", "4h", 0.00, True),
         ("pure-rules-1h-baseline", "1h", 0.00, True),
     ]
@@ -200,6 +230,7 @@ def main():
             if is_rule_based:
                 prob = 1.0
                 passes_gate = True
+            # v1 Suite
             elif model_id == "v1-distributed-4h-engine":
                 prob = predict(v1_dist_4h[sym], fvec)
                 passes_gate = prob >= cutoff
@@ -223,6 +254,7 @@ def main():
             elif model_id == "v1-unified-4h-engine":
                 prob = predict(v1_uni_4h, fvec)
                 passes_gate = prob >= cutoff
+            # New Suite
             elif model_id in ("unified-4h-engine", "4h-swing-meta-017"):
                 prob = predict(new_uni_4h, fvec)
                 passes_gate = prob >= cutoff
@@ -246,6 +278,30 @@ def main():
                 logit = b_new + w_uni_new * pu + w_sp_new * ps
                 prob = 1.0 / (1.0 + math.exp(-logit))
                 passes_gate = prob >= cutoff
+            # OM Suite
+            elif model_id == "om-distributed-4h-engine":
+                prob = predict(om_dist_4h[sym], fvec)
+                passes_gate = prob >= cutoff
+            elif model_id == "om-stacking-meta-engine":
+                pu = predict(om_uni_1h, fvec)
+                ps = predict(om_dist_1h[sym], fvec)
+                logit = b_om + w_uni_om * pu + w_sp_om * ps
+                prob = 1.0 / (1.0 + math.exp(-logit))
+                passes_gate = prob >= cutoff
+            elif model_id == "om-distributed-1h-engine":
+                prob = predict(om_dist_1h[sym], fvec)
+                passes_gate = prob >= cutoff
+            elif model_id == "om-unified-1h-engine":
+                prob = predict(om_uni_1h, fvec)
+                passes_gate = prob >= cutoff
+            elif model_id == "om-consensus-committee-engine":
+                pu = predict(om_uni_1h, fvec)
+                ps = predict(om_dist_1h[sym], fvec)
+                prob = (pu + ps) / 2.0
+                passes_gate = (pu >= cutoff) and (ps >= cutoff)
+            elif model_id == "om-unified-4h-engine":
+                prob = predict(om_uni_4h, fvec)
+                passes_gate = prob >= cutoff
 
             # Check if this bar is an executed trade entry or active trade
             is_entry = (sym, ts_ms) in entry_events
@@ -268,123 +324,95 @@ def main():
                 trade_details = {
                     "side": side,
                     "entry_price": round(c, 2),
-                    "stop_loss": round(d_l if side == "LONG" else d_h, 2),
-                    "take_profit": round(c + 2.5 * abs(c - d_l) if side == "LONG" else c - 2.5 * abs(d_h - c), 2),
-                    "probability": round(prob, 4),
+                    "stop_loss": round(active_trade.get("stopLoss") or active_trade.get("stop_loss", 0), 2) if active_trade else 0,
+                    "take_profit": round(active_trade.get("takeProfit") or active_trade.get("take_profit", 0), 2) if active_trade else 0,
+                    "position_size": 1000.0,
+                    "risk_r": 1.0,
+                    "bars_held": 0
                 }
-            elif active_trade is not None:
-                decision = "CASH_PROTECTED_POSITION_ACTIVE"
-                side = active_trade.get("direction") or active_trade.get("side", "LONG")
-                decision_reason = f"Position running ({side}) · 100% Capital Deployed"
-            elif is_rule_based and (is_long or is_short):
+            elif active_trade:
                 decision = "EXECUTED_TRADE"
-                side = "LONG" if is_long else "SHORT"
-                decision_reason = f"Breakout confirmed ({side}) · Pure Rule-Based (Zero AI Filter)"
+                side = active_trade.get("direction") or active_trade.get("side", "LONG")
+                decision_reason = f"Managing active {side} position | Holding bar {active_trade.get('holdingBars', 1)}"
                 passes_gate = True
                 trade_details = {
                     "side": side,
-                    "entry_price": round(c, 2),
-                    "stop_loss": round(d_l if is_long else d_h, 2),
-                    "take_profit": round(c + 2.5 * abs(c - d_l) if is_long else c - 2.5 * abs(d_h - c), 2),
-                    "probability": 1.0,
+                    "entry_price": round(active_trade.get("entryPrice") or active_trade.get("entry_price", c), 2),
+                    "stop_loss": round(active_trade.get("stopLoss") or active_trade.get("stop_loss", 0), 2),
+                    "take_profit": round(active_trade.get("takeProfit") or active_trade.get("take_profit", 0), 2),
+                    "position_size": 1000.0,
+                    "risk_r": 1.0,
+                    "bars_held": active_trade.get("bars_held", 1)
                 }
-            elif (is_long or is_short):
-                if passes_gate:
-                    decision = "EXECUTED_TRADE"
-                    side = "LONG" if is_long else "SHORT"
-                    decision_reason = f"Breakout confirmed ({side}) | AI Conviction {(prob*100):.1f}% >= cutoff {(cutoff*100):.1f}%"
-                    trade_details = {
-                        "side": side,
-                        "entry_price": round(c, 2),
-                        "stop_loss": round(d_l if is_long else d_h, 2),
-                        "take_profit": round(c + 2.5 * abs(c - d_l) if is_long else c - 2.5 * abs(d_h - c), 2),
-                        "probability": round(prob, 4),
-                    }
-                else:
-                    decision = "CASH_PROTECTED_CONSOLIDATION"
-                    decision_reason = f"Breakout candidate suppressed: ML prob {(prob*100):.1f}% < threshold {(cutoff*100):.1f}%"
-            elif c < sma:
-                decision = "CASH_PROTECTED_BEARISH"
-                decision_reason = f"Price below 200 SMA trend filter (${c:,.1f} < ${sma:,.1f}) · 100% Capital in Cash"
             else:
-                decision = "CASH_PROTECTED_CONSOLIDATION"
-                decision_reason = "Within Donchian channel envelope · No entry trigger"
+                if (c > sma) and (c > d_h):
+                    if passes_gate:
+                        decision = "EXECUTED_TRADE"
+                        decision_reason = f"Bullish Breakout (Long) | Conviction {(prob*100):.1f}%"
+                    else:
+                        decision = "GATE_BLOCKED"
+                        decision_reason = f"AI Conviction {(prob*100):.1f}% < cutoff {(cutoff*100):.1f}% (Rejected)"
+                elif (c < sma) and (c < d_l):
+                    if passes_gate:
+                        decision = "EXECUTED_TRADE"
+                        decision_reason = f"Bearish Breakdown (Short) | Conviction {(prob*100):.1f}%"
+                    else:
+                        decision = "GATE_BLOCKED"
+                        decision_reason = f"AI Conviction {(prob*100):.1f}% < cutoff {(cutoff*100):.1f}% (Rejected)"
+                elif c < sma:
+                    decision = "CASH_SHIELD"
+                    decision_reason = "Price below 200 SMA (Trend Filtered)"
+                else:
+                    decision = "CASH_SHIELD"
+                    decision_reason = "Price inside Donchian channel (No Breakout)"
 
-            log_entry = {
-                "id": f"{model_id}_{sym}_{ts_ms}",
+            doc = {
                 "model_id": model_id,
                 "timestamp": bar_iso,
                 "timestamp_ms": ts_ms,
                 "time_utc": time_utc,
-                "symbol": sym,
-                "asset_class": "commodities" if sym in COMMODITIES else "crypto",
                 "timeframe": tf,
+                "symbol": sym,
                 "price": round(c, 2),
                 "sma_200": round(sma, 2),
                 "donchian_high": round(d_h, 2),
                 "donchian_low": round(d_l, 2),
-                "donchian_high_20": round(d_h, 2),
-                "donchian_low_20": round(d_l, 2),
-                "probability": round(prob, 4),
+                "conviction_p": round(float(prob), 4),
+                "probability": round(float(prob), 4),
                 "p_cutoff": cutoff,
                 "passes_gate": passes_gate,
+                "regime": "BULLISH" if c > sma else "BEARISH",
                 "decision": decision,
                 "decision_reason": decision_reason,
-                "trade_details": trade_details,
+                "trade_details": trade_details
             }
-            model_logs.append(log_entry)
+            model_logs.append(doc)
+            all_combined_docs.append(doc)
 
-        model_logs.sort(key=lambda x: x["timestamp_ms"], reverse=True)
         all_logs_by_model[model_id] = model_logs
-        all_combined_docs.extend(model_logs)
+        out_json = SRC_DATA_DIR / f"live_prediction_logs_{model_id}.json"
+        with open(out_json, "w", encoding="utf-8") as f:
+            json.dump(model_logs, f, indent=2)
+        print(f"[{model_id}] Generated {len(model_logs)} logs -> {out_json.name}")
 
-        # Save model JSON file
-        out_file = SRC_DATA_DIR / f"live_prediction_logs_{model_id}.json"
-        with open(out_file, "w", encoding="utf-8") as out_f:
-            json.dump(model_logs, out_f, indent=2)
-        print(f"✓ Saved {out_file.name:<44}: {len(model_logs)} records (Sample P={model_logs[0]['probability']*100:.1f}%)")
+    print(f"\nTotal generated prediction logs across all {len(models_config)} engines: {len(all_combined_docs)}")
 
-    # Also handle aliases
-    for alias, target in [("4h-swing-meta-017", "unified-4h-engine"), ("pure-rules-baseline", "pure-rules-1h-baseline")]:
-        alias_file = SRC_DATA_DIR / f"live_prediction_logs_{alias}.json"
-        with open(alias_file, "w", encoding="utf-8") as out_f:
-            json.dump(all_logs_by_model[target], out_f, indent=2)
-        print(f"✓ Saved alias {alias_file.name}")
+    # Seed MongoDB Atlas collection live_prediction_logs
+    print("\nConnecting to MongoDB Atlas to seed 'live_prediction_logs'...")
+    client = MongoClient(MONGO_URI)
+    db = client["that"]
+    col = db["live_prediction_logs"]
 
-    # Seed MongoDB Atlas collection 'live_prediction_logs'
-    print("\n" + "=" * 60)
-    print("SEEDING MONGODB ATLAS: 'live_prediction_logs' COLLECTION")
-    print("=" * 60)
+    print("Dropping old prediction logs and inserting new batch...")
+    col.delete_many({})
+    for i in range(0, len(all_combined_docs), 1000):
+        col.insert_many(all_combined_docs[i : i + 1000])
 
-    try:
-        client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=10000)
-        db = client["that"]
-        col = db["live_prediction_logs"]
-        col.drop()
-        print("  Dropped stale live_prediction_logs collection.")
-
-        batch_size = 1000
-        for i in range(0, len(all_combined_docs), batch_size):
-            col.insert_many(all_combined_docs[i:i + batch_size])
-
-        # Create indexes
-        col.create_index([("model_id", 1), ("timestamp_ms", -1)])
-        col.create_index([("model_id", 1), ("symbol", 1), ("timestamp_ms", -1)])
-        col.create_index([("timestamp_ms", -1)])
-
-        total_inserted = col.count_documents({})
-        print(f"✓ Successfully seeded {total_inserted:,} model-specific prediction records into MongoDB Atlas!")
-
-        # Verify
-        for mid in ["v1-distributed-4h-engine", "v1-stacking-meta-engine", "unified-4h-engine", "pure-rules-4h-baseline"]:
-            count = col.count_documents({"model_id": mid})
-            sample = col.find_one({"model_id": mid, "symbol": "BTCUSDT"}, sort=[("timestamp_ms", -1)])
-            print(f"  {mid:<30} Count: {count} | Latest BTC P: {sample['probability']*100:.1f}% ({sample['decision']})")
-
-    except Exception as e:
-        print(f"  MongoDB Seeding error: {e}")
-
-    print("\nAll done!")
+    col.create_index([("model_id", 1), ("timestamp_ms", -1)])
+    col.create_index([("timestamp_ms", -1)])
+    col.create_index([("symbol", 1)])
+    print("✅ MongoDB Atlas 'live_prediction_logs' successfully seeded and indexed!")
+    client.close()
 
 
 if __name__ == "__main__":
