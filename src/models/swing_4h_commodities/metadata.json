@@ -1,0 +1,95 @@
+{
+  "model_name": "lgbm_meta_4h_macro_commodities",
+  "asset_class": "commodities",
+  "timeframe": "4h",
+  "universe": [
+    "XAUUSDT",
+    "XAGUSDT",
+    "CLUSDT"
+  ],
+  "raw_universe": [
+    "GC=F",
+    "SI=F",
+    "CL=F"
+  ],
+  "commodity_map": {
+    "GC=F": {
+      "display": "XAUUSDT",
+      "name": "Gold (XAUUSDT)"
+    },
+    "SI=F": {
+      "display": "XAGUSDT",
+      "name": "Silver (XAGUSDT)"
+    },
+    "CL=F": {
+      "display": "CLUSDT",
+      "name": "Crude Oil (CLUSDT)"
+    }
+  },
+  "benchmark": "DX-Y.NYB",
+  "friction_bps": 5.0,
+  "n_samples": 1018,
+  "target_base_rate": 0.019646365422396856,
+  "p_cutoff": 0.0186,
+  "num_trees": 100,
+  "feature_names": [
+    "feat_dxy_mom_24h",
+    "feat_dxy_mom_72h",
+    "feat_dxy_corr_60",
+    "feat_vol_zscore",
+    "feat_volatility_ratio",
+    "feat_atr_pct",
+    "feat_donchian_pos",
+    "feat_trend_dist_200"
+  ],
+  "feature_stats": {
+    "feat_dxy_mom_24h": {
+      "mean": -0.0004027390399211632,
+      "std": 0.0045580242806099866,
+      "min": -0.023660867324049706,
+      "max": 0.015033007862532255
+    },
+    "feat_dxy_mom_72h": {
+      "mean": -0.00020026194657302382,
+      "std": 0.0072312229802889184,
+      "min": -0.03118843868690213,
+      "max": 0.022046191457744113
+    },
+    "feat_dxy_corr_60": {
+      "mean": -0.20076714727612763,
+      "std": 0.37490987628461897,
+      "min": -0.9162827137648141,
+      "max": 0.86398579131224
+    },
+    "feat_vol_zscore": {
+      "mean": 0.06303023884986415,
+      "std": 0.988021474926854,
+      "min": -1.3406794114859346,
+      "max": 4.0
+    },
+    "feat_volatility_ratio": {
+      "mean": 0.9809503179588354,
+      "std": 0.26438208775400696,
+      "min": 0.42382736163040496,
+      "max": 2.587402036265319
+    },
+    "feat_atr_pct": {
+      "mean": 0.01188317445710895,
+      "std": 0.007149478063073786,
+      "min": 0.0029857188662650714,
+      "max": 0.07123584236318022
+    },
+    "feat_donchian_pos": {
+      "mean": 0.12698742014481093,
+      "std": 0.4033701177074068,
+      "min": -0.722040486737952,
+      "max": 0.710261031362014
+    },
+    "feat_trend_dist_200": {
+      "mean": 0.03119633353200507,
+      "std": 0.09251593832176884,
+      "min": -0.22756958632579213,
+      "max": 0.4
+    }
+  }
+}

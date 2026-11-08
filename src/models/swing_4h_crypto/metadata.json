@@ -1,0 +1,89 @@
+{
+  "model_name": "lgbm_meta_4h_trusted_crypto",
+  "asset_class": "crypto",
+  "timeframe": "4h",
+  "universe": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "DOTUSDT"
+  ],
+  "raw_universe": [
+    "BTC-USD",
+    "ETH-USD",
+    "SOL-USD",
+    "DOT-USD"
+  ],
+  "friction_bps": 10.0,
+  "n_samples": 1289,
+  "target_base_rate": 0.05973622963537626,
+  "p_cutoff": 0.05,
+  "num_trees": 100,
+  "feature_names": [
+    "feat_rs_btc_24h",
+    "feat_rs_btc_72h",
+    "feat_rs_btc_7d",
+    "feat_funding_zscore",
+    "feat_vol_zscore",
+    "feat_volatility_ratio",
+    "feat_atr_pct",
+    "feat_donchian_pos",
+    "feat_trend_dist_200"
+  ],
+  "feature_stats": {
+    "feat_rs_btc_24h": {
+      "mean": 0.00010758650680071859,
+      "std": 0.02989643819404681,
+      "min": -0.11662707431733788,
+      "max": 0.23599788546223888
+    },
+    "feat_rs_btc_72h": {
+      "mean": -0.0007219850208893809,
+      "std": 0.04586553363974222,
+      "min": -0.13440211765516308,
+      "max": 0.32423158160971344
+    },
+    "feat_rs_btc_7d": {
+      "mean": -0.003874630566471299,
+      "std": 0.0632606577315597,
+      "min": -0.19620433858409092,
+      "max": 0.366418592792628
+    },
+    "feat_funding_zscore": {
+      "mean": 0.0,
+      "std": 0.0,
+      "min": 0.0,
+      "max": 0.0
+    },
+    "feat_vol_zscore": {
+      "mean": 0.43121155147270523,
+      "std": 1.2035443851977188,
+      "min": -1.5054693813972386,
+      "max": 4.0
+    },
+    "feat_volatility_ratio": {
+      "mean": 0.9535200736501465,
+      "std": 0.27239628460240056,
+      "min": 0.41907330201244064,
+      "max": 2.1526391409955425
+    },
+    "feat_atr_pct": {
+      "mean": 0.017722884969002744,
+      "std": 0.007517857182411092,
+      "min": 0.005,
+      "max": 0.059835223014955904
+    },
+    "feat_donchian_pos": {
+      "mean": -0.018674892097287215,
+      "std": 0.4355579200616906,
+      "min": -0.7495470197075359,
+      "max": 0.8109649312416549
+    },
+    "feat_trend_dist_200": {
+      "mean": -0.015305398657634977,
+      "std": 0.1199200978378132,
+      "min": -0.38688788420115056,
+      "max": 0.43405626567320055
+    }
+  }
+}
