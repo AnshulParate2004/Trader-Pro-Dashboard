@@ -27,6 +27,8 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
   isLiveMode = true,
   trades = [],
 }) => {
+  const isDistributed1H = selectedModelId === "distributed-1h-engine";
+  const isDistributed4H = selectedModelId === "distributed-4h-engine";
   const is4H = selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017";
   const is1H = selectedModelId === "unified-1h-engine" || selectedModelId === "1h-commodities-rf";
   const isRules = selectedModelId === "pure-rules-baseline";
@@ -55,7 +57,7 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
   const feeBadge = (
     <span
       className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded border font-semibold ${
-        is1H || isCommodityAsset || is4H || isRules || isAll
+        is1H || isDistributed1H || isCommodityAsset || is4H || isDistributed4H || isRules || isAll
           ? "bg-win-tint text-chrome-green-ink border-win/30"
           : isTaker
           ? "bg-accent-tint text-chrome-green-ink border-accent/30"
@@ -92,7 +94,7 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
           </h2>
           <span
             className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
-              is1H || isCommodityAsset || is4H || isRules || isAll
+              is1H || isDistributed1H || isCommodityAsset || is4H || isDistributed4H || isRules || isAll
                 ? "bg-win-tint text-chrome-green-ink border-win/30"
                 : isTaker
                 ? "bg-accent-tint text-chrome-green-ink border-accent/30"

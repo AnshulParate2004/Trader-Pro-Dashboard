@@ -357,8 +357,8 @@ describe("4H Swing Meta-Labeling Engine Unit Tests", () => {
       assert.equal(res.status, 200);
       const data = await res.json();
       assert.equal(data.success, true);
-      assert.equal(data.totalHistoricalTrades, 509);
-      assert.equal(data.trades.length, 509);
+      assert.equal(data.totalHistoricalTrades, 1296);
+      assert.equal(data.trades.length, 1000);
 
       // Verify trade structure and multi-asset coverage (Crypto + Commodities)
       const symbols = new Set(data.trades.map((t: any) => t.symbol));
@@ -386,7 +386,7 @@ describe("4H Swing Meta-Labeling Engine Unit Tests", () => {
       assert.equal(data.success, true);
       assert.equal(data.modelId, "4h-swing-meta-017");
       assert.ok(data.metrics);
-      assert.equal(data.metrics.avgNetR, 0.0968);
+      assert.equal(data.metrics.avgNetR, 0.204);
     });
   });
 });

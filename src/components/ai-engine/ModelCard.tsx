@@ -49,9 +49,13 @@ export const ModelCard: React.FC<ModelCardProps> = ({
               <span className="text-[10px] font-mono font-bold bg-accent-tint text-chrome-green-ink px-2 py-0.5 rounded border border-accent/30">
                 {currentModel ? currentModel.timeframe.toUpperCase() : "MULTI-TIMEFRAME"}
               </span>
-              {currentModel && (currentModel.id === "unified-1h-engine" || currentModel.id === "1h-commodities-rf") ? (
+              {currentModel && currentModel.statusBadge.includes("ACTIVE LIVE") ? (
                 <span className="text-[10px] font-mono font-bold bg-win-tint text-chrome-green-ink px-2 py-0.5 rounded border border-win/40">
                   ACTIVE LIVE
+                </span>
+              ) : currentModel && currentModel.id === "pure-rules-baseline" ? (
+                <span className="text-[10px] font-mono font-bold bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-300">
+                  BENCHMARK
                 </span>
               ) : currentModel ? (
                 <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-300">

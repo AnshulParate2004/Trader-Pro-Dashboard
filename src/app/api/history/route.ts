@@ -87,14 +87,19 @@ export async function GET(req: Request) {
     let targetCollection = "historical_trades_unified_1h";
     let fallbackFile = "unified_1h_historical_trades.json";
 
-    if (modelParam === "unified-4h-engine" || modelParam === "4h-swing-meta-017") {
+    if (modelParam === "distributed-1h-engine") {
+      targetCollection = "historical_trades_distributed_1h";
+      fallbackFile = "distributed_1h_historical_trades.json";
+    } else if (modelParam === "unified-4h-engine" || modelParam === "4h-swing-meta-017") {
       targetCollection = "historical_trades_unified_4h";
       fallbackFile = "unified_4h_historical_trades.json";
+    } else if (modelParam === "distributed-4h-engine") {
+      targetCollection = "historical_trades_distributed_4h";
+      fallbackFile = "distributed_4h_historical_trades.json";
     } else if (modelParam === "pure-rules-baseline") {
       targetCollection = "historical_trades_pure_rule";
       fallbackFile = "pure_rule_historical_trades.json";
     } else {
-      // Default to 1H Unified
       targetCollection = "historical_trades_unified_1h";
       fallbackFile = "unified_1h_historical_trades.json";
     }

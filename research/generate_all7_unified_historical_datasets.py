@@ -533,11 +533,11 @@ def main():
     print("\n[Model Loading] Loading trained 7-asset LightGBM meta-models...")
     with open(SRC_MODELS_DIR / "unified_1h_7assets" / "model.json") as f:
         model_1h = json.load(f)
-    p_cutoff_1h = 0.090
+    p_cutoff_1h = 0.062
 
     with open(SRC_MODELS_DIR / "unified_4h_7assets" / "model.json") as f:
         model_4h = json.load(f)
-    p_cutoff_4h = 0.045
+    p_cutoff_4h = 0.060
 
     # Update metadata files to keep everything synchronized
     p_meta_1h = SRC_MODELS_DIR / "unified_1h_7assets" / "metadata.json"

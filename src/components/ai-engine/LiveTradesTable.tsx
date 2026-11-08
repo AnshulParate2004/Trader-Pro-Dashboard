@@ -171,15 +171,19 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                   : "text-chrome-dim hover:text-chrome-ink"
               }`}
             >
-              📊 Verified Historical OOS Trades ({totalHistoricalCount ? totalHistoricalCount.toLocaleString() : (selectedAsset === "ALL" ? (selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017" ? "706" : selectedModelId === "pure-rules-baseline" ? "4,448" : "509") : "0")})
+              📊 Verified Historical OOS Trades ({totalHistoricalCount ? totalHistoricalCount.toLocaleString() : (selectedAsset === "ALL" ? (selectedModelId === "distributed-1h-engine" ? "1,994" : selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017" ? "319" : selectedModelId === "distributed-4h-engine" ? "1,174" : selectedModelId === "pure-rules-baseline" ? "4,448" : "1,296") : "0")})
             </button>
           </div>
         </div>
 
         <div className="text-xs text-chrome-dim font-mono">
           {tableTab === "live"
-            ? selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017"
+            ? selectedModelId === "distributed-1h-engine"
+            ? "Distributed 1H Specialists Execution (7 Dedicated Models | Platform Friction Deducted)"
+            : selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017"
             ? "Unified 4H Swing Execution (7 Assets on 4-Hour Candles | Platform Friction Deducted)"
+            : selectedModelId === "distributed-4h-engine"
+            ? "Distributed 4H Specialists Swing Execution (7 Dedicated Models | Platform Friction Deducted)"
             : selectedModelId === "pure-rules-baseline"
             ? "Pure Mechanical Rules Execution (Zero AI Filter Benchmark | Platform Friction Deducted)"
             : "Unified 1H Multi-Asset Execution (7 Assets on 1-Hour Candles | Platform Friction Deducted)"
