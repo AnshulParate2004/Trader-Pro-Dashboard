@@ -328,96 +328,59 @@ function mapRecordToTradeOrder(
 
 
 async function getLivePredictionLogs(
-
+  modelId: string = "unified-1h-engine",
   assetClass: "crypto" | "commodities" | "all" = "all",
-
   limit: number = 200
-
 ): Promise<any[]> {
-
   try {
-
     const db = await getDb();
-
     if (db) {
-
       const col = db.collection("live_prediction_logs");
-
-      const query = assetClass === "all" ? {} : { asset_class: assetClass };
-
+      const query: any = { model_id: modelId };
+      if (assetClass !== "all") {
+        query.asset_class = assetClass;
+      }
       const docs = await col
-
         .find(query)
-
         .sort({ timestamp_ms: -1 })
-
         .limit(limit > 0 ? limit : 200)
-
         .toArray();
 
       if (docs && docs.length > 0) {
-
         return docs.map((d: any) => ({
-
           ...d,
-
           id: d.id || d._id.toString(),
-
           rawSymbol: d.symbol,
-
           symbol: toDisplaySymbol(d.symbol),
-
         }));
-
       }
-
     }
-
   } catch (err) {
-
-    console.warn("DB prediction logs fetch error, falling back to JSON:", err);
-
+    console.warn(`DB prediction logs fetch error for ${modelId}, falling back to JSON:`, err);
   }
-
-
 
   try {
+    const modelJsonPath = path.join(process.cwd(), "src", "data", `live_prediction_logs_${modelId}.json`);
+    const fallbackPath = fs.existsSync(modelJsonPath)
+      ? modelJsonPath
+      : path.join(process.cwd(), "src", "data", "live_unseen_prediction_logs.json");
 
-    const jsonPath = path.join(process.cwd(), "src", "data", "live_unseen_prediction_logs.json");
-
-    if (fs.existsSync(jsonPath)) {
-
-      const raw = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
-
+    if (fs.existsSync(fallbackPath)) {
+      const raw = JSON.parse(fs.readFileSync(fallbackPath, "utf-8"));
       const filtered = assetClass === "all" ? raw : raw.filter((r: any) => r.asset_class === assetClass);
-
       const slice = limit > 0 ? filtered.slice(0, limit) : filtered.slice(0, 200);
-
       return slice.map((d: any) => ({
-
         ...d,
-
         rawSymbol: d.symbol,
-
         symbol: toDisplaySymbol(d.symbol),
-
       }));
-
     }
-
   } catch (err) {
-
-    console.warn("Could not read live_unseen_prediction_logs.json:", err);
-
+    console.warn(`Could not read fallback prediction logs for ${modelId}:`, err);
   }
 
-
-
   return [];
-
 }
-
-
 
 export async function GET(req: Request) {
 
@@ -779,13 +742,7 @@ export async function GET(req: Request) {
 
 
 
-    const livePredictionLogs = await getLivePredictionLogs(
-
-      "all",
-
-      limit
-
-    );
+    const livePredictionLogs = await getLivePredictionLogs(activeModelId, "all", limit);
 
 
 

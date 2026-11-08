@@ -2,7 +2,7 @@
 import { toDisplaySymbol, toDisplayName } from "@/lib/symbolMapper";
 
 import React from "react";
-import { TradeOrder } from "@/lib/engineTypes";
+import { TradeOrder, TOP_MODELS } from "@/lib/engineTypes";
 import {
   Filter,
   ChevronLeft,
@@ -82,6 +82,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   onAssetChange,
   selectedModelId = "unified-1h-engine",
 }) => {
+  const activeModelMeta = TOP_MODELS.find((m) => m.id === selectedModelId);
   const getFallbackCount = (mId: string) => {
     switch (mId) {
       case "v1-distributed-4h-engine": return "336";
@@ -602,6 +603,9 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                     <span className="text-[10px] font-bold bg-blue-100 text-blue-900 border border-blue-300 px-2 py-0.5 rounded-full">
                       UNSEEN WINDOW: OCT 21 – NOV 7, 2026
                     </span>
+                    <span className="text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full">
+                      ACTIVE ENGINE: {activeModelMeta?.shortName || activeModelMeta?.name || selectedModelId || "Unified 1H"}
+                    </span>
                     <div className="flex bg-chrome-line/50 p-0.5 rounded font-mono text-[11px]">
                       <button
                         onClick={() => setFeedViewMode("snapshot")}
@@ -716,7 +720,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                       return (
                         <tr key={log.id} className="hover:bg-chrome-field/40 transition-colors">
                           <td className="py-2 px-2 sm:px-2.5 text-chrome-dim text-[11px] whitespace-nowrap">
-                            {log.time_utc}
+                            {log.time_utc || (log.timestamp ? new Date(log.timestamp).toISOString().replace("T", " ").slice(0, 16) : "")}
                           </td>
                           <td className="py-2 px-2 sm:px-2.5 font-bold text-chrome-ink whitespace-nowrap">
                             <span className="px-1.5 py-0.5 rounded bg-chrome-field border border-chrome-line text-[11px]">
@@ -744,7 +748,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                                 />
                               </div>
                               <span className={`font-mono text-[11px] font-bold ${log.probability >= log.p_cutoff ? "text-emerald-700" : "text-slate-500"}`}>
-                                {(log.probability * 100).toFixed(1)}%
+                                {log.p_cutoff === 0 || selectedModelId?.includes("pure-rules") ? "100.0% (Rules)" : `${(log.probability * 100).toFixed(1)}%`}
                               </span>
                             </div>
                           </td>
