@@ -1,0 +1,142 @@
+{
+  "model_name": "distributed_4h_SOLUSDT",
+  "timeframe": "4h",
+  "symbol": "SOLUSDT",
+  "n_samples": 492,
+  "train_samples": 369,
+  "calibration_samples": 123,
+  "target_base_rate": 0.2385,
+  "p_cutoff": 0.2625,
+  "tau_star": 0.2625,
+  "percentile_50": 0.1783,
+  "percentile_75": 0.3219,
+  "percentile_90": 0.5174,
+  "calibration_stats": {
+    "admitted_trades": 36,
+    "win_rate_pct": 41.67,
+    "net_r": 8.31,
+    "profit_factor": 1.48
+  },
+  "num_trees": 100,
+  "feature_names": [
+    "feat_atr_pct",
+    "feat_vol_zscore",
+    "feat_volatility_ratio",
+    "feat_donchian_pos",
+    "feat_trend_dist_200",
+    "feat_mom_24h",
+    "feat_mom_72h",
+    "feat_rsi_14",
+    "feat_dist_ema20",
+    "feat_dist_ema50"
+  ],
+  "feature_stats": {
+    "feat_atr_pct": {
+      "mean": 0.03745,
+      "std": 0.0248,
+      "min": 0.00937,
+      "max": 0.30188
+    },
+    "feat_vol_zscore": {
+      "mean": 1.48551,
+      "std": 1.22585,
+      "min": -0.95629,
+      "max": 4.09416
+    },
+    "feat_volatility_ratio": {
+      "mean": 1.11755,
+      "std": 0.30378,
+      "min": 0.40001,
+      "max": 2.42795
+    },
+    "feat_donchian_pos": {
+      "mean": 0.5732,
+      "std": 0.66912,
+      "min": -0.83901,
+      "max": 2.10868
+    },
+    "feat_trend_dist_200": {
+      "mean": 0.08804,
+      "std": 0.31624,
+      "min": -0.58098,
+      "max": 1.46597
+    },
+    "feat_mom_24h": {
+      "mean": 0.03987,
+      "std": 0.17244,
+      "min": -0.65323,
+      "max": 0.69125
+    },
+    "feat_mom_72h": {
+      "mean": 0.09155,
+      "std": 0.32047,
+      "min": -0.59211,
+      "max": 1.7782
+    },
+    "feat_rsi_14": {
+      "mean": 0.04832,
+      "std": 0.45676,
+      "min": -0.87078,
+      "max": 0.84714
+    },
+    "feat_dist_ema20": {
+      "mean": 0.00758,
+      "std": 0.11027,
+      "min": -0.98625,
+      "max": 0.279
+    },
+    "feat_dist_ema50": {
+      "mean": 0.00955,
+      "std": 0.15354,
+      "min": -1.27298,
+      "max": 0.3477
+    }
+  },
+  "verification_samples": [
+    {
+      "features": [
+        0.02303,
+        2.50159,
+        1.28201,
+        1.21263,
+        0.14183,
+        0.09382,
+        0.32606,
+        0.2841,
+        0.04614,
+        0.07378
+      ],
+      "expected_prob": 0.21634
+    },
+    {
+      "features": [
+        0.02018,
+        0.72589,
+        0.79623,
+        1.08761,
+        0.15476,
+        -0.00598,
+        0.23105,
+        0.19129,
+        0.0327,
+        0.03833
+      ],
+      "expected_prob": 0.13296
+    },
+    {
+      "features": [
+        0.02644,
+        0.40799,
+        0.95885,
+        -0.04554,
+        -0.08133,
+        -0.00092,
+        -0.02635,
+        -0.2007,
+        -0.04058,
+        -0.03399
+      ],
+      "expected_prob": 0.1159
+    }
+  ]
+}

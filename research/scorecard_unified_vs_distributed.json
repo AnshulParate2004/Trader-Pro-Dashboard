@@ -1,0 +1,110 @@
+{
+  "portfolio_config": {
+    "initial_capital_inr": 7000.0,
+    "capital_per_asset_inr": 1000.0,
+    "risk_per_trade_inr": 100.0,
+    "friction_deducted": true,
+    "commodity_friction_bps": 5.9,
+    "crypto_friction_bps": 11.8
+  },
+  "historical_performance": {
+    "1h_unified": {
+      "total_trades": 503,
+      "win_rate_pct": 35.59,
+      "net_realized_r": -33.28,
+      "profit_factor": 0.89,
+      "max_drawdown_r": 47.63,
+      "pnl_inr": -3327.53,
+      "final_capital_inr": 3672.47
+    },
+    "1h_distributed": {
+      "total_trades": 1994,
+      "win_rate_pct": 48.45,
+      "net_realized_r": 616.66,
+      "profit_factor": 1.66,
+      "max_drawdown_r": 28.9,
+      "pnl_inr": 61666.17,
+      "final_capital_inr": 68666.17
+    },
+    "4h_unified": {
+      "total_trades": 695,
+      "win_rate_pct": 40.86,
+      "net_realized_r": 71.18,
+      "profit_factor": 1.2,
+      "max_drawdown_r": 33.5,
+      "pnl_inr": 7118.26,
+      "final_capital_inr": 14118.26
+    },
+    "4h_distributed": {
+      "total_trades": 1174,
+      "win_rate_pct": 49.57,
+      "net_realized_r": 529.41,
+      "profit_factor": 1.98,
+      "max_drawdown_r": 15.26,
+      "pnl_inr": 52940.98,
+      "final_capital_inr": 59940.98
+    }
+  },
+  "live_unseen_window": {
+    "1h_unified": {
+      "total_trades": 26,
+      "win_rate_pct": 69.23,
+      "net_realized_r": 10.28,
+      "profit_factor": 3.71,
+      "max_drawdown_r": 1.74,
+      "pnl_inr": 1028.4,
+      "final_capital_inr": 8028.4,
+      "verdict": "WINNER"
+    },
+    "1h_distributed": {
+      "total_trades": 33,
+      "win_rate_pct": 48.48,
+      "net_realized_r": 7.22,
+      "profit_factor": 1.49,
+      "max_drawdown_r": 5.89,
+      "pnl_inr": 721.58,
+      "final_capital_inr": 7721.58,
+      "verdict": "LOSER"
+    },
+    "4h_unified": {
+      "total_trades": 8,
+      "win_rate_pct": 62.5,
+      "net_realized_r": 1.63,
+      "profit_factor": 1.68,
+      "max_drawdown_r": 1.37,
+      "pnl_inr": 163.3,
+      "final_capital_inr": 7163.3,
+      "verdict": "WINNER"
+    },
+    "4h_distributed": {
+      "total_trades": 13,
+      "win_rate_pct": 38.46,
+      "net_realized_r": -2.72,
+      "profit_factor": 0.63,
+      "max_drawdown_r": 3.16,
+      "pnl_inr": -271.95,
+      "final_capital_inr": 6728.05,
+      "verdict": "LOSER"
+    }
+  },
+  "specialist_cutoffs": {
+    "1h": {
+      "GC=F": 0.02,
+      "SI=F": 0.4413,
+      "CL=F": 0.0291,
+      "BTCUSDT": 0.291,
+      "ETHUSDT": 0.3319,
+      "SOLUSDT": 0.442,
+      "DOTUSDT": 0.0367
+    },
+    "4h": {
+      "GC=F": 0.1149,
+      "SI=F": 0.1978,
+      "CL=F": 0.0252,
+      "BTCUSDT": 0.4419,
+      "ETHUSDT": 0.2472,
+      "SOLUSDT": 0.2625,
+      "DOTUSDT": 0.0704
+    }
+  }
+}
