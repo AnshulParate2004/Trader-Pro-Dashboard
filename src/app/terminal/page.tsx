@@ -114,7 +114,7 @@ export default function TerminalPage() {
   const [indicators, setIndicators] = useState<RealIndicators | null>(null);
   const [recommendation, setRecommendation] = useState<TradeRecommendation | null>(null);
   const [aiPrediction, setAiPrediction] = useState<AIPredictionState | null>(null);
-  const [accountBalanceINR, setAccountBalanceINR] = useState<number>(9350.80);
+  const [accountBalanceINR, setAccountBalanceINR] = useState<number>(7000.00);
   const [recentTrades, setRecentTrades] = useState<TradeOrder[]>([]);
   const [dockTab, setDockTab] = useState<"radar" | "trades" | "audit">("radar");
   const [livePredictionLogs, setLivePredictionLogs] = useState<any[]>([]);
@@ -657,7 +657,7 @@ export default function TerminalPage() {
           <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 clay-white-pill font-mono text-xs shrink-0" title="Live Portfolio Capital (₹7,000 Baseline + Realized PnL)">
             <span className="text-slate-400 text-[10px] font-bold uppercase hidden md:inline">Capital:</span>
             <span className="font-black text-emerald-700 tabular-nums">
-              ₹{(accountBalanceINR || 9350.80).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+              ₹{(accountBalanceINR || 7000.00).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
             </span>
           </div>
 
@@ -767,7 +767,7 @@ export default function TerminalPage() {
                       <span className={`text-xs font-black font-mono mt-0.5 ${
                         (aiPrediction?.pLong || 0) >= 0.5457 ? "text-emerald-600" : "text-slate-700"
                       }`}>
-                        {aiPrediction ? `${(aiPrediction.pLong * 100).toFixed(1)}% L` : "54.6% L"}
+                        {aiPrediction ? `${(aiPrediction.pLong * 100).toFixed(1)}% L` : "—"}
                       </span>
                       <span className="text-[9px] font-mono text-slate-400">Purged LGBM</span>
                     </div>
@@ -1192,8 +1192,8 @@ export default function TerminalPage() {
             {/* 5. AI Conviction Score */}
             {(() => {
               const cutoffPct = activeModel.id.includes("commodities") ? 6.35 : 55.0;
-              const probLong = aiPrediction ? aiPrediction.pLong * 100 : 54.6;
-              const isCleared = probLong >= cutoffPct;
+              const probLong = aiPrediction ? aiPrediction.pLong * 100 : null;
+              const isCleared = probLong !== null && probLong >= cutoffPct;
               return (
                 <div className="clay-white-inset p-2.5 flex items-center justify-between font-mono text-xs bg-slate-50">
                   <div className="flex flex-col">
@@ -1201,7 +1201,7 @@ export default function TerminalPage() {
                       <Eye className="w-3 h-3 text-slate-400" /> AI Meta Conviction Score
                     </span>
                     <span className="text-xs font-black text-gray-950 mt-0.5 tabular-nums">
-                      Posterior P: {probLong.toFixed(1)}% · Cutoff Threshold: {cutoffPct.toFixed(2)}%
+                      Posterior P: {probLong !== null ? `${probLong.toFixed(1)}%` : "—"} · Cutoff Threshold: {cutoffPct.toFixed(2)}%
                     </span>
                   </div>
                   <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border shadow-2xs ${
@@ -1209,7 +1209,7 @@ export default function TerminalPage() {
                       ? "bg-emerald-100 text-emerald-900 border-emerald-300"
                       : "bg-slate-200 text-slate-700 border-slate-300"
                   }`}>
-                    {isCleared ? "CONVICTION CLEARED" : "BELOW THRESHOLD"}
+                    {probLong === null ? "SCANNING..." : isCleared ? "CONVICTION CLEARED" : "BELOW THRESHOLD"}
                   </span>
                 </div>
               );

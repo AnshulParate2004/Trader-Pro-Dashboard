@@ -432,11 +432,17 @@ export default function AiEnginePage() {
           <div className="hidden xl:flex items-center gap-2 font-mono text-[11px] bg-emerald-50 text-emerald-950 border border-emerald-300 px-3 py-1 rounded shadow-2xs">
             <span className="text-slate-500 uppercase text-[10px] font-bold">Live Capital:</span>
             <strong className="text-emerald-950 font-black tabular-nums">
-              ₹{(metrics?.currentBalanceINR || 8028.40).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+              {metrics ? `₹${metrics.currentBalanceINR.toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "₹7,000.00"}
             </strong>
-            <span className="text-emerald-700 font-bold bg-emerald-100/80 px-1.5 py-0.5 rounded text-[10px]">
-              {((metrics?.netPnLINR ?? 1028.40) >= 0 ? "+" : "")}₹{(metrics?.netPnLINR ?? 1028.40).toFixed(2)} ({((metrics?.netPnLINR ?? 1028.40) >= 0 ? "+" : "")}{(((metrics?.netPnLINR ?? 1028.40) / 7000) * 100).toFixed(1)}%)
-            </span>
+            {metrics ? (
+              <span className={`font-bold px-1.5 py-0.5 rounded text-[10px] ${metrics.netPnLINR >= 0 ? "text-emerald-700 bg-emerald-100/80" : "text-rose-700 bg-rose-100/80"}`}>
+                {metrics.netPnLINR >= 0 ? "+" : ""}₹{metrics.netPnLINR.toFixed(2)} ({metrics.netPnLINR >= 0 ? "+" : ""}{((metrics.netPnLINR / 7000) * 100).toFixed(1)}%)
+              </span>
+            ) : (
+              <span className="text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded text-[10px]">
+                ₹0.00 (0.0%)
+              </span>
+            )}
           </div>
         </div>
 

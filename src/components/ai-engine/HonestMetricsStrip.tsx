@@ -45,14 +45,28 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
 
   const dynamicTotalFees = filteredTrades.length > 0
     ? filteredTrades.reduce((acc, t) => acc + (t.totalFeeINR || 0), 0)
-    : (resolved.liveChargesINR ?? 60.93);
+    : 0;
 
   const dynamicNetProfit = filteredTrades.length > 0
     ? filteredTrades.reduce((acc, t) => acc + (t.netPnLINR || 0), 0)
-    : (resolved.liveNetPnLINR ?? 1028.40);
+    : 0;
 
   const baseAllocated = selectedAsset === "ALL" ? 7000 : 1000;
   const dynamicCapital = baseAllocated + dynamicNetProfit;
+
+  // Fully dynamic metrics computed strictly from current filtered trades
+  const liveCount = filteredTrades.length;
+  const liveWins = filteredTrades.filter(t => (t.netPnLINR || 0) > 0 || (t.net_r || 0) > 0).length;
+  const liveLosses = filteredTrades.filter(t => (t.netPnLINR || 0) < 0 || (t.net_r || 0) < 0).length;
+  const liveWinRate = liveCount > 0 ? (liveWins / liveCount) * 100 : 0;
+  const liveTpCount = filteredTrades.filter(t => t.exitReason === 'TP' || (t as any).exit_reason === 'take_profit' || (t.netPnLINR || 0) > 0).length;
+  const liveSlCount = liveCount - liveTpCount;
+  const liveTpPercent = liveCount > 0 ? (liveTpCount / liveCount) * 100 : 0;
+  const liveSlPercent = liveCount > 0 ? (liveSlCount / liveCount) * 100 : 0;
+
+  const grossWinINR = filteredTrades.filter(t => (t.grossPnLINR || 0) > 0).reduce((acc, t) => acc + (t.grossPnLINR || 0), 0);
+  const grossLossINR = Math.abs(filteredTrades.filter(t => (t.grossPnLINR || 0) < 0).reduce((acc, t) => acc + (t.grossPnLINR || 0), 0));
+  const liveProfitFactor = grossLossINR > 0 ? grossWinINR / grossLossINR : (grossWinINR > 0 ? 99.0 : 0);
 
   const feeBadge = (
     <span
@@ -122,13 +136,13 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
             {feeBadge}
           </div>
           <div className="font-mono text-xl sm:text-2xl font-bold text-chrome-ink mt-2">
-            {isLiveMode ? `${resolved.liveWinRate.toFixed(1)}%` : `${resolved.winRate.toFixed(1)}%`}
+            {isLiveMode ? (liveCount > 0 ? `${liveWinRate.toFixed(1)}%` : "0.0%") : `${resolved.winRate.toFixed(1)}%`}
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
             {isLiveMode ? (
               resolved.liveTradesCount === 0
                 ? "100% Cash Safe"
-                : `${Math.round((resolved.liveTradesCount * resolved.liveWinRate) / 100)} Wins / ${resolved.liveTradesCount} Trades`
+                : `${liveWins} Wins / ${liveCount} Trades`
             ) : selectedAsset === "DOTUSDT" ? (
               "100% Cash Safe Protection"
             ) : isCommodityAsset ? (
@@ -154,7 +168,7 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
               (isLiveMode ? resolved.liveWinRate : resolved.winRate) >= 40 ? "text-win" : "text-loss"
             }`}
           >
-            {isLiveMode ? `${resolved.liveWinRate.toFixed(1)}%` : `${resolved.winRate.toFixed(1)}%`}
+            {isLiveMode ? (liveCount > 0 ? `${liveWinRate.toFixed(1)}%` : "0.0%") : `${resolved.winRate.toFixed(1)}%`}
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
             {isLiveMode ? (
@@ -200,7 +214,7 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
             {isLiveMode ? (
               resolved.liveTradesCount === 0
                 ? "Cash Safe: 0 Trades"
-                : `${Math.round((resolved.liveTradesCount * resolved.liveWinRate) / 100)} TP/Time / ${resolved.liveTradesCount - Math.round((resolved.liveTradesCount * resolved.liveWinRate) / 100)} SL`
+                : `${liveTpCount} TP / ${liveSlCount} SL`
             ) : selectedAsset === "DOTUSDT" ? (
               "Cash Safe: 0 Trades"
             ) : (
@@ -222,13 +236,13 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
               (isLiveMode ? resolved.liveProfitFactor : resolved.profitFactor) >= 1 ? "text-win" : "text-chrome-ink"
             }`}
           >
-            {isLiveMode ? resolved.liveProfitFactor.toFixed(2) : resolved.profitFactor.toFixed(2)}
+            {isLiveMode ? (liveCount > 0 ? liveProfitFactor.toFixed(2) : "0.00") : resolved.profitFactor.toFixed(2)}
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
             {isLiveMode ? (
               resolved.liveTradesCount === 0
                 ? "Cash Safe (1.00 PF)"
-                : `Gross PF: ${(resolved.liveProfitFactor * 1.05).toFixed(2)} (Net: ${resolved.liveProfitFactor.toFixed(2)})`
+                : `Gross PF: ${(liveProfitFactor * 1.05).toFixed(2)} (Net: ${liveProfitFactor.toFixed(2)})`
             ) : (
               `Gross PF: ${resolved.profitFactor.toFixed(2)} (Net: ${resolved.profitFactor.toFixed(2)})`
             )}
@@ -274,7 +288,7 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
             {feeBadge}
           </div>
           <div className="font-mono text-xl sm:text-2xl font-bold text-chrome-ink mt-2">
-            {isLiveMode ? `${resolved.liveTradesCount} Closed` : `${resolved.historicalTradesCount} Closed`}
+            {isLiveMode ? `${liveCount} Closed` : `${resolved.historicalTradesCount} Closed`}
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
             {isLiveMode

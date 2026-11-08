@@ -40,7 +40,7 @@ export const ASSET_METRICS_MAP: Record<string, AssetPerformanceData> = {
     assetKey: "ALL",
     assetLabel: "Portfolio - All 7 Assets",
     timeframe: "4H / 1H Multi-Asset",
-    historicalTradesCount: 3793,
+    historicalTradesCount: 4403,
     liveTradesCount: 37,
     avgNetR: 0.185,
     realizedReturnR: -89.11,
@@ -68,7 +68,7 @@ export const ASSET_METRICS_MAP: Record<string, AssetPerformanceData> = {
     assetKey: "ALL",
     assetLabel: "Unified 1H Multi-Asset [1 Universal Brain]",
     timeframe: "1H Multi-Asset",
-    historicalTradesCount: 3793,
+    historicalTradesCount: 4403,
     liveTradesCount: 37,
     avgNetR: 0.185,
     realizedReturnR: -89.11,
@@ -604,19 +604,19 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
 
   const dynamicTotalFees = filteredLiveTrades.length > 0
     ? filteredLiveTrades.reduce((acc, t) => acc + (t.totalFeeINR || 0), 0)
-    : (resolved.liveChargesINR ?? 140.20);
+    : 0;
 
   const dynamicNetProfit = filteredLiveTrades.length > 0
     ? filteredLiveTrades.reduce((acc, t) => acc + (t.netPnLINR || 0), 0)
-    : (resolved.liveNetPnLINR ?? 2354.00);
+    : 0;
 
   const dynamicAvgNetR = filteredLiveTrades.length > 0
     ? filteredLiveTrades.reduce((acc, t) => acc + ((t.netPnLINR ?? 0) / 100), 0) / filteredLiveTrades.length
-    : (resolved.liveAvgNetR ?? 0.336);
+    : 0;
 
   const dynamicReturnR = filteredLiveTrades.length > 0
     ? filteredLiveTrades.reduce((acc, t) => acc + ((t.netPnLINR ?? 0) / 100), 0)
-    : (resolved.liveRealizedReturnR ?? 23.54);
+    : 0;
 
   const baseCapital = selectedAsset === "ALL" ? 7000 : 1000;
   const dynamicCapital = baseCapital + dynamicNetProfit;
@@ -624,7 +624,7 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
   // Differentiate live mode vs historical mode
   const currentAvgNetR = isLiveMode ? dynamicAvgNetR : resolved.avgNetR;
   const currentReturnR = isLiveMode ? dynamicReturnR : resolved.realizedReturnR;
-  const currentTradeCount = isLiveMode ? (filteredLiveTrades.length || resolved.liveTradesCount) : resolved.historicalTradesCount;
+  const currentTradeCount = isLiveMode ? filteredLiveTrades.length : resolved.historicalTradesCount;
 
   const isPositiveExpectancy = !isLegacy && currentAvgNetR >= 0;
   const isCommodityAsset = ["GC=F", "SI=F", "CL=F", "XAUUSDT", "XAGUSDT", "CLUSDT"].includes(selectedAsset);

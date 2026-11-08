@@ -210,20 +210,19 @@ function mapRecordToTradeOrder(
 
 
 
+  const isDistributed1H = modelId === "distributed-1h-engine";
+  const isDistributed4H = modelId === "distributed-4h-engine";
   const is4H = modelId === "unified-4h-engine" || modelId === "4h-swing-meta-017";
+  const isPure = modelId === "pure-rules-baseline" || modelId === "pure-rules-1h-baseline" || modelId === "pure-rules-4h-baseline";
 
-  const isPure = modelId === "pure-rules-baseline";
-
-
-
-  const modelName = is4H
-
+  const modelName = isDistributed4H
+    ? "Distributed 4H Specialists [7 Models]"
+    : isDistributed1H
+    ? "Distributed 1H Specialists [7 Models]"
+    : is4H
     ? "Unified 4H Swing Engine [INCREMENTAL SYNC]"
-
     : isPure
-
     ? "Rule-Based Engine (No AI Filter) [BENCHMARK]"
-
     : "Unified 1H Multi-Asset Engine [ACTIVE LIVE]";
 
 
@@ -750,7 +749,7 @@ export async function GET(req: Request) {
 
     const livePredictionLogs = await getLivePredictionLogs(
 
-      !is4H && !isPure ? "commodities" : "all",
+      "all",
 
       limit
 
