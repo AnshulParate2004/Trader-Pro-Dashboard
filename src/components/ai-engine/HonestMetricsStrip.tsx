@@ -120,7 +120,7 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
         </div>
         <span className="font-mono text-xs text-chrome-dim">
           {isLiveMode
-            ? `${resolved.liveTradesCount} Closed Live Executions Tracked (${resolved.assetLabel})`
+            ? `${liveCount} Closed Live Executions Tracked (${resolved.assetLabel})`
             : `${resolved.historicalTradesCount} Closed OOS Trades Evaluated (${resolved.assetLabel})`}
         </span>
       </div>
@@ -140,7 +140,7 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
             {isLiveMode ? (
-              resolved.liveTradesCount === 0
+              liveCount === 0
                 ? "100% Cash Safe"
                 : `${liveWins} Wins / ${liveCount} Trades`
             ) : selectedAsset === "DOTUSDT" ? (
@@ -165,14 +165,14 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
           </div>
           <div
             className={`font-mono text-xl sm:text-2xl font-bold mt-2 ${
-              (isLiveMode ? resolved.liveWinRate : resolved.winRate) >= 40 ? "text-win" : "text-loss"
+              (isLiveMode ? liveWinRate : resolved.winRate) >= 40 ? "text-win" : "text-loss"
             }`}
           >
             {isLiveMode ? (liveCount > 0 ? `${liveWinRate.toFixed(1)}%` : "0.0%") : `${resolved.winRate.toFixed(1)}%`}
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
             {isLiveMode ? (
-              resolved.liveTradesCount === 0 ? "No Drawdown Incurred" : "Net > 0 after Shark fees"
+              liveCount === 0 ? "No Drawdown Incurred" : "Net > 0 after Shark fees"
             ) : selectedAsset === "DOTUSDT" ? (
               "No Drawdown Incurred"
             ) : (
@@ -191,13 +191,13 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
           </div>
           <div className="font-mono text-xs sm:text-sm lg:text-[13px] xl:text-[14px] font-bold text-chrome-ink mt-2 flex items-baseline gap-0.5 sm:gap-1 flex-nowrap">
             {isLiveMode ? (
-              resolved.liveTradesCount === 0 ? (
+              liveCount === 0 ? (
                 <span className="text-chrome-dim">0.0% / 0.0%</span>
               ) : (
                 <>
-                  <span className="text-win-dark">{resolved.liveTpPercent.toFixed(1)}%</span>
+                  <span className="text-win-dark">{liveTpPercent.toFixed(1)}%</span>
                   <span className="text-chrome-dim font-normal">/</span>
-                  <span className="text-loss-dark">{resolved.liveSlPercent.toFixed(1)}%</span>
+                  <span className="text-loss-dark">{liveSlPercent.toFixed(1)}%</span>
                 </>
               )
             ) : selectedAsset === "DOTUSDT" ? (
@@ -212,7 +212,7 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
             {isLiveMode ? (
-              resolved.liveTradesCount === 0
+              liveCount === 0
                 ? "Cash Safe: 0 Trades"
                 : `${liveTpCount} TP / ${liveSlCount} SL`
             ) : selectedAsset === "DOTUSDT" ? (
@@ -233,14 +233,14 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
           </div>
           <div
             className={`font-mono text-xl sm:text-2xl font-bold mt-2 ${
-              (isLiveMode ? resolved.liveProfitFactor : resolved.profitFactor) >= 1 ? "text-win" : "text-chrome-ink"
+              (isLiveMode ? liveProfitFactor : resolved.profitFactor) >= 1 ? "text-win" : "text-chrome-ink"
             }`}
           >
             {isLiveMode ? (liveCount > 0 ? liveProfitFactor.toFixed(2) : "0.00") : resolved.profitFactor.toFixed(2)}
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
             {isLiveMode ? (
-              resolved.liveTradesCount === 0
+              liveCount === 0
                 ? "Cash Safe (1.00 PF)"
                 : `Gross PF: ${(liveProfitFactor * 1.05).toFixed(2)} (Net: ${liveProfitFactor.toFixed(2)})`
             ) : (
