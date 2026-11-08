@@ -1,6 +1,5 @@
 {
   "model_name": "lgbm_unified_4h_7assets",
-  "asset_class": "multi-asset",
   "timeframe": "4h",
   "universe": [
     "XAUUSDT",
@@ -11,33 +10,10 @@
     "SOLUSDT",
     "DOTUSDT"
   ],
-  "raw_universe": [
-    "GC=F",
-    "SI=F",
-    "CL=F",
-    "BTC-USD",
-    "ETH-USD",
-    "SOL-USD",
-    "DOT-USD"
-  ],
-  "commodity_map": {
-    "GC=F": {
-      "display": "XAUUSDT",
-      "name": "Gold (XAUUSDT)"
-    },
-    "SI=F": {
-      "display": "XAGUSDT",
-      "name": "Silver (XAGUSDT)"
-    },
-    "CL=F": {
-      "display": "CLUSDT",
-      "name": "Crude Oil (CLUSDT)"
-    }
-  },
-  "friction_bps": 8.0,
-  "n_samples": 2307,
-  "target_base_rate": 0.04204594711746858,
-  "p_cutoff": 0.06,
+  "n_samples": 1247,
+  "target_base_rate": 0.2192513368983957,
+  "p_cutoff": 0.24,
+  "tau_star": 0.24,
   "num_trees": 100,
   "feature_names": [
     "feat_atr_pct",
@@ -50,67 +26,5 @@
     "feat_rsi_14",
     "feat_dist_ema20",
     "feat_dist_ema50"
-  ],
-  "feature_stats": {
-    "feat_atr_pct": {
-      "mean": 0.015143664304888983,
-      "std": 0.007910279014954938,
-      "min": 0.0029857188662650714,
-      "max": 0.07123584236318022
-    },
-    "feat_vol_zscore": {
-      "mean": 0.2687457620275157,
-      "std": 1.128280728728372,
-      "min": -1.5054693813972386,
-      "max": 4.0
-    },
-    "feat_volatility_ratio": {
-      "mean": 0.96562409996408,
-      "std": 0.26917639744196403,
-      "min": 0.41907330201244064,
-      "max": 2.587402036265319
-    },
-    "feat_donchian_pos": {
-      "mean": 0.04560089197833302,
-      "std": 0.42772984384556784,
-      "min": -0.7495470197075359,
-      "max": 0.8109649312416549
-    },
-    "feat_trend_dist_200": {
-      "mean": 0.0052868990776647916,
-      "std": 0.1113697752943205,
-      "min": -0.38688788420115056,
-      "max": 0.5
-    },
-    "feat_mom_24h": {
-      "mean": 0.0012914171224762975,
-      "std": 0.04146411368518949,
-      "min": -0.20341567360561397,
-      "max": 0.3
-    },
-    "feat_mom_72h": {
-      "mean": 0.004674816050064152,
-      "std": 0.06502072634206457,
-      "min": -0.25160142114853046,
-      "max": 0.43809897270287634
-    },
-    "feat_rsi_14": {
-      "mean": 0.05172499453544314,
-      "std": 0.35566891006599344,
-      "min": -0.7849147109040632,
-      "max": 0.8913271030192049
-    },
-    "feat_dist_ema20": {
-      "mean": -0.00013574482561767607,
-      "std": 0.03641550423898932,
-      "min": -0.1,
-      "max": 0.1
-    },
-    "feat_dist_ema50": {
-      "mean": -0.00042936830259426764,
-      "std": 0.054519729941885184,
-      "min": -0.15,
-      "max": 0.15
-    }
-  }
+  ]
 }

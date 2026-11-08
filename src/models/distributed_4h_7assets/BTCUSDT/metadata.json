@@ -1,22 +1,9 @@
 {
   "model_name": "distributed_4h_BTCUSDT",
-  "timeframe": "4h",
   "symbol": "BTCUSDT",
-  "n_samples": 496,
-  "train_samples": 372,
-  "calibration_samples": 124,
-  "target_base_rate": 0.2151,
-  "p_cutoff": 0.4419,
-  "tau_star": 0.4419,
-  "percentile_50": 0.1821,
-  "percentile_75": 0.2837,
-  "percentile_90": 0.4247,
-  "calibration_stats": {
-    "admitted_trades": 9,
-    "win_rate_pct": 44.44,
-    "net_r": -0.73,
-    "profit_factor": 0.83
-  },
+  "timeframe": "4h",
+  "n_samples": 207,
+  "tau_star": 0.3282,
   "num_trees": 100,
   "feature_names": [
     "feat_atr_pct",
@@ -29,114 +16,5 @@
     "feat_rsi_14",
     "feat_dist_ema20",
     "feat_dist_ema50"
-  ],
-  "feature_stats": {
-    "feat_atr_pct": {
-      "mean": 0.01854,
-      "std": 0.00994,
-      "min": 0.0046,
-      "max": 0.10512
-    },
-    "feat_vol_zscore": {
-      "mean": 1.76422,
-      "std": 1.16425,
-      "min": -0.89822,
-      "max": 4.09731
-    },
-    "feat_volatility_ratio": {
-      "mean": 1.12867,
-      "std": 0.3063,
-      "min": 0.41828,
-      "max": 2.42389
-    },
-    "feat_donchian_pos": {
-      "mean": 0.63092,
-      "std": 0.71856,
-      "min": -1.25186,
-      "max": 2.29065
-    },
-    "feat_trend_dist_200": {
-      "mean": 0.03654,
-      "std": 0.13257,
-      "min": -0.48377,
-      "max": 0.53443
-    },
-    "feat_mom_24h": {
-      "mean": 0.01253,
-      "std": 0.08324,
-      "min": -0.40727,
-      "max": 0.22072
-    },
-    "feat_mom_72h": {
-      "mean": 0.0306,
-      "std": 0.13375,
-      "min": -0.44155,
-      "max": 0.52074
-    },
-    "feat_rsi_14": {
-      "mean": 0.0827,
-      "std": 0.47194,
-      "min": -0.90983,
-      "max": 0.96434
-    },
-    "feat_dist_ema20": {
-      "mean": 0.00319,
-      "std": 0.05573,
-      "min": -0.5101,
-      "max": 0.12085
-    },
-    "feat_dist_ema50": {
-      "mean": 0.00563,
-      "std": 0.0765,
-      "min": -0.66214,
-      "max": 0.1754
-    }
-  },
-  "verification_samples": [
-    {
-      "features": [
-        0.01799,
-        0.34436,
-        0.52363,
-        -0.19186,
-        -0.1074,
-        -0.05981,
-        -0.04789,
-        -0.66403,
-        -0.04271,
-        -0.05447
-      ],
-      "expected_prob": 0.23382
-    },
-    {
-      "features": [
-        0.01369,
-        2.66729,
-        1.318,
-        1.2369,
-        0.00427,
-        0.01469,
-        0.00713,
-        0.30336,
-        0.02163,
-        0.01298
-      ],
-      "expected_prob": 0.21017
-    },
-    {
-      "features": [
-        0.0133,
-        1.34624,
-        0.87715,
-        1.01366,
-        0.12141,
-        0.07958,
-        0.13338,
-        0.12654,
-        0.02637,
-        0.05709
-      ],
-      "expected_prob": 0.20961
-    }
   ]
 }

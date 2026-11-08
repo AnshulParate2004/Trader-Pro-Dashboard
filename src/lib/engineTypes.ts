@@ -76,7 +76,7 @@ export const TOP_MODELS: AIStrategyModel[] = [
     ratchetTriggerR: 0,
     requires4HMacro: false,
     requires5MMicro: false,
-    description: "DISTRIBUTED 1H SPECIALISTS: 7 dedicated LightGBM specialist models trained per asset (+616.66R historical return).",
+    description: "DISTRIBUTED 1H SPECIALISTS: 7 dedicated LightGBM specialist models trained per asset (+609.99R historical return, 1,651 trades).",
   },
   {
     id: "unified-4h-engine",
@@ -102,7 +102,7 @@ export const TOP_MODELS: AIStrategyModel[] = [
     ratchetTriggerR: 0,
     requires4HMacro: false,
     requires5MMicro: false,
-    description: "UNIFIED 4H SWING: Single universal LightGBM brain trading all 7 assets on 4-Hour swing candles.",
+    description: "UNIFIED 4H SWING: Single universal LightGBM brain trading all 7 assets on 4-Hour swing candles (373 historical trades, +318.27R).",
   },
   {
     id: "distributed-4h-engine",
@@ -128,7 +128,7 @@ export const TOP_MODELS: AIStrategyModel[] = [
     ratchetTriggerR: 0,
     requires4HMacro: false,
     requires5MMicro: false,
-    description: "DISTRIBUTED 4H SPECIALISTS: 7 dedicated 4-Hour specialist models trained per asset (+529.41R historical return).",
+    description: "DISTRIBUTED 4H SPECIALISTS: 7 dedicated 4-Hour specialist models trained per asset (+425.00R historical return, 418 trades).",
   },
   {
     id: "pure-rules-baseline",
