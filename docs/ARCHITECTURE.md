@@ -69,14 +69,14 @@ flowchart LR
 
 ### Engine Specifications
 
-| # | Engine Key | Timeframe | Architecture | Filter / Gating Mechanism | Live Net R (Oct 21 – Nov 7) |
-| :-: | :--- | :-: | :--- | :--- | :-: |
-| **1** | `swing-4h` | **4H** | Unified 7-Asset | LightGBM Meta-Classifier ($P \ge 0.50$) | **+10.95 R** (80% Win) |
-| **2** | `distributed-4h-specialist` | **4H** | 7 Distributed Specialists | Asset-Specific LightGBM ($P \ge 0.50$) | **+10.95 R** (80% Win) |
-| **3** | `unified-1h-7assets` | **1H** | Unified 7-Asset | LightGBM Meta-Classifier ($P \ge 0.45$) | **+13.68 R** (56.1% Win) |
-| **4** | `distributed-1h-specialist` | **1H** | 7 Distributed Specialists | Asset-Specific LightGBM ($P \ge 0.45$) | **+15.54 R** (58.1% Win) |
-| **5** | `pure-rules-1h-baseline` | **1H** | Pure Mechanical Rules | Zero AI Filter (20-Donchian + 200 SMA) | **+5.32 R** (44.7% Win) |
-| **6** | `pure-rules-4h-baseline` | **4H** | Pure Mechanical Rules | Zero AI Filter (20-Donchian + 200 SMA) | **+0.42 R** (47.6% Win) |
+| # | Engine Key | Timeframe | Architecture | Gating Mechanism | 2020–2024 Holdout Stats | Live Window (Oct 21 – Nov 8, 2026) |
+| :-: | :--- | :-: | :--- | :--- | :---: | :---: |
+| **1** | `unified-1h-engine` | **1H** | Unified 7-Asset | LightGBM Universal ($P \ge 0.45$) | 4,403 trades (44.7% WR, 0.97 PF) | 32 trades (43.8% WR, -1.51 R) |
+| **2** | `distributed-1h-engine` | **1H** | 7 Specialists | Per-Asset LightGBM ($P \ge 0.45$) | 4,376 trades (43.9% WR, 0.92 PF) | 32 trades (56.3% WR, +2.18 R) |
+| **3** | `unified-4h-engine` | **4H** | Unified 7-Asset | LightGBM Universal ($P \ge 0.50$) | 511 trades (46.6% WR, +26.71 R, 1.16 PF) | 1 trade (100% Cash-Safe) |
+| **4** | `distributed-4h-engine` | **4H** | 7 Specialists | Per-Asset LightGBM ($P \ge 0.50$) | 1,086 trades (46.9% WR, +7.60 R, 1.02 PF) | 9 trades (**77.8% WR**, +2.21 R, **2.89 PF**) |
+| **5** | `pure-rules-1h-baseline` | **1H** | Pure Rules | Zero AI Filter (20-Donchian + 200 SMA) | 6,217 trades (43.3% WR, 0.95 PF) | 62 trades (46.8% WR, -3.20 R) |
+| **6** | `pure-rules-4h-baseline` | **4H** | Pure Rules | Zero AI Filter (20-Donchian + 200 SMA) | 2,005 trades (46.0% WR, +46.12 R, 1.07 PF) | 21 trades (**61.9% WR**, +2.48 R, 1.34 PF) |
 
 ---
 

@@ -99,3 +99,40 @@ In accordance with [`docs/prereg/round2_residual_edge.md`](docs/prereg/round2_re
 3. **Core Lesson**:
    - Alpha cannot be extracted from micro-level noise.
    - Robust positive expectancy requires combining **macro trend filters (200-SMA / 50-EMA)** with **wide swing barriers ($+2.5\text{R}$ targets)** and **machine learning meta-labeling** that acts as an intelligent trade gate rather than a standalone price predictor.
+
+
+---
+
+## 5. Deep Learning (Tabular ResNet & Temporal CNN) vs. LightGBM on 7 Continuous Assets
+
+### Research Hypothesis
+Can modern deep tabular architectures (ResNet with Batch Normalization, Heavy Dropout 0.35, Cosine Annealing, AdamW) or 1D Dilated Temporal CNNs outperform tree ensembles (LightGBM) on 7 continuous assets?
+
+### Empirical Findings (Notebook 3 Benchmark)
+1. **Low Signal-to-Noise Ratio (SNR < 1%) Barrier**:
+   - Financial price series have a fundamentally lower signal-to-noise ratio than vision or natural language.
+   - LightGBM constructs orthogonal, axis-aligned decision splits. It isolates discrete conditions (e.g. `feat_cost_r < 0.08` AND `feat_sma200_dist > 0.02`) without smoothing across unpopulated feature space.
+   - Deep neural networks naturally produce smooth decision boundaries. In high-noise financial regimes, this inductive bias causes the network to overfit random variance unless constrained by aggressive regularizers (Dropout $\ge 0.35$, Weight Decay $\ge 10^{-4}$).
+2. **Inference Latency & Deployment Cost**:
+   - LightGBM: $\approx 0.005\text{ ms}$ per candidate evaluation with 0 GPU dependencies.
+   - PyTorch Tabular ResNet: $\approx 0.035\text{ ms}$ with PyTorch runtime overhead.
+3. **Takeaway**:
+   - For tabular quantitative meta-labeling on financial time series, LightGBM remains the superior production architecture in terms of risk-adjusted returns, out-of-sample stability, and compute efficiency.
+
+---
+
+## 6. The CME Futures Gap Illusion vs. 24/7 Continuous Crypto Perps
+
+### Research Question
+Why were CME futures (`GC=F`, `SI=F`, `CL=F`) permanently purged from Trader-Pro in favor of continuous crypto perps (`XAUUSDT`, `XAGUSDT`, `CLUSDT`)?
+
+### Empirical Findings
+1. **The Phantom Weekend Gap**:
+   - CME commodities close on Friday afternoon and reopen Sunday evening. 
+   - Over weekends, geopolitical and macroeconomic events create large price gaps on reopening.
+   - In backtesting, if a model evaluates at the Friday close and books an exit at Monday open, it produces phantom profits or catastrophic gap slippage that cannot be managed intraday.
+2. **Execution Un-realism**:
+   - Retail and prop crypto traders execute on 24/7 continuous perpetual contracts (Binance, Shark Exchange, Bybit). These contracts trade continuously through Saturday and Sunday without market halts.
+   - Backtesting CME futures data and deploying on 24/7 perpetual swaps creates fatal regime distribution shift.
+3. **Mandatory Standard**:
+   - All models in Trader-Pro are strictly trained and executed on **continuous 24/7 feeds**, ensuring $100\%$ execution parity between research and live paper trading.
