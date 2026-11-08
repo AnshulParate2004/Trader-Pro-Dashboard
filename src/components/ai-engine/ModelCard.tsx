@@ -49,16 +49,15 @@ export const ModelCard: React.FC<ModelCardProps> = ({
               <span className="text-[10px] font-mono font-bold bg-accent-tint text-chrome-green-ink px-2 py-0.5 rounded border border-accent/30">
                 {currentModel ? currentModel.timeframe.toUpperCase() : "MULTI-TIMEFRAME"}
               </span>
-              {currentModel && currentModel.id === "4h-swing-meta-017" && (
+              {currentModel && currentModel.id === "1h-commodities-rf" ? (
                 <span className="text-[10px] font-mono font-bold bg-win-tint text-chrome-green-ink px-2 py-0.5 rounded border border-win/40">
-                  ACTIVE OOS EDGE
+                  ACTIVE LIVE
                 </span>
-              )}
-              {currentModel && currentModel.statusBadge.includes("RETIRED") && (
-                <span className="text-[10px] font-mono font-bold bg-rose-50 text-rose-800 px-2 py-0.5 rounded border border-rose-300">
-                  RETIRED
+              ) : currentModel ? (
+                <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-300">
+                  SYNCED DB
                 </span>
-              )}
+              ) : null}
             </div>
             <p className="font-body text-xs text-chrome-dim max-w-2xl leading-relaxed mt-0.5">
               {currentModel
@@ -141,18 +140,20 @@ export const ModelCard: React.FC<ModelCardProps> = ({
           </div>
 
           <div className={`border rounded p-2 flex flex-col overflow-hidden ${
-            dynamicAvgNetR >= 0 ? "bg-win-tint border-win/40" : "bg-rose-50 border-rose-300"
+            currentModel.id === "1h-commodities-rf"
+              ? "bg-win-tint border-win/40"
+              : "bg-slate-50 border-slate-300"
           }`}>
             <span className={`text-[10px] uppercase font-bold ${
-              dynamicAvgNetR >= 0 ? "text-chrome-green-ink" : "text-rose-800"
+              currentModel.id === "1h-commodities-rf" ? "text-chrome-green-ink" : "text-slate-600"
             }`}>Live Status</span>
             <span className={`text-xs font-bold mt-1 ${
-              dynamicAvgNetR >= 0 ? "text-win-dark" : "text-rose-800"
+              currentModel.id === "1h-commodities-rf" ? "text-win-dark" : "text-slate-700 font-mono"
             }`}>
-              {dynamicAvgNetR >= 0 ? "ACTIVE OOS PAPER" : "RETIRED"}
+              {currentModel.id === "1h-commodities-rf" ? "ACTIVE LIVE" : "SYNCED DB"}
             </span>
             <span className="text-[9px] text-chrome-dim font-sans">
-              {dynamicAvgNetR >= 0 ? "Positive Expectancy" : "Negative Expectancy"}
+              {currentModel.id === "1h-commodities-rf" ? "Primary Live Paper Engine" : "Watermark Delta Cached"}
             </span>
           </div>
         </div>

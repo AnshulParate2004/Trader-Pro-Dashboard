@@ -116,7 +116,7 @@ describe("Risk Engine & Execution Safeguards Tests", () => {
 
   describe("3. Daily Loss Limit (-3R default)", () => {
     test("triggers when closed trades today exceed -3.0R daily loss", () => {
-      const now = Date.now();
+      const now = Date.UTC(2026, 10, 8, 12, 0, 0);
       const trades: TradeOrder[] = [
         createSyntheticTrade("t_1", -1.0, now - 3600000),
         createSyntheticTrade("t_2", -1.0, now - 1800000),
@@ -130,7 +130,7 @@ describe("Risk Engine & Execution Safeguards Tests", () => {
     });
 
     test("does not trigger when today's loss is within -3.0R", () => {
-      const now = Date.now();
+      const now = Date.UTC(2026, 10, 8, 12, 0, 0);
       const trades: TradeOrder[] = [
         createSyntheticTrade("t_1", -1.0, now - 3600000),
         createSyntheticTrade("t_2", +0.5, now - 1800000),
@@ -143,7 +143,7 @@ describe("Risk Engine & Execution Safeguards Tests", () => {
     });
 
     test("ignores trades closed on previous UTC days", () => {
-      const now = Date.now();
+      const now = Date.UTC(2026, 10, 8, 12, 0, 0);
       const yesterday = now - 86400000 * 2;
       const trades: TradeOrder[] = [
         createSyntheticTrade("t_old", -5.0, yesterday),
