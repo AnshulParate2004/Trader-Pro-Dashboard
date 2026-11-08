@@ -118,19 +118,17 @@ xychart-beta
 
 ---
 
-## 4. Deep Learning vs. LightGBM Benchmark (Notebook 3)
+## 4. Advanced Deep Learning Frontiers (Notebook 3)
 
-The complete benchmark is codified in [`Trader-Pro/notebooks/03_deep_learning_vs_lightgbm_benchmark.ipynb`](file:///D:/Projects_Main/Trade-Pro/Trader-Pro/notebooks/03_deep_learning_vs_lightgbm_benchmark.ipynb).
+The complete benchmark and architecture exploration is codified in [`Trader-Pro/notebooks/03_deep_learning_hf_foundation_model_frontiers.ipynb`](file:///D:/Projects_Main/Trade-Pro/Trader-Pro/notebooks/03_deep_learning_hf_foundation_model_frontiers.ipynb).
 
-### Comparative Architecture Overview:
-- **LightGBM:** 100 decision trees, `max_depth=5`, `learning_rate=0.03`, `subsample=0.8`, `colsample_bytree=0.8`.
-- **PyTorch Tabular ResNet:** Deep residual architecture with Batch Normalization, Heavy Dropout (0.35), LeakyReLU(0.1), AdamW (`weight_decay=1e-4`), and Cosine Annealing learning rate schedule.
-- **PyTorch 1D Temporal Dilated CNN:** Sequence model operating over 6-bar multi-period temporal feature paths.
+### Comparative Architecture & Frontier Overview:
+- **LightGBM (Active Production Engine):** 100 decision trees, `max_depth=4`, `num_leaves=15`, `learning_rate=0.04`, `reg_lambda=1.0`. Specifically optimized for low-data, event-driven breakout setups (~1,000–5,000 samples) with sub-0.02 ms in-memory inference latency.
+- **Frontier 1 - DeepLOB (High-Frequency L2/L3 Order Books):** Spatial 2D convolutions + multi-scale Inception temporal filters + GRU modeling order book depth, queue depletion, and micro-price imbalance across millions of ticks.
+- **Frontier 2 - Continuous Temporal WaveNet (TCN):** Causal dilated convolutions ($1, 2, 4, 8, 16, 32$) over continuous 256-bar multi-channel tensors ($B \times T \times C$) capturing market regime transitions without sparse event gating.
+- **Frontier 3 - Cross-Asset Self-Supervised Foundation Models (Time-MAE / PatchTST):** Patch-based Transformer pre-trained with 30% random masking across continuous multi-asset streams to learn universal market representations, followed by sample-efficient downstream transfer learning.
+- **Empirical Scaling Law:** Demonstrates the sample-size crossover: LightGBM dominates at $N < 10,000$ tabular rows, while Deep Learning scales monotonically at $N > 100,000$ continuous/HFT observations.
 
-### Benchmark Takeaways:
-1. **Inductive Biases:** Financial market data has a low Signal-to-Noise Ratio (SNR < 1%). Decision trees make axis-aligned cuts that isolate extreme volatility regimes without smoothing noise across boundaries. Neural networks, without extreme dropout, smooth across boundaries and fit noisy non-linearities.
-2. **Inference Latency:** LightGBM achieves $\approx 0.005\text{ ms}$ inference per candidate bar. PyTorch deep models require $\approx 0.035\text{ ms}$, adding dependency bloat without statistically beating gradient boosted trees on tabular features.
-3. **Verdict:** LightGBM remains our recommended primary production engine for tabular financial meta-labeling.
 
 ---
 
