@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { TOP_MODELS, AIStrategyModel } from "@/lib/engineTypes";
+import { TOP_MODELS, AIStrategyModel, EnginePerformanceMetrics, TradeOrder } from "@/lib/engineTypes";
 import { Brain, Sparkles, ChevronDown } from "lucide-react";
 
 interface ModelCardProps {
@@ -9,6 +9,9 @@ interface ModelCardProps {
   onModelChange: (modelId: string) => void;
   isTaker: boolean;
   tradingFeePercent?: number;
+  metrics?: EnginePerformanceMetrics | null;
+  trades?: TradeOrder[];
+  isLiveMode?: boolean;
 }
 
 export const ModelCard: React.FC<ModelCardProps> = ({
@@ -16,6 +19,9 @@ export const ModelCard: React.FC<ModelCardProps> = ({
   onModelChange,
   isTaker,
   tradingFeePercent,
+  metrics,
+  trades = [],
+  isLiveMode = true,
 }) => {
   const currentModel = TOP_MODELS.find((m) => m.id === selectedModelId) || null;
 
@@ -23,10 +29,29 @@ export const ModelCard: React.FC<ModelCardProps> = ({
   const feePct = tradingFeePercent !== undefined ? tradingFeePercent : (isTaker ? 0.040 : 0.016);
   const roundTripPct = (2 * (feePct * 1.18 + 0.010)) / 100;
   const frictionR = Number(((1000 * roundTripPct) / 100).toFixed(4));
-  const avgGrossR = currentModel
-    ? (currentModel.avgGrossR ?? (currentModel.avgNetR + 0.025))
-    : 0.20;
-  const dynamicAvgNetR = currentModel ? Number((avgGrossR - frictionR).toFixed(3)) : 0;
+
+  // Dynamic live execution metrics
+  const liveCount = trades.length;
+  const liveWins = trades.filter((t) => (t.netPnLINR ?? ((t.net_r ?? 0) * 100)) > 0).length;
+  const liveWinRate = liveCount > 0 ? Number(((liveWins / liveCount) * 100).toFixed(1)) : 0;
+  
+  const sumNetR = trades.reduce((acc, t) => acc + (t.net_r ?? (t.netPnLINR ? t.netPnLINR / 100 : 0)), 0);
+  const liveAvgNetR = liveCount > 0 ? Number((sumNetR / liveCount).toFixed(3)) : 0;
+
+  const grossWin = trades.filter((t) => (t.grossPnLINR ?? 0) > 0).reduce((acc, t) => acc + (t.grossPnLINR ?? 0), 0);
+  const grossLoss = Math.abs(trades.filter((t) => (t.grossPnLINR ?? 0) < 0).reduce((acc, t) => acc + (t.grossPnLINR ?? 0), 0));
+  const livePF = grossLoss > 0 ? Number((grossWin / grossLoss).toFixed(2)) : (grossWin > 0 ? 99.0 : 1.0);
+
+  const tpCount = trades.filter((t) => t.exitReason === "TP" || (t.netPnLINR ?? 0) > 0).length;
+  const tpSplit = liveCount > 0 ? Number(((tpCount / liveCount) * 100).toFixed(1)) : 0;
+  const slSplit = liveCount > 0 ? Number((((liveCount - tpCount) / liveCount) * 100).toFixed(1)) : 0;
+
+  // Display values: if live mode and live trades exist, show actual live metrics; otherwise holdout benchmark
+  const displayWinRate = isLiveMode && liveCount > 0 ? liveWinRate : (currentModel?.trueWinRate ?? 0);
+  const displayAvgNetR = isLiveMode && liveCount > 0 ? liveAvgNetR : (currentModel ? Number(((currentModel.avgGrossR ?? currentModel.avgNetR) - frictionR).toFixed(3)) : 0);
+  const displayPF = isLiveMode && liveCount > 0 ? livePF : (currentModel?.netProfitFactor ?? 1.0);
+  const displayTpSplit = isLiveMode && liveCount > 0 ? tpSplit : (currentModel?.tpSplit ?? 0);
+  const displaySlSplit = isLiveMode && liveCount > 0 ? slSplit : (currentModel?.slSplit ?? 0);
 
   return (
     <div className="bg-white border border-chrome-line rounded-lg p-4 sm:p-5 flex flex-col gap-4 shadow-xs">
@@ -39,7 +64,7 @@ export const ModelCard: React.FC<ModelCardProps> = ({
           <div className="flex flex-col">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-brand text-sm font-medium text-chrome-ink">
-                {currentModel ? currentModel.name : "All Top 4 Models (Combined Portfolio)"}
+                {currentModel ? currentModel.name : "All Top Models (Combined Portfolio)"}
               </span>
               {currentModel && (
                 <span className="text-[10px] font-mono font-bold bg-chrome-field text-chrome-ink px-2 py-0.5 rounded border border-chrome-line">
@@ -49,24 +74,16 @@ export const ModelCard: React.FC<ModelCardProps> = ({
               <span className="text-[10px] font-mono font-bold bg-accent-tint text-chrome-green-ink px-2 py-0.5 rounded border border-accent/30">
                 {currentModel ? currentModel.timeframe.toUpperCase() : "MULTI-TIMEFRAME"}
               </span>
-              {currentModel && currentModel.statusBadge.includes("ACTIVE LIVE") ? (
+              {currentModel && (
                 <span className="text-[10px] font-mono font-bold bg-win-tint text-chrome-green-ink px-2 py-0.5 rounded border border-win/40">
                   ACTIVE LIVE
                 </span>
-              ) : currentModel && currentModel.id.includes("pure-rules") ? (
-                <span className="text-[10px] font-mono font-bold bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-300">
-                  BENCHMARK
-                </span>
-              ) : currentModel ? (
-                <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-300">
-                  SYNCED DB
-                </span>
-              ) : null}
+              )}
             </div>
             <p className="font-body text-xs text-chrome-dim max-w-2xl leading-relaxed mt-0.5">
               {currentModel
                 ? currentModel.description
-                : "Aggregated performance and execution logs across all top-ranked algorithmic models from the backtesting suite."}
+                : "Aggregated performance and execution logs across all algorithmic models from the backtesting suite."}
             </p>
           </div>
         </div>
@@ -86,7 +103,6 @@ export const ModelCard: React.FC<ModelCardProps> = ({
                 #{m.rank}: {m.shortName}
               </option>
             ))}
-            <option value="all">🌐 All Models Combined (Aggregate Portfolio)</option>
           </select>
         </div>
       </div>
@@ -96,14 +112,16 @@ export const ModelCard: React.FC<ModelCardProps> = ({
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 pt-3 border-t border-chrome-edge font-mono text-xs">
           <div className="bg-chrome-field/50 border border-chrome-line rounded p-2 flex flex-col overflow-hidden">
             <span className="text-[10px] text-chrome-dim uppercase font-bold">True Win Rate</span>
-            <span className="text-base font-bold text-chrome-ink mt-0.5">{currentModel.trueWinRate}%</span>
-            <span className="text-[9px] text-chrome-dim font-sans">TP / (TP + SL)</span>
+            <span className="text-base font-bold text-chrome-ink mt-0.5">{displayWinRate.toFixed(1)}%</span>
+            <span className="text-[9px] text-chrome-dim font-sans">
+              {isLiveMode && liveCount > 0 ? `${liveWins} Wins / ${liveCount} Trades` : "TP / (TP + SL)"}
+            </span>
           </div>
 
           <div className="bg-chrome-field/50 border border-chrome-line rounded p-2 flex flex-col overflow-hidden">
             <span className="text-[10px] text-chrome-dim uppercase font-bold">Net Win Rate</span>
-            <span className={`text-base font-bold mt-0.5 ${currentModel.netWinRate >= 50 ? "text-win" : "text-loss"}`}>
-              {currentModel.netWinRate}%
+            <span className={`text-base font-bold mt-0.5 ${displayWinRate >= 45 ? "text-win" : "text-loss"}`}>
+              {displayWinRate.toFixed(1)}%
             </span>
             <span className="text-[9px] text-chrome-dim font-sans">Net &gt; 0 After Fees</span>
           </div>
@@ -112,21 +130,21 @@ export const ModelCard: React.FC<ModelCardProps> = ({
             <div className="flex items-center justify-between gap-1">
               <span className="text-[10px] text-chrome-dim uppercase font-bold">Avg Net R</span>
               <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-accent-tint text-chrome-green-ink border border-accent/30 font-bold truncate">
-                {feePct.toFixed(3)}%
+                {isLiveMode && liveCount > 0 ? "LIVE" : `${feePct.toFixed(3)}%`}
               </span>
             </div>
-            <span className={`text-base font-bold mt-0.5 ${dynamicAvgNetR >= 0 ? "text-win" : "text-loss"}`}>
-              {dynamicAvgNetR >= 0 ? "+" : ""}{dynamicAvgNetR.toFixed(3)} R
+            <span className={`text-base font-bold mt-0.5 ${displayAvgNetR >= 0 ? "text-win" : "text-loss"}`}>
+              {displayAvgNetR >= 0 ? "+" : ""}{displayAvgNetR.toFixed(3)} R
             </span>
             <span className="text-[9px] text-chrome-dim font-sans truncate">
-              Friction: ({feePct.toFixed(3)}% + 18% GST + Slip)
+              {isLiveMode && liveCount > 0 ? "Live Executed Net" : `Friction: (${feePct.toFixed(3)}% + GST)`}
             </span>
           </div>
 
           <div className="bg-chrome-field/50 border border-chrome-line rounded p-2 flex flex-col overflow-hidden">
             <span className="text-[10px] text-chrome-dim uppercase font-bold">Net Profit Factor</span>
-            <span className={`text-base font-bold mt-0.5 ${currentModel.netProfitFactor >= 1.0 ? "text-win" : "text-loss"}`}>
-              {currentModel.netProfitFactor}
+            <span className={`text-base font-bold mt-0.5 ${displayPF >= 1.0 ? "text-win" : "text-loss"}`}>
+              {displayPF.toFixed(2)}
             </span>
             <span className="text-[9px] text-chrome-dim font-sans">Net Win / Net Loss</span>
           </div>
@@ -134,30 +152,22 @@ export const ModelCard: React.FC<ModelCardProps> = ({
           <div className="bg-chrome-field/50 border border-chrome-line rounded p-2 flex flex-col overflow-hidden">
             <span className="text-[10px] text-chrome-dim uppercase font-bold">TP/BE/SL Split</span>
             <span className="text-xs font-bold text-chrome-ink mt-1 flex items-baseline gap-0.5 flex-nowrap">
-              <span className="text-win-dark">{currentModel.tpSplit}%</span>
+              <span className="text-win-dark">{displayTpSplit.toFixed(1)}%</span>
               <span className="text-chrome-dim font-normal">/</span>
-              <span>{currentModel.beSplit}%</span>
+              <span>0%</span>
               <span className="text-chrome-dim font-normal">/</span>
-              <span className="text-loss-dark">{currentModel.slSplit}%</span>
+              <span className="text-loss-dark">{displaySlSplit.toFixed(1)}%</span>
             </span>
             <span className="text-[9px] text-chrome-dim font-sans">Exit Distribution</span>
           </div>
 
-          <div className={`border rounded p-2 flex flex-col overflow-hidden ${
-            (currentModel.id === "unified-1h-engine" || currentModel.id === "1h-commodities-rf")
-              ? "bg-win-tint border-win/40"
-              : "bg-slate-50 border-slate-300"
-          }`}>
-            <span className={`text-[10px] uppercase font-bold ${
-              (currentModel.id === "unified-1h-engine" || currentModel.id === "1h-commodities-rf") ? "text-chrome-green-ink" : "text-slate-600"
-            }`}>Live Status</span>
-            <span className={`text-xs font-bold mt-1 ${
-              (currentModel.id === "unified-1h-engine" || currentModel.id === "1h-commodities-rf") ? "text-win-dark" : "text-slate-700 font-mono"
-            }`}>
-              {(currentModel.id === "unified-1h-engine" || currentModel.id === "1h-commodities-rf") ? "ACTIVE LIVE" : "SYNCED DB"}
+          <div className="border rounded p-2 flex flex-col overflow-hidden bg-win-tint border-win/40">
+            <span className="text-[10px] uppercase font-bold text-chrome-green-ink">Live Status</span>
+            <span className="text-xs font-bold mt-1 text-win-dark font-mono">
+              ACTIVE LIVE
             </span>
             <span className="text-[9px] text-chrome-dim font-sans">
-              {(currentModel.id === "unified-1h-engine" || currentModel.id === "1h-commodities-rf") ? "Primary Live Paper Engine" : "Watermark Delta Cached"}
+              {isLiveMode && liveCount > 0 ? `${liveCount} Live Executions` : "Watermark Delta Cached"}
             </span>
           </div>
         </div>

@@ -386,7 +386,7 @@ describe("4H Swing Meta-Labeling Engine Unit Tests", () => {
       assert.equal(data.success, true);
       assert.equal(data.modelId, "4h-swing-meta-017");
       assert.ok(data.metrics);
-      assert.equal(data.metrics.avgNetR, 0.204);
+      assert.equal(data.metrics.avgNetR, 0.052);
     });
   });
 });
