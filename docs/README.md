@@ -58,18 +58,26 @@ All documentation in `docs/` is organized into logical pillars:
 
 ---
 
-## 3. The 6 Production Trading Engines
+## 3. The 14 Production Trading Engines (Dual-Suite Platform)
 
-Trader-Pro features 6 concurrent production engines accessible via the `/ai-engine` selector and live REST APIs:
+Trader-Pro features 14 concurrent engines accessible via the `/ai-engine` selector and live REST APIs, hosting both the **`v1` Suite (Trained 2020–2023 | Unseen 2024–2025)** and the **`New` Suite (Trained 2024–2025 | Unseen 2020–2023)** side-by-side:
 
-| Engine # | Engine Identifier | Timeframe | Asset Scope | Model Architecture | 2020–2024 Holdout Performance | Live Window (Oct 21 – Nov 8, 2026) | Live Verdict & Status |
+| Rank | Engine Identifier | Suite | Timeframe | Architecture | Unseen Holdout Stats | Live Window (Oct 21 – Nov 07, 2026) | Live Status & Capital |
 | :---: | :--- | :---: | :---: | :--- | :---: | :---: | :--- |
-| **#1** | `unified-1h-engine` | **1H** | 7 Assets | 1 Universal LightGBM Brain | 4,403 trades (44.7% WR, 0.97 PF) | 32 trades (43.8% WR, -1.51 R) | **ACTIVE LIVE** (Capital: ₹6,848.70) |
-| **#2** | `distributed-1h-engine` | **1H** | 7 Assets | 7 Dedicated LightGBM Models | 4,376 trades (43.9% WR, 0.92 PF) | 32 trades (56.3% WR, +2.18 R) | **ACTIVE LIVE** (Capital: ₹7,218.40) |
-| **#3** | `unified-4h-engine` | **4H** | 7 Assets | 1 Universal LightGBM Brain | 511 trades (46.6% WR, +26.71 R, 1.16 PF) | 1 trade (100% Cash Safe) | **ACTIVE LIVE** (100% Cash-Safe) |
-| **#4** | `distributed-4h-engine` | **4H** | 7 Assets | 7 Dedicated LightGBM Models | 1,086 trades (46.9% WR, +7.60 R, 1.02 PF) | 9 trades (**77.8% WR**, +2.21 R, **2.89 PF**) | **ACTIVE LIVE CHAMPION** (Capital: ₹7,220.80) |
-| **#5** | `pure-rules-1h-baseline` | **1H** | 7 Assets | Mechanical (No AI Gating) | 6,217 trades (43.3% WR, 0.95 PF) | 62 trades (46.8% WR, -3.20 R) | **ACTIVE BENCHMARK** (Capital: ₹6,680.00) |
-| **#6** | `pure-rules-4h-baseline` | **4H** | 7 Assets | Mechanical (No AI Gating) | 2,005 trades (46.0% WR, +46.12 R, 1.07 PF) | 21 trades (**61.9% WR**, +2.48 R, 1.34 PF) | **ACTIVE BENCHMARK** (Capital: ₹7,248.00) |
+| **#1** | `v1-distributed-4h-engine` | `v1` | **4H** | 7 Dedicated Models | 336 trades (53.3% WR, **+40.88R**, 1.41 PF) | 11 trades (**72.7% WR**, **+1.19R**) | **ACTIVE CHAMPION** (₹7,119.00) |
+| **#2** | `v1-stacking-meta-engine` | `v1` | **1H** | Logistic Meta-Learner | 1,669 trades (47.8% WR, **+30.05R**, 1.05 PF) | 27 trades (**51.9% WR**, -0.79R) | **ACTIVE ENSEMBLE** (₹6,921.00) |
+| **#3** | `v1-distributed-1h-engine` | `v1` | **1H** | 7 Dedicated Models | 1,659 trades (47.7% WR, **+31.46R**, 1.05 PF) | 25 trades (48.0% WR, -2.48R) | **ACTIVE SPECIALISTS** (₹6,752.00) |
+| **#4** | `v1-unified-1h-engine` | `v1` | **1H** | 1 Universal Brain | 2,527 trades (46.6% WR, **+5.85R**, 1.01 PF) | 46 trades (47.8% WR, **+1.19R**) | **ACTIVE LIVE** (₹7,119.00) |
+| **#5** | `v1-consensus-committee-engine` | `v1` | **1H** | Consensus Committee | 1,404 trades (47.1% WR, **+0.33R**, 1.00 PF) | 21 trades (47.6% WR, -1.96R) | **ACTIVE COMMITTEE** (₹6,804.00) |
+| **#6** | `v1-unified-4h-engine` | `v1` | **4H** | 1 Universal Brain | 53 trades (45.3% WR, -1.43R, 0.93 PF) | 1 trade (**100% WR**, **+0.39R**) | **ACTIVE SWING** (₹7,039.00) |
+| **#7** | `unified-4h-engine` | `New` | **4H** | 1 Universal Brain | 511 trades (46.6% WR, **+26.71R**, 1.16 PF) | 1 trade (0.0% WR, -0.76R) | **ACTIVE SWING** (₹6,924.00) |
+| **#8** | `distributed-4h-engine` | `New` | **4H** | 7 Dedicated Models | 1,086 trades (46.9% WR, **+7.34R**, 1.02 PF) | 9 trades (**77.8% WR**, **+2.20R**) | **ACTIVE SPECIALISTS** (₹7,220.80) |
+| **#9** | `unified-1h-engine` | `New` | **1H** | 1 Universal Brain | 4,403 trades (44.7% WR, -47.04R, 0.97 PF) | 32 trades (43.8% WR, -1.84R) | **ACTIVE LIVE** (₹6,816.00) |
+| **#10** | `distributed-1h-engine` | `New` | **1H** | 7 Dedicated Models | 4,376 trades (43.9% WR, -151.17R, 0.92 PF) | 32 trades (**56.2% WR**, -0.07R) | **ACTIVE SPECIALISTS** (₹6,993.00) |
+| **#11** | `new-consensus-committee-engine` | `New` | **1H** | Consensus Committee | 3,381 trades (44.6% WR, -28.35R, 0.98 PF) | 37 trades (35.1% WR, -9.90R) | **ACTIVE COMMITTEE** (₹6,010.00) |
+| **#12** | `new-stacking-meta-engine` | `New` | **1H** | Logistic Meta-Learner | 3,678 trades (43.9% WR, -91.17R, 0.94 PF) | 39 trades (33.3% WR, -11.98R) | **ACTIVE ENSEMBLE** (₹5,802.00) |
+| **#13** | `pure-rules-4h-baseline` | Benchmark | **4H** | Mechanical (No AI) | 2,005 trades (46.0% WR, **+47.11R**, 1.07 PF) | 21 trades (**61.9% WR**, **+1.97R**) | **BENCHMARK** (₹7,197.00) |
+| **#14** | `pure-rules-1h-baseline` | Benchmark | **1H** | Mechanical (No AI) | 6,217 trades (43.3% WR, -131.54R, 0.95 PF) | 62 trades (46.8% WR, -3.60R) | **BENCHMARK** (₹6,640.00) |
 
 ---
 

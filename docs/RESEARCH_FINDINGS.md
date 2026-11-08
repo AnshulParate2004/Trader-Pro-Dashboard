@@ -136,3 +136,40 @@ Why were CME futures (`GC=F`, `SI=F`, `CL=F`) permanently purged from Trader-Pro
    - Backtesting CME futures data and deploying on 24/7 perpetual swaps creates fatal regime distribution shift.
 3. **Mandatory Standard**:
    - All models in Trader-Pro are strictly trained and executed on **continuous 24/7 feeds**, ensuring $100\%$ execution parity between research and live paper trading.
+
+
+---
+
+## 7. Multi-Cycle Regime Generalization: Why v1 (2020–2023 Train) Outperforms New (2024–2025 Train)
+
+### Research Question
+How does the temporal calibration window affect the out-of-sample survival and forward live performance of LightGBM meta-labeling models?
+
+### Empirical Comparison: v1 (Trained 2020–2023) vs New (Trained 2024–2025)
+
+1. **The Regime Diversity Advantage of v1**:
+   - The **`v1` Suite** was trained on four tumultuous market years ($2020 - 2023$):
+     - The March 2020 liquidity shock and subsequent DeFi summer.
+     - The 2021 parabolic bull market and double top.
+     - The 2022 crypto winter ($-65\%$ to $-77\%$ drawdown, Terra/Luna collapse, 3AC failure, FTX insolvency).
+     - The 2023 range-bound accumulation grind.
+   - Because `v1` encountered structural bear markets, hyper-volatile chop, and low-volatility compression, its decision tree splits learned conservative, defensive probability cutoffs that reject low-conviction breakout setups.
+
+2. **The Recency Trap of New**:
+   - The **`New` Suite** was trained solely on $2024 - 2025$ post-ETF institutional momentum.
+   - While these models performed well in trending 2024 conditions, when exposed backwards to out-of-sample historical holdouts ($2020 - 2023$), they suffered severe drawdowns ($-28.35	ext{R}$ to $-151.17	ext{R}$) due to false-breakout vulnerability during bear market consolidations.
+
+3. **Out-of-Sample Empirical Scorecard**:
+   - **Stacking Meta-Learner**:
+     - `v1` (2024–2025 Unseen): **$+30.05	ext{R}$ Net Profit ($47.8\%$ Win Rate across 1,669 trades)**.
+     - `New` (2020–2023 Unseen): **$-91.17	ext{R}$ Drawdown ($43.9\%$ Win Rate across 3,678 trades)**.
+   - **Distributed 4H Specialists**:
+     - `v1` (2024–2025 Unseen): **$+40.88	ext{R}$ Net Profit ($53.3\%$ Win Rate, $1.41$ Profit Factor across 336 trades)**.
+     - `New` (2020–2023 Unseen): $+7.34	ext{R}$ Net Profit ($46.9\%$ Win Rate, $1.02$ Profit Factor).
+
+4. **Live Forward Window Stress Test (₹7,000 Starting Capital)**:
+   - Evaluated across the forward live window (Oct 21 – Nov 07, 2026) allocating ₹1,000 per asset across all 7 continuous instruments:
+     - **`v1` Suite Portfolio**: Ending Capital = **₹6,987.13 ($-0.18\%$ / $-1.30	ext{R}$)**, preserving virtually $100\%$ of capital with profitable commodity breakouts on Crude Oil ($+1.46	ext{R}$) and Gold ($+1.57	ext{R}$).
+     - **`New` Suite Portfolio**: Ending Capital = **₹6,887.88 ($-1.60\%$ / $-11.21	ext{R}$)**, experiencing greater chop and fee drag.
+
+**Conclusion**: In financial machine learning, training data length and regime diversity strictly trump recency. A model exposed to extreme historical shocks generalizes better out-of-sample than a model trained only on recent upward momentum.

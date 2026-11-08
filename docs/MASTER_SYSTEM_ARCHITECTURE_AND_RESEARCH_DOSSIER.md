@@ -18,21 +18,34 @@ KEY CONTEXT YOU MUST KNOW:
 1. Architecture:
    - Trader-Pro-Dashboard: Next.js 14.2 App Router dashboard (/terminal, /ai-engine), headless cron workers (/api/cron/*), MongoDB Atlas trade logging, native in-memory TypeScript decision tree inference (src/lib/treeInference.ts).
    - Trader-Pro: Python quantitative research lake, continuous 7-asset ingestion, visual EDA, LightGBM/XGBoost/PyTorch Tabular ResNet pipelines, and decision tree exporters.
-2. The 6 Production Trading Engines:
-   - #1: Unified 1H Multi-Asset Meta Engine [1 Universal Brain] (4,403 Holdout Trades, 44.7% WR | 32 Live Trades, 43.8% WR)
-   - #2: Distributed 1H Specialists [7 Models] (4,376 Holdout Trades, 43.9% WR | 32 Live Trades, 56.3% WR, +2.18R)
-   - #3: Unified 4H Swing Engine [1 Universal Brain] (511 Holdout Trades, 46.6% WR, +26.71R | 1 Live Trade, 100% Cash-Preserved)
-   - #4: Distributed 4H Specialists [7 Models] (1,086 Holdout Trades, 46.9% WR | 9 Live Trades, 77.8% WR [7W/2L], +2.21R, 2.89 PF)
-   - #5: Rule-Based 1H Baseline [No AI] (6,217 Holdout Trades, 43.3% WR | 62 Live Trades, 46.8% WR)
-   - #6: Rule-Based 4H Baseline [No AI] (2,005 Holdout Trades, 46.0% WR | 21 Live Trades, 61.9% WR, +2.48R)
+2. The 14 Production & Benchmark Trading Engines (Dual-Suite Architecture):
+   v1 Suite (Trained: 2020-2023 | Unseen: 2024-2025 [2 Years] | Live: Oct 21 - Nov 07, 2026):
+   - #1: [v1] 4H Distributed Specialists [Top Performer] (336 Unseen Trades, 53.3% WR, +40.88R | 11 Live Trades, 72.7% WR, +1.19R)
+   - #2: [v1] Stacking Meta-Learner [Ensemble] (1,669 Unseen Trades, 47.8% WR, +30.05R | 27 Live Trades, 51.9% WR, -0.79R)
+   - #3: [v1] 1H Distributed Specialists (1,659 Unseen Trades, 47.7% WR, +31.46R | 25 Live Trades, 48.0% WR, -2.48R)
+   - #4: [v1] 1H Unified [1 Brain] (2,527 Unseen Trades, 46.6% WR, +5.85R | 46 Live Trades, 47.8% WR, +1.19R)
+   - #5: [v1] 1H Consensus Committee (1,404 Unseen Trades, 47.1% WR, +0.33R | 21 Live Trades, 47.6% WR, -1.96R)
+   - #6: [v1] 4H Unified [1 Brain] (53 Unseen Trades, 45.3% WR, -1.43R | 1 Live Trade, 100% WR, +0.39R)
+   New Suite (Trained: 2024-2025 | Unseen: 2020-2023 [4 Years] | Live: Oct 21 - Nov 07, 2026):
+   - #7: [New] 4H Unified [1 Brain] (511 Unseen Trades, 46.6% WR, +26.71R | 1 Live Trade, -0.76R)
+   - #8: [New] 4H Distributed Specialists (1,086 Unseen Trades, 46.9% WR, +7.34R | 9 Live Trades, 77.8% WR, +2.20R)
+   - #9: [New] 1H Unified [1 Brain] (4,403 Unseen Trades, 44.7% WR, -47.04R | 32 Live Trades, 43.8% WR, -1.84R)
+   - #10: [New] 1H Distributed Specialists (4,376 Unseen Trades, 43.9% WR, -151.17R | 32 Live Trades, 56.2% WR, -0.07R)
+   - #11: [New] 1H Consensus Committee (3,381 Unseen Trades, 44.6% WR, -28.35R | 37 Live Trades, 35.1% WR, -9.90R)
+   - #12: [New] Stacking Meta-Learner (3,678 Unseen Trades, 43.9% WR, -91.17R | 39 Live Trades, 33.3% WR, -11.98R)
+   Rule-Based Benchmarks (Zero AI Gating):
+   - #13: 4H Rule-Based [No AI] (2,005 Unseen Trades, 46.0% WR, +47.11R | 21 Live Trades, 61.9% WR, +1.97R)
+   - #14: 1H Rule-Based [No AI] (6,217 Unseen Trades, 43.3% WR, -131.54R | 62 Live Trades, 46.8% WR, -3.60R)
 3. Multi-Asset Scope (7 Continuous Instruments):
    - Crypto Perps: BTCUSDT, ETHUSDT, SOLUSDT, DOTUSDT
    - Macro Commodities: XAUUSDT (Gold), XAGUSDT (Silver), CLUSDT (WTI Crude Oil)
    - Zero CME data: GC=F, SI=F, CL=F are permanently decommissioned due to weekend gap traps and non-executable hours.
 4. Historical & Out-of-Sample Horizons:
-   - Standardized In-Sample Training: 2024 -> 2025 (2 years post-ETF calibration)
-   - 4-Year Pre-ETF Unseen Holdout: 2020 -> 2024 (2020 Bull, 2021 Peak, 2022 Bear Crash, 2023 Accumulation)
-   - Forward Unseen Live Evaluation: Oct 21, 2026 -> Nov 8, 2026 (Live paper execution on closed bars)
+   - v1 Model Suite Training: 2020-01-01 -> 2023-12-31 (4 years covering COVID crash, 2021 bull, 2022 bear, 2023 recovery)
+   - v1 Unseen Holdout: 2024-01-01 -> 2025-12-31 (2 years out-of-sample forward test)
+   - New Model Suite Training: 2024-01-01 -> 2025-12-31 (2 years post-ETF calibration)
+   - New Unseen Holdout: 2020-01-01 -> 2023-12-31 (4 years backwards out-of-sample holdout)
+   - Forward Live Window: Oct 21, 2026 -> Nov 07, 2026 (Live forward paper execution on closed bars across both suites)
 5. Non-Negotiable Hard Invariants:
    - FROZEN FILE: Never edit src/lib/paperExecutor1HA.ts (SHA-256: C1DE3359D29A4B4C6BFB3662A65C2ABF5DD4001052BDF6CAA1A7AA50FB8B33A8).
    - Zero lookahead: Signals evaluate strictly at candle close t-1 with 0 intrabar future leakage.
@@ -84,18 +97,54 @@ flowchart TD
 
 ---
 
-## 2. Complete Scorecard of Evaluated Engines
+## 2. Complete Head-to-Head Scorecard: v1 vs New vs Benchmarks
 
-All figures reflect **strict point-in-time causality**, zero lookahead bias, and **realistic Indian exchange friction deducted** (0.100% taker fee + 18% GST + 0.010% slippage per side = 0.1144% round-trip):
+All evaluations enforce **strict point-in-time causality**, zero lookahead bias, and **realistic exchange friction deducted** (0.100% taker fee + 18% GST + 0.010% slippage per side = 0.1144% round-trip):
 
-| Rank & Engine Architecture | Timeframe | 2020–2024 Unseen Holdout Trades | Holdout Win Rate | Holdout Net R | Holdout PF | Live Forward Trades (Oct 21 – Nov 8, 2026) | Live Win Rate | Live Realized Net Return | Live PF | Production Verdict |
-| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **#1: Unified 1H Multi-Asset [1 Brain]** | **1H** | 4,403 | 44.7% | -48.43 R | 0.97 | 32 trades | 43.8% (14W / 18L) | -1.51 R | 0.88 | **ACTIVE LIVE** (Capital: ₹6,848.70) |
-| **#2: Distributed 1H Specialists [7 Models]** | **1H** | 4,376 | 43.9% | -153.16 R | 0.92 | 32 trades | 56.3% (18W / 14L) | **+2.18 R** | 1.25 | **ACTIVE LIVE** (Capital: ₹7,218.40) |
-| **#3: Unified 4H Swing Engine [1 Brain]** | **4H** | 511 | 46.6% | **+26.71 R** | 1.16 | 1 trade | Cash-Preserved | 0.00 R | 1.00 | **ACTIVE LIVE** (100% Cash-Safe) |
-| **#4: Distributed 4H Specialists [7 Models]** | **4H** | 1,086 | 46.9% | **+7.60 R** | 1.02 | 9 trades | **77.8% (7W / 2L)** | **+2.21 R** | **2.89** | **ACTIVE LIVE CHAMPION** (Capital: ₹7,220.80) |
-| **#5: Rule-Based 1H Baseline (No AI)** | **1H** | 6,217 | 43.3% | -130.56 R | 0.95 | 62 trades | 46.8% (29W / 33L) | -3.20 R | 0.91 | **ACTIVE BENCHMARK** (Capital: ₹6,680.00) |
-| **#6: Rule-Based 4H Baseline (No AI)** | **4H** | 2,005 | 46.0% | **+46.12 R** | 1.07 | 21 trades | **61.9% (13W / 8L)** | **+2.48 R** | 1.34 | **ACTIVE BENCHMARK** (Capital: ₹7,248.00) |
+| Rank & Engine Architecture | Suite | Timeframe | In-Sample Train | Unseen Holdout Window | Unseen Trades | Unseen Win Rate | Unseen Net R | Unseen PF | Live Forward Trades (Oct 21 – Nov 07) | Live Win Rate | Live Realized Net Return | Production Verdict |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **#1: [v1] 4H Distributed [Top Performer]** | `v1` | **4H** | 2020–2023 | 2024–2025 | 336 | **53.3%** | **+40.88 R** | **1.41** | 11 | **72.7% (8W/3L)** | **+1.19 R** | **ACTIVE CHAMPION** (Capital: ₹7,119) |
+| **#2: [v1] Stacking Meta [Ensemble]** | `v1` | **1H** | 2020–2023 | 2024–2025 | 1,669 | **47.8%** | **+30.05 R** | **1.05** | 27 | **51.9% (14W/13L)** | -0.79 R | **ACTIVE ENSEMBLE** (Capital: ₹6,921) |
+| **#3: [v1] 1H Distributed [7 Specialists]** | `v1` | **1H** | 2020–2023 | 2024–2025 | 1,659 | **47.7%** | **+31.46 R** | **1.05** | 25 | 48.0% (12W/13L) | -2.48 R | **ACTIVE SPECIALISTS** (Capital: ₹6,752) |
+| **#4: [v1] 1H Unified [1 Brain]** | `v1` | **1H** | 2020–2023 | 2024–2025 | 2,527 | 46.6% | **+5.85 R** | 1.01 | 46 | 47.8% (22W/24L) | **+1.19 R** | **ACTIVE LIVE** (Capital: ₹7,119) |
+| **#5: [v1] 1H Consensus Committee** | `v1` | **1H** | 2020–2023 | 2024–2025 | 1,404 | 47.1% | **+0.33 R** | 1.00 | 21 | 47.6% (10W/11L) | -1.96 R | **ACTIVE COMMITTEE** (Capital: ₹6,804) |
+| **#6: [v1] 4H Unified [1 Brain]** | `v1` | **4H** | 2020–2023 | 2024–2025 | 53 | 45.3% | -1.43 R | 0.93 | 1 | **100.0% (1W/0L)** | **+0.39 R** | **ACTIVE SWING** (Capital: ₹7,039) |
+| **#7: [New] 4H Unified [1 Brain]** | `New` | **4H** | 2024–2025 | 2020–2023 | 511 | 46.6% | **+26.71 R** | 1.16 | 1 | 0.0% (0W/1L) | -0.76 R | **ACTIVE SWING** (Capital: ₹6,924) |
+| **#8: [New] 4H Distributed [7 Specialists]** | `New` | **4H** | 2024–2025 | 2020–2023 | 1,086 | 46.9% | **+7.34 R** | 1.02 | 9 | **77.8% (7W/2L)** | **+2.20 R** | **ACTIVE SPECIALISTS** (Capital: ₹7,220) |
+| **#9: [New] 1H Unified [1 Brain]** | `New` | **1H** | 2024–2025 | 2020–2023 | 4,403 | 44.7% | -47.04 R | 0.97 | 32 | 43.8% (14W/18L) | -1.84 R | **ACTIVE LIVE** (Capital: ₹6,816) |
+| **#10: [New] 1H Distributed [7 Specialists]** | `New` | **1H** | 2024–2025 | 2020–2023 | 4,376 | 43.9% | -151.17 R | 0.92 | 32 | **56.2% (18W/14L)** | -0.07 R | **ACTIVE SPECIALISTS** (Capital: ₹6,993) |
+| **#11: [New] 1H Consensus Committee** | `New` | **1H** | 2024–2025 | 2020–2023 | 3,381 | 44.6% | -28.35 R | 0.98 | 37 | 35.1% (13W/24L) | -9.90 R | **ACTIVE COMMITTEE** (Capital: ₹6,010) |
+| **#12: [New] Stacking Meta-Learner** | `New` | **1H** | 2024–2025 | 2020–2023 | 3,678 | 43.9% | -91.17 R | 0.94 | 39 | 33.3% (13W/26L) | -11.98 R | **ACTIVE ENSEMBLE** (Capital: ₹5,802) |
+| **#13: 4H Rule-Based [No AI]** | Benchmark | **4H** | — | 2020–2023 | 2,005 | 46.0% | **+47.11 R** | 1.07 | 21 | **61.9% (13W/8L)** | **+1.97 R** | **BENCHMARK** (Capital: ₹7,197) |
+| **#14: 1H Rule-Based [No AI]** | Benchmark | **1H** | — | 2020–2023 | 6,217 | 43.3% | -131.54 R | 0.95 | 62 | 46.8% (29W/33L) | -3.60 R | **BENCHMARK** (Capital: ₹6,640) |
+
+---
+
+## 3. Deep Quantitative Analysis: Why v1 Decisively Outperforms New
+
+A pivotal empirical finding emerged when comparing the **`v1` Suite (Trained 2020–2023)** against the **`New` Suite (Trained 2024–2025)**:
+
+### 1. Multi-Cycle Regime Diversity vs Single-Cycle Recency
+- **The `v1` Training Window (2020–2023)** encompassed 4 full market regimes:
+  1. *2020 Post-COVID Liquidity Expansion*: Extreme trending volume and explosive breakout follow-through.
+  2. *2021 Parabolic Top & Retail Euphoria*: Dual ATH peaks with high volatility whipsaws.
+  3. *2022 Macro Crypto Winter*: -65% to -77% sustained drawdown, Luna/Terra crash, 3AC liquidation, and FTX insolvency.
+  4. *2023 Accumulation Grind*: Low-volatility sideways compression and range-bound mean reversion.
+- Because `v1` decision trees were calibrated against this diverse history, the tree split thresholds learned to demand higher breakout conviction before triggering, while aggressively filtering false breakouts.
+- **The `New` Training Window (2024–2025)** covered only the post-ETF institutional bull cycle. When evaluated on out-of-sample data, `New` models suffered from overfitting to unidirectional momentum, resulting in heavy drawdowns (-28.35R to -151.17R) during choppy regimes.
+
+### 2. Empirical Out-of-Sample Performance Comparison
+- **Stacking Meta-Learner**:
+  - `v1` on 2024–2025 Unseen Data: **$+30.05	ext{R}$ Net Profit ($47.8\%$ Win Rate across 1,669 trades)**.
+  - `New` on 2020–2023 Unseen Data: **$-91.17	ext{R}$ Net Drawdown ($43.9\%$ Win Rate across 3,678 trades)**.
+- **Distributed 4H Specialists**:
+  - `v1` on 2024–2025 Unseen Data: **$+40.88	ext{R}$ Net Profit ($53.3\%$ Win Rate, $1.41$ Profit Factor)**.
+  - `New` on 2020–2023 Unseen Data: $+7.34	ext{R}$ Net Profit ($46.9\%$ Win Rate, $1.02$ Profit Factor).
+
+### 3. Forward Live Window (₹7,000 Starting Capital Test)
+Across the identical 17-day forward live window (Oct 21 – Nov 07, 2026), allocating ₹1,000 per asset (₹7,000 total portfolio):
+- **`v1` Benchmark Portfolio**: Ended at **₹6,987.13 ($-0.18\%$ / $-1.30	ext{R}$)**, preserving virtually 100% of capital while delivering positive net R on Crude Oil ($+1.46	ext{R}$) and Gold ($+1.57	ext{R}$).
+- **`New` Benchmark Portfolio**: Ended at **₹6,887.88 ($-1.60\%$ / $-11.21	ext{R}$)**, suffering higher trade churn and drawdown.
 
 ---
 

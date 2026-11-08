@@ -47,36 +47,46 @@ flowchart TD
 
 ---
 
-## 3. The 6 Production Trading Engines
+## 3. Dual-Suite Production Engines (14 Models Hosted Concurrently)
 
-Trader-Pro deploys 6 live production engines running side-by-side to benchmark AI gating against pure mechanical rules:
+Trader-Pro hosts both the **`v1` Suite (Trained 2020–2023)** and the **`New` Suite (Trained 2024–2025)** simultaneously, along with mechanical benchmarks, on the `/ai-engine` selector and backend REST routes:
 
 ```mermaid
-flowchart LR
+flowchart TD
     A["Raw Market Candle Close (t-1)"] --> B{"Setup Detection:<br/>20-Donchian Breakout<br/>+ 200 SMA Macro Filter"}
-    B -->|"Candidate Signal"| C{"Engine Selection"}
+    B -->|"Candidate Signal"| C{"Model Suite Selection"}
     
-    C -->|"Engine #1 & #2 (4H)"| D1["4H Meta Classifier<br/>(Unified vs. 7 Specialists)"]
-    C -->|"Engine #3 & #4 (1H)"| D2["1H Meta Classifier<br/>(Unified vs. 7 Specialists)"]
-    C -->|"Engine #5 (1H Rules)"| D3["Pure Mechanical 1H Execution<br/>(Zero AI Filtering)"]
-    C -->|"Engine #6 (4H Rules)"| D4["Pure Mechanical 4H Execution<br/>(Zero AI Filtering)"]
+    C -->|"v1 Suite (2020-2023 Train | 2024-2025 Unseen)"| D1["v1 Ensemble & Specialists<br/>(4H Dist, Stacking Meta, 1H Dist, 1H Uni, Consensus, 4H Uni)"]
+    C -->|"New Suite (2024-2025 Train | 2020-2023 Unseen)"| D2["New Ensemble & Specialists<br/>(4H Uni, 4H Dist, 1H Uni, 1H Dist, Consensus, Stacking)"]
+    C -->|"Rule-Based Benchmarks (Zero AI Filter)"| D3["Pure Mechanical Donchian-20<br/>(1H & 4H Swing Breakouts)"]
 
-    D1 -->|"P >= P_cutoff"| E["Execute Trade with Clamped Stop"]
+    D1 -->|"P >= P_cutoff"| E["Execute Trade with Clamped Stop & 1:2.5 Risk/Reward"]
     D2 -->|"P >= P_cutoff"| E
     D3 -->|"Always Executes"| E
-    D4 -->|"Always Executes"| E
 ```
 
-### Engine Specifications
+### Complete 14-Model Production Specifications
 
-| # | Engine Key | Timeframe | Architecture | Gating Mechanism | 2020–2024 Holdout Stats | Live Window (Oct 21 – Nov 8, 2026) |
-| :-: | :--- | :-: | :--- | :--- | :---: | :---: |
-| **1** | `unified-1h-engine` | **1H** | Unified 7-Asset | LightGBM Universal ($P \ge 0.45$) | 4,403 trades (44.7% WR, 0.97 PF) | 32 trades (43.8% WR, -1.51 R) |
-| **2** | `distributed-1h-engine` | **1H** | 7 Specialists | Per-Asset LightGBM ($P \ge 0.45$) | 4,376 trades (43.9% WR, 0.92 PF) | 32 trades (56.3% WR, +2.18 R) |
-| **3** | `unified-4h-engine` | **4H** | Unified 7-Asset | LightGBM Universal ($P \ge 0.50$) | 511 trades (46.6% WR, +26.71 R, 1.16 PF) | 1 trade (100% Cash-Safe) |
-| **4** | `distributed-4h-engine` | **4H** | 7 Specialists | Per-Asset LightGBM ($P \ge 0.50$) | 1,086 trades (46.9% WR, +7.60 R, 1.02 PF) | 9 trades (**77.8% WR**, +2.21 R, **2.89 PF**) |
-| **5** | `pure-rules-1h-baseline` | **1H** | Pure Rules | Zero AI Filter (20-Donchian + 200 SMA) | 6,217 trades (43.3% WR, 0.95 PF) | 62 trades (46.8% WR, -3.20 R) |
-| **6** | `pure-rules-4h-baseline` | **4H** | Pure Rules | Zero AI Filter (20-Donchian + 200 SMA) | 2,005 trades (46.0% WR, +46.12 R, 1.07 PF) | 21 trades (**61.9% WR**, +2.48 R, 1.34 PF) |
+| Rank | Engine Identifier | Suite | Timeframe | Architecture | Gating Threshold | Unseen Window | Unseen Trades / WR / Return | Live Window (Oct 21 – Nov 07, 2026) |
+| :---: | :--- | :---: | :---: | :--- | :---: | :---: | :---: | :---: |
+| **#1** | `v1-distributed-4h-engine` | `v1` | **4H** | 7 Dedicated Per-Asset Models | $P \ge 0.50$ | 2024–2025 (2 Yrs) | 336 trades (53.3% WR, **+40.88R**, 1.41 PF) | 11 trades (**72.7% WR**, **+1.19R**) |
+| **#2** | `v1-stacking-meta-engine` | `v1` | **1H** | Logistic Meta-Learner Ensemble | $P \ge 0.48$ | 2024–2025 (2 Yrs) | 1,669 trades (47.8% WR, **+30.05R**, 1.05 PF) | 27 trades (**51.9% WR**, -0.79R) |
+| **#3** | `v1-distributed-1h-engine` | `v1` | **1H** | 7 Dedicated Per-Asset Models | $P \ge 0.45$ | 2024–2025 (2 Yrs) | 1,659 trades (47.7% WR, **+31.46R**, 1.05 PF) | 25 trades (48.0% WR, -2.48R) |
+| **#4** | `v1-unified-1h-engine` | `v1` | **1H** | 1 Universal LightGBM Brain | $P \ge 0.45$ | 2024–2025 (2 Yrs) | 2,527 trades (46.6% WR, **+5.85R**, 1.01 PF) | 46 trades (47.8% WR, **+1.19R**) |
+| **#5** | `v1-consensus-committee-engine` | `v1` | **1H** | Dual-Gating Agreement Committee | Unified & Spec $\ge 0.45$ | 2024–2025 (2 Yrs) | 1,404 trades (47.1% WR, **+0.33R**, 1.00 PF) | 21 trades (47.6% WR, -1.96R) |
+| **#6** | `v1-unified-4h-engine` | `v1` | **4H** | 1 Universal LightGBM Brain | $P \ge 0.50$ | 2024–2025 (2 Yrs) | 53 trades (45.3% WR, -1.43R, 0.93 PF) | 1 trade (**100% WR**, **+0.39R**) |
+| **#7** | `unified-4h-engine` | `New` | **4H** | 1 Universal LightGBM Brain | $P \ge 0.50$ | 2020–2023 (4 Yrs) | 511 trades (46.6% WR, **+26.71R**, 1.16 PF) | 1 trade (0.0% WR, -0.76R) |
+| **#8** | `distributed-4h-engine` | `New` | **4H** | 7 Dedicated Per-Asset Models | $P \ge 0.50$ | 2020–2023 (4 Yrs) | 1,086 trades (46.9% WR, **+7.34R**, 1.02 PF) | 9 trades (**77.8% WR**, **+2.20R**) |
+| **#9** | `unified-1h-engine` | `New` | **1H** | 1 Universal LightGBM Brain | $P \ge 0.45$ | 2020–2023 (4 Yrs) | 4,403 trades (44.7% WR, -47.04R, 0.97 PF) | 32 trades (43.8% WR, -1.84R) |
+| **#10** | `distributed-1h-engine` | `New` | **1H** | 7 Dedicated Per-Asset Models | $P \ge 0.45$ | 2020–2023 (4 Yrs) | 4,376 trades (43.9% WR, -151.17R, 0.92 PF) | 32 trades (**56.2% WR**, -0.07R) |
+| **#11** | `new-consensus-committee-engine` | `New` | **1H** | Dual-Gating Agreement Committee | Unified & Spec $\ge 0.45$ | 2020–2023 (4 Yrs) | 3,381 trades (44.6% WR, -28.35R, 0.98 PF) | 37 trades (35.1% WR, -9.90R) |
+| **#12** | `new-stacking-meta-engine` | `New` | **1H** | Logistic Meta-Learner Ensemble | $P \ge 0.48$ | 2020–2023 (4 Yrs) | 3,678 trades (43.9% WR, -91.17R, 0.94 PF) | 39 trades (33.3% WR, -11.98R) |
+| **#13** | `pure-rules-4h-baseline` | Benchmark | **4H** | Mechanical (No AI Gating) | None | 2020–2023 (4 Yrs) | 2,005 trades (46.0% WR, **+47.11R**, 1.07 PF) | 21 trades (**61.9% WR**, **+1.97R**) |
+| **#14** | `pure-rules-1h-baseline` | Benchmark | **1H** | Mechanical (No AI Gating) | None | 2020–2023 (4 Yrs) | 6,217 trades (43.3% WR, -131.54R, 0.95 PF) | 62 trades (46.8% WR, -3.60R) |
+
+### REST API Routing Architecture
+- **Live Paper Trades (`/api/trades?modelId=<id>`):** Loads each engine's corresponding live trades dataset (`v1_*_live_trades.json` for `v1-*` models, `distributed_*` or `live_*` for `New` models, and `pure_rules_*` for benchmarks).
+- **Unseen Trade History (`/api/history?modelId=<id>`):** Seamlessly queries each engine's verified out-of-sample holdout dataset (`v1_*_unseen_trades.json` or `*_historical_trades.json`) with server-side pagination, asset filtering, and side/outcome filters.
 
 ---
 
