@@ -689,6 +689,7 @@ export default function AiEnginePage() {
             Live and paper trades table.
            ========================================================================= */}
         <LiveTradesTable
+          selectedModelId={selectedModelId}
           trades={trades}
           filteredLiveTrades={filteredLiveTrades}
           livePredictionLogs={livePredictionLogs}

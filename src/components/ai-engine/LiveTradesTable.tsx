@@ -45,6 +45,7 @@ interface LiveTradesTableProps {
   feePercent?: number;
   selectedAsset?: string;
   onAssetChange?: (asset: string) => void;
+  selectedModelId?: string;
 }
 
 export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
@@ -79,6 +80,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   feePercent = 0.040,
   selectedAsset = "ALL",
   onAssetChange,
+  selectedModelId = "unified-1h-engine",
 }) => {
   // Live Prediction Logs Filter & Pagination State
   const [logAssetFilter, setLogAssetFilter] = React.useState<"ALL" | "crypto" | "commodities">("ALL");
@@ -169,14 +171,18 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                   : "text-chrome-dim hover:text-chrome-ink"
               }`}
             >
-              📊 Verified Historical OOS Trades ({totalHistoricalCount ? totalHistoricalCount.toLocaleString() : (selectedAsset === "ALL" ? "495" : "0")})
+              📊 Verified Historical OOS Trades ({totalHistoricalCount ? totalHistoricalCount.toLocaleString() : (selectedAsset === "ALL" ? (selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017" ? "159" : selectedModelId === "unified-1h-engine" || selectedModelId === "1h-commodities-rf" ? "336" : "495") : "0")})
             </button>
           </div>
         </div>
 
         <div className="text-xs text-chrome-dim font-mono">
           {tableTab === "live"
-            ? "Multi-Asset Execution (Crypto 4H Swing + Commodities 1H | Friction Deducted)"
+            ? selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017"
+            ? "Unified 4H Swing Execution (7 Assets on 4-Hour Candles | Platform Friction Deducted)"
+            : selectedModelId === "pure-rules-baseline"
+            ? "Pure Mechanical Rules Execution (Zero AI Filter Benchmark | Platform Friction Deducted)"
+            : "Unified 1H Multi-Asset Execution (7 Assets on 1-Hour Candles | Platform Friction Deducted)"
             : "Verified out-of-sample backtest logs (Point-in-Time execution across 7 assets)"}
         </div>
       </div>
