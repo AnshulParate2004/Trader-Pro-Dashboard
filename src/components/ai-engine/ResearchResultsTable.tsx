@@ -603,6 +603,14 @@ export const ResearchResultsTable: React.FC = () => {
         </button>
       </div>
 
+      {/* Prominent Historical In-Sample Caution Banner */}
+      <div className="mx-4 my-3 bg-amber-50/90 border border-amber-300 rounded px-3 py-2 flex items-center gap-2 text-xs font-mono text-amber-950 shadow-2xs">
+        <span className="font-bold shrink-0 text-amber-800">⚠️ Governance Caveat:</span>
+        <span className="text-[11px] leading-tight text-amber-900">
+          Historical, in-sample; see <code className="font-bold text-amber-950 underline">docs/LESSONS.md</code>. No strategy has beaten random entry out of sample.
+        </span>
+      </div>
+
       {/* Table Content */}
       {isExpanded && (
         <div>

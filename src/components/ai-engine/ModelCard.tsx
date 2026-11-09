@@ -150,6 +150,14 @@ export const ModelCard: React.FC<ModelCardProps> = ({
         </div>
       </div>
 
+      {/* Prominent Historical / In-Sample Caveat Banner */}
+      <div className="bg-amber-50/80 border border-amber-300 rounded px-3 py-2 flex items-center gap-2 text-xs font-mono text-amber-950 shadow-2xs">
+        <span className="font-bold shrink-0 text-amber-700">⚠️ Notice:</span>
+        <span className="text-[11px] leading-tight text-amber-900">
+          Historical, in-sample; see <code className="font-bold text-amber-950 underline">docs/LESSONS.md</code>. No strategy has beaten random entry out of sample.
+        </span>
+      </div>
+
       {/* Model Benchmarked Metrics Strip */}
       {currentModel && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 pt-3 border-t border-chrome-edge font-mono text-xs">

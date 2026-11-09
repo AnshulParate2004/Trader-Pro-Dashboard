@@ -23,7 +23,7 @@ import {
   checkCostRFilter,
   checkDailyLossLimit,
   evaluateRollingKillSwitch,
-  checkDrawdownStop,
+  checkMaxDrawdownLimit,
 } from "./riskEngine";
 import { TradeOrder } from "./engineTypes";
 
@@ -912,7 +912,7 @@ export async function runPaper4HFixedExecutor(
     }
 
     // Risk Engine: Daily Loss Limit & Rolling Kill Switch on closed trades
-    const tradeOrdersForRisk: TradeOrder[] = closedStoredTrades.map((t) => ({
+    const tradeOrdersForRisk = closedStoredTrades.map((t) => ({
       id: t.id,
       symbol: t.coin,
       direction: t.side,
@@ -928,13 +928,24 @@ export async function runPaper4HFixedExecutor(
       entryOrderType: "MARKET",
       exitReason: t.exit_type || "STOP",
       timeframe: "4h",
-    }));
+      orderType: "TAKER",
+      modelId: "fixed_rule_4h_v1",
+      modelName: "Fixed Rule 4H v1",
+      positionSizeINR: t.position_size_inr,
+      coins: t.position_size_inr / t.entry_price,
+      feePercentage: 0.040,
+      gstPercentage: 18.0,
+      entryFeeINR: (t.fee_r || 0) * t.risk_inr * 0.5,
+      totalFeeINR: (t.fee_r || 0) * t.risk_inr,
+      stopLoss: t.initial_stop,
+      stopPct: t.stop_dist_pct,
+    })) as unknown as TradeOrder[];
 
     const dailyCheck = checkDailyLossLimit(tradeOrdersForRisk, -3.0);
-    if (dailyCheck.exceeded) {
+    if (dailyCheck.limitExceeded) {
       skippedSymbols.push({
         symbol: sym,
-        reason: `Daily loss limit exceeded (${dailyCheck.dailyNetR}R <= ${dailyCheck.limitR}R)`,
+        reason: dailyCheck.reason || "Daily loss limit exceeded",
       });
       continue;
     }
@@ -948,8 +959,8 @@ export async function runPaper4HFixedExecutor(
       continue;
     }
 
-    const drawdownCheck = checkDrawdownStop(tradeOrdersForRisk, -10.0);
-    if (drawdownCheck.stopped) {
+    const drawdownCheck = checkMaxDrawdownLimit(tradeOrdersForRisk, -10.0);
+    if (drawdownCheck.limitExceeded) {
       skippedSymbols.push({
         symbol: sym,
         reason: drawdownCheck.reason || `Max drawdown stop triggered`,

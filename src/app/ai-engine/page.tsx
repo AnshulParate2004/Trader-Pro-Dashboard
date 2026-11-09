@@ -30,8 +30,10 @@ import ResearchResultsTable from "@/components/ai-engine/ResearchResultsTable";
 import LiveTradesTable from "@/components/ai-engine/LiveTradesTable";
 import ModelCard from "@/components/ai-engine/ModelCard";
 import FeeModeToggle from "@/components/ai-engine/FeeModeToggle";
+import FixedRules4HPanel from "@/components/ai-engine/FixedRules4HPanel";
 
 export default function AiEnginePage() {
+  const [activeEngineView, setActiveEngineView] = useState<"ai_models" | "fixed_rules_4h">("ai_models");
   const [trades, setTrades] = useState<TradeOrder[]>([]);
   const [metrics, setMetrics] = useState<EnginePerformanceMetrics | null>(null);
   const [selectedModelId, setSelectedModelId] = useState<string>("om-distributed-4h-engine");
@@ -597,6 +599,46 @@ export default function AiEnginePage() {
           </div>
         )}
 
+        {/* Primary View Switcher: ML Models vs Fixed Rules 4H */}
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-white border border-chrome-line rounded-lg p-2.5 shadow-xs">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveEngineView("ai_models")}
+              className={`px-3 py-1.5 rounded font-mono text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                activeEngineView === "ai_models"
+                  ? "bg-accent text-white shadow-xs"
+                  : "bg-chrome-field text-chrome-dim hover:text-chrome-ink border border-chrome-line"
+              }`}
+            >
+              <span>🤖 ML Strategy Models (Rank 1–19)</span>
+            </button>
+
+            <button
+              onClick={() => setActiveEngineView("fixed_rules_4h")}
+              className={`px-3 py-1.5 rounded font-mono text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                activeEngineView === "fixed_rules_4h"
+                  ? "bg-emerald-700 text-white shadow-xs"
+                  : "bg-chrome-field text-chrome-dim hover:text-chrome-ink border border-chrome-line"
+              }`}
+            >
+              <span>⚖️ Fixed Rules 4H Engine (v2)</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300 font-bold">
+                NO ML / VALIDATED
+              </span>
+            </button>
+          </div>
+
+          <div className="text-[11px] font-mono text-chrome-dim hidden sm:block">
+            {activeEngineView === "fixed_rules_4h"
+              ? "Forward paper testing post-2026-10-31 · BTC + ETH"
+              : "Historical 6-year walk-forward ML models"}
+          </div>
+        </div>
+
+        {activeEngineView === "fixed_rules_4h" ? (
+          <FixedRules4HPanel />
+        ) : (
+          <>
         {/* AI Action/Standby Status Toast */}
         {aiStatusMsg && (
           <div className="p-3 rounded-lg bg-win-tint border border-win/30 text-win-dark font-mono text-xs font-bold text-center animate-fade-in shadow-2xs">
@@ -824,6 +866,8 @@ export default function AiEnginePage() {
           handleAllHistOutcomeChange={handleAllHistOutcomeChange}
           allHistMetrics={allHistMetrics}
         />
+          </>
+        )}
 
 
 
