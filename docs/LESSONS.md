@@ -229,3 +229,31 @@ The frozen 15M engine (`BTCUSDT_15m`, `final_model_BTCUSDT_15m.joblib`, $2.0\tex
 
 ### Definitive Invariant
 Even at the ultra-low 14 bps friction tier (.14\%$), over .9\%$ of exploratory trades and \%$ of out-of-sample trades exceed the $\text{cost}_R \le 0.15$ budget. The out-of-sample net return ($-1.0269\text{R}$) drops far below the 14 bps noise-null baseline ($-0.2925\text{R}$). The 15M engine possesses **no edge** at any realistic fee level.
+
+---
+
+## 8. Fixed-Rule 4H Trend Engine (v2) Audit & Validation Findings
+
+In November 2026, a clean, honest, no-ML fixed-rule 4H trend following engine (`fixed_rule_4h_v1`) was built to establish a reference baseline under Gates 1–7 (`config/fixed_rule_4h_v1.json`).
+
+### Key Empirical Findings:
+
+1. **Chandelier Trailing Exit vs Fixed Take-Profit Targets:**
+   - In trend-following architectures on 4H candles, fixed take-profit targets (e.g. 2.5R) choke fat-tailed winners (+8R to +12R) while holding losers into time exits.
+   - An ablation replacing the 3×ATR Chandelier trailing stop with a fixed 2.5R target dropped Mean Net R from **`+0.1920R`** to **`-0.0193R`** (PF collapsed from 1.47 to 0.95).
+   - **Lesson:** Trend-following requires trailing stops to let winners run. Fixed R:R targets negate trend-following expectancy.
+
+2. **Indian Statutory 30% Tax Drag (Section 115BBH):**
+   - Under Section 115BBH, crypto profits are taxed at a flat 30% with zero loss set-off across trades.
+   - On ₹7,000 capital, gross winning trades produced ₹5,637.58 in profit, incurring ₹1,691.27 in tax.
+   - Pre-tax net profit was **`+₹1,800.84`** (+25.7%), but after-tax net profit was only **`+₹109.57`** (+1.57%).
+   - **Lesson:** Statutory taxes consume **93.9% of net strategy earnings** on a 32% win-rate trend strategy. Without loss set-off, retail quantitative trading on Indian VDA exchanges is arithmetically penalized.
+
+3. **Resolution of the "+0.131R" Reporting Mystery:**
+   - Config A (+0.13055R), Config B (+0.13062R), and Config C (+0.13097R) in `step4_step5_retest_and_gating.py` all printed `+0.131R`.
+   - Audit confirmed this was a 3-decimal-place string formatting rounding coincidence (`round(x, 3)`), not a computational or state leakage bug.
+
+4. **Gate 7 Residual Alpha & Bootstrap Falsification:**
+   - Strategy achieved 95% block-bootstrap CI of `[-0.0283R, +0.4052R]`. Because it crosses zero, it is not statistically distinguishable from noise at 95% confidence.
+   - Gate 7 OLS regression against buy-and-hold produced $t_{\text{HAC}} = 1.267 < 2.0$.
+   - **Verdict:** Classified as an honest, robust reference baseline with zero simulator bias (Gate 2 noise null **`-0.0083R`**), but **no statistically proven alpha edge**. Forward paper testing is logged post-2026-10-31.
