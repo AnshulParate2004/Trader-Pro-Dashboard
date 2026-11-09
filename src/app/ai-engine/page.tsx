@@ -34,7 +34,7 @@ import FeeModeToggle from "@/components/ai-engine/FeeModeToggle";
 export default function AiEnginePage() {
   const [trades, setTrades] = useState<TradeOrder[]>([]);
   const [metrics, setMetrics] = useState<EnginePerformanceMetrics | null>(null);
-  const [selectedModelId, setSelectedModelId] = useState<string>("unified-1h-engine");
+  const [selectedModelId, setSelectedModelId] = useState<string>("om-distributed-4h-engine");
   const [livePredictionLogs, setLivePredictionLogs] = useState<any[]>([]);
 
   // Lifted Asset Selection State for dynamic multi-asset reactive dashboard
@@ -53,7 +53,7 @@ export default function AiEnginePage() {
     riskPerTradePercent: 1.0, // 1% = ₹10
     ratchetEnabled: false,
     maxConcurrentTrades: 3,
-    activeModelId: "unified-1h-engine",
+    activeModelId: "om-distributed-4h-engine",
   });
   const [mongoConnected, setMongoConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);

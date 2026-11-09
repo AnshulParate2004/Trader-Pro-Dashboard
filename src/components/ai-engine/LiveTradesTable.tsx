@@ -80,7 +80,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   feePercent = 0.040,
   selectedAsset = "ALL",
   onAssetChange,
-  selectedModelId = "unified-1h-engine",
+  selectedModelId = "om-distributed-4h-engine",
 }) => {
   const activeModelMeta = TOP_MODELS.find((m) => m.id === selectedModelId);
   const getFallbackCount = (mId: string) => {

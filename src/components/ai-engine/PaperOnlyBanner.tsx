@@ -763,7 +763,7 @@ export const ASSET_METRICS_MAP: Record<string, AssetPerformanceData> = {
 
 export function getAssetMetrics(
   selectedAsset: string = "ALL",
-  selectedModelId: string = "unified-1h-engine"
+  selectedModelId: string = "om-distributed-4h-engine"
 ): AssetPerformanceData {
   if (selectedAsset && selectedAsset !== "ALL") {
     return (

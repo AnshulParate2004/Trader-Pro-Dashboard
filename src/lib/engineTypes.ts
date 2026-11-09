@@ -25,6 +25,8 @@ export interface AIStrategyModel {
   description: string;
 }
 
+export const DEFAULT_MODEL_ID = 'om-distributed-4h-engine';
+
 export const TOP_MODELS: AIStrategyModel[] = [
   // =========================================================================
   // OM MODEL SUITE (6-Year Optimal Segmentation: Train 2020-2023 | Val 2024 | Unseen 2025-2026 | Live Oct-Nov 2026)
