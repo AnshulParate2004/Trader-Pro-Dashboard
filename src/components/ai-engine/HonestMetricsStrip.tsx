@@ -15,6 +15,20 @@ interface HonestMetricsStripProps {
   assetData?: AssetPerformanceData;
   isLiveMode?: boolean;
   trades?: TradeOrder[];
+  tableTab?: "live" | "historical" | "all_historical";
+  allHistoricalMetrics?: {
+    totalTrades: number;
+    trueWinRate: number;
+    netWinRate: number;
+    avgNetR: number;
+    avgGrossR: number;
+    netProfitFactor: number;
+    tpSplit: number;
+    slSplit: number;
+    finalCapital: number;
+    netPnLINR: number;
+    maxDrawdown: number;
+  } | null;
 }
 
 export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
@@ -26,7 +40,10 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
   assetData,
   isLiveMode = true,
   trades = [],
+  tableTab = "live",
+  allHistoricalMetrics = null,
 }) => {
+  const isAllHistorical = tableTab === "all_historical" && allHistoricalMetrics != null;
   const isDistributed1H = selectedModelId === "distributed-1h-engine" || selectedModelId === "v1-distributed-1h-engine";
   const isDistributed4H = selectedModelId === "distributed-4h-engine" || selectedModelId === "v1-distributed-4h-engine";
   const is4H = selectedModelId.includes("4h");
@@ -71,18 +88,26 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
   const feeBadge = (
     <span
       className={`text-[9px] font-mono uppercase px-1.5 py-0.5 rounded border font-semibold ${
-        is1H || isDistributed1H || isCommodityAsset || is4H || isDistributed4H || isRules || isAll
+        isAllHistorical
+          ? "bg-amber-100 text-amber-900 border-amber-300"
+          : is1H || isDistributed1H || isCommodityAsset || is4H || isDistributed4H || isRules || isAll
           ? "bg-win-tint text-chrome-green-ink border-win/30"
           : isTaker
           ? "bg-accent-tint text-chrome-green-ink border-accent/30"
           : "bg-blue-50 text-chrome-dim border-blue-200"
       }`}
     >
-      {isLiveMode ? "Live Window" : (isCommodityAsset || (isAll && is1H) ? "5 bps" : isAll ? (is4H ? "10 bps" : "Multi-Asset") : is4H ? "10 bps" : isTaker ? "Taker" : "Maker")}
+      {isAllHistorical
+        ? "6-Yr Archive"
+        : isLiveMode
+        ? "Live Window"
+        : (isCommodityAsset || (isAll && is1H) ? "5 bps" : isAll ? (is4H ? "10 bps" : "Multi-Asset") : is4H ? "10 bps" : isTaker ? "Taker" : "Maker")}
     </span>
   );
 
-  const modeString = isCommodityAsset || (isAll && is1H)
+  const modeString = isAllHistorical
+    ? "6-Year Archive (Shark 0.100% + 18% GST Friction Deducted)"
+    : isCommodityAsset || (isAll && is1H)
     ? "0.05% Institutional Friction Deducted"
     : (isAll && (is4H || isRules))
     ? "0.10% Taker Friction Deducted"
@@ -108,7 +133,9 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
           </h2>
           <span
             className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
-              is1H || isDistributed1H || isCommodityAsset || is4H || isDistributed4H || isRules || isAll
+              isAllHistorical
+                ? "bg-amber-100 text-amber-900 border-amber-300"
+                : is1H || isDistributed1H || isCommodityAsset || is4H || isDistributed4H || isRules || isAll
                 ? "bg-win-tint text-chrome-green-ink border-win/30"
                 : isTaker
                 ? "bg-accent-tint text-chrome-green-ink border-accent/30"
@@ -119,7 +146,9 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
           </span>
         </div>
         <span className="font-mono text-xs text-chrome-dim">
-          {isLiveMode
+          {isAllHistorical && allHistoricalMetrics
+            ? `${allHistoricalMetrics.totalTrades.toLocaleString()} 6-Year Historical Transactions Evaluated (2020-01-01 to 2026-10-20)`
+            : isLiveMode
             ? `${liveCount} Closed Live Executions Tracked (${resolved.assetLabel})`
             : `${resolved.historicalTradesCount} Closed OOS Trades Evaluated (${resolved.assetLabel})`}
         </span>
@@ -136,10 +165,16 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
             {feeBadge}
           </div>
           <div className="font-mono text-xl sm:text-2xl font-bold text-chrome-ink mt-2">
-            {isLiveMode ? (liveCount > 0 ? `${liveWinRate.toFixed(1)}%` : "0.0%") : `${resolved.winRate.toFixed(1)}%`}
+            {isAllHistorical && allHistoricalMetrics
+              ? `${allHistoricalMetrics.trueWinRate.toFixed(1)}%`
+              : isLiveMode
+              ? (liveCount > 0 ? `${liveWinRate.toFixed(1)}%` : "0.0%")
+              : `${resolved.winRate.toFixed(1)}%`}
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
-            {isLiveMode ? (
+            {isAllHistorical && allHistoricalMetrics ? (
+              `${Math.round((allHistoricalMetrics.totalTrades * allHistoricalMetrics.trueWinRate) / 100).toLocaleString()} Wins / ${allHistoricalMetrics.totalTrades.toLocaleString()} Trades`
+            ) : isLiveMode ? (
               liveCount === 0
                 ? "100% Cash Safe"
                 : `${liveWins} Wins / ${liveCount} Trades`
@@ -165,13 +200,19 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
           </div>
           <div
             className={`font-mono text-xl sm:text-2xl font-bold mt-2 ${
-              (isLiveMode ? liveWinRate : resolved.winRate) >= 40 ? "text-win" : "text-loss"
+              (isAllHistorical && allHistoricalMetrics ? allHistoricalMetrics.netWinRate : (isLiveMode ? liveWinRate : resolved.winRate)) >= 40 ? "text-win" : "text-loss"
             }`}
           >
-            {isLiveMode ? (liveCount > 0 ? `${liveWinRate.toFixed(1)}%` : "0.0%") : `${resolved.winRate.toFixed(1)}%`}
+            {isAllHistorical && allHistoricalMetrics
+              ? `${allHistoricalMetrics.netWinRate.toFixed(1)}%`
+              : isLiveMode
+              ? (liveCount > 0 ? `${liveWinRate.toFixed(1)}%` : "0.0%")
+              : `${resolved.winRate.toFixed(1)}%`}
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
-            {isLiveMode ? (
+            {isAllHistorical ? (
+              "Net > 0 After Shark Friction"
+            ) : isLiveMode ? (
               liveCount === 0 ? "No Drawdown Incurred" : "Net > 0 after Shark fees"
             ) : selectedAsset === "DOTUSDT" ? (
               "No Drawdown Incurred"
@@ -185,12 +226,18 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
         <div className="bg-white border border-chrome-line rounded-lg p-3 sm:p-3.5 flex flex-col justify-between shadow-xs transition-shadow hover:shadow-sm overflow-hidden">
           <div className="flex items-center justify-between gap-1">
             <span className="font-mono text-[10px] text-chrome-dim uppercase font-bold tracking-wider">
-              {isLiveMode ? "TP / SL Split" : "TP / SL Split"}
+              TP / SL Split
             </span>
             {feeBadge}
           </div>
           <div className="font-mono text-xs sm:text-sm lg:text-[13px] xl:text-[14px] font-bold text-chrome-ink mt-2 flex items-baseline gap-0.5 sm:gap-1 flex-nowrap">
-            {isLiveMode ? (
+            {isAllHistorical && allHistoricalMetrics ? (
+              <>
+                <span className="text-win-dark">{allHistoricalMetrics.tpSplit.toFixed(1)}%</span>
+                <span className="text-chrome-dim font-normal">/</span>
+                <span className="text-loss-dark">{allHistoricalMetrics.slSplit.toFixed(1)}%</span>
+              </>
+            ) : isLiveMode ? (
               liveCount === 0 ? (
                 <span className="text-chrome-dim">0.0% / 0.0%</span>
               ) : (
@@ -211,7 +258,9 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
             )}
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
-            {isLiveMode ? (
+            {isAllHistorical && allHistoricalMetrics ? (
+              `${Math.round((allHistoricalMetrics.totalTrades * allHistoricalMetrics.tpSplit) / 100).toLocaleString()} TP / ${Math.round((allHistoricalMetrics.totalTrades * allHistoricalMetrics.slSplit) / 100).toLocaleString()} SL`
+            ) : isLiveMode ? (
               liveCount === 0
                 ? "Cash Safe: 0 Trades"
                 : `${liveTpCount} TP / ${liveSlCount} SL`
@@ -233,13 +282,19 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
           </div>
           <div
             className={`font-mono text-xl sm:text-2xl font-bold mt-2 ${
-              (isLiveMode ? liveProfitFactor : resolved.profitFactor) >= 1 ? "text-win" : "text-chrome-ink"
+              (isAllHistorical && allHistoricalMetrics ? allHistoricalMetrics.netProfitFactor : (isLiveMode ? liveProfitFactor : resolved.profitFactor)) >= 1 ? "text-win" : "text-chrome-ink"
             }`}
           >
-            {isLiveMode ? (liveCount > 0 ? liveProfitFactor.toFixed(2) : "0.00") : resolved.profitFactor.toFixed(2)}
+            {isAllHistorical && allHistoricalMetrics
+              ? allHistoricalMetrics.netProfitFactor.toFixed(2)
+              : isLiveMode
+              ? (liveCount > 0 ? liveProfitFactor.toFixed(2) : "0.00")
+              : resolved.profitFactor.toFixed(2)}
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
-            {isLiveMode ? (
+            {isAllHistorical && allHistoricalMetrics ? (
+              `Net PF (${allHistoricalMetrics.totalTrades.toLocaleString()} Trades)`
+            ) : isLiveMode ? (
               liveCount === 0
                 ? "Cash Safe (1.00 PF)"
                 : `Gross PF: ${(liveProfitFactor * 1.05).toFixed(2)} (Net: ${liveProfitFactor.toFixed(2)})`
@@ -253,29 +308,35 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
         <div className="bg-white border border-chrome-line rounded-lg p-3 sm:p-3.5 flex flex-col justify-between shadow-xs transition-shadow hover:shadow-sm overflow-hidden">
           <div className="flex items-center justify-between gap-1">
             <span className="font-mono text-[10px] text-chrome-dim uppercase font-bold tracking-wider">
-              {isLiveMode ? "CAPITAL & CHARGES" : "Maximum Drawdown"}
+              {isAllHistorical ? "Maximum Drawdown" : isLiveMode ? "CAPITAL & CHARGES" : "Maximum Drawdown"}
             </span>
             {feeBadge}
           </div>
           <div className="font-mono text-xl sm:text-2xl font-bold text-chrome-ink mt-2">
-            {isLiveMode
+            {isAllHistorical && allHistoricalMetrics
+              ? `${allHistoricalMetrics.maxDrawdown.toFixed(1)}%`
+              : isLiveMode
               ? `₹${dynamicCapital.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
               : resolved.maxDrawdownR === 0
               ? "0.00 R"
               : `${resolved.maxDrawdownR.toFixed(2)} R`}
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
-            {isLiveMode
-              ? `Given: ₹${baseAllocated.toLocaleString("en-IN")} • Charges Paid: ₹${dynamicTotalFees.toFixed(2)}`
-              : isAll
-              ? "Combined Multi-Asset Portfolio"
-              : isCommodityAsset
-              ? "Institutional Stop Sizing"
-              : selectedAsset === "BTCUSDT"
-              ? "crushed by 76% vs base"
-              : selectedAsset === "DOTUSDT"
-              ? "0 Drawdown (Protected)"
-              : resolved.assetLabel}
+            {isAllHistorical ? (
+              "Max Portfolio DD (₹7k Base)"
+            ) : isLiveMode ? (
+              `Given: ₹${baseAllocated.toLocaleString("en-IN")} • Charges Paid: ₹${dynamicTotalFees.toFixed(2)}`
+            ) : isAll ? (
+              "Combined Multi-Asset Portfolio"
+            ) : isCommodityAsset ? (
+              "Institutional Stop Sizing"
+            ) : selectedAsset === "BTCUSDT" ? (
+              "crushed by 76% vs base"
+            ) : selectedAsset === "DOTUSDT" ? (
+              "0 Drawdown (Protected)"
+            ) : (
+              resolved.assetLabel
+            )}
           </div>
         </div>
 
@@ -283,25 +344,33 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
         <div className="bg-white border border-chrome-line rounded-lg p-3 sm:p-3.5 flex flex-col justify-between shadow-xs transition-shadow hover:shadow-sm overflow-hidden">
           <div className="flex items-center justify-between gap-1">
             <span className="font-mono text-[10px] text-chrome-dim uppercase font-bold tracking-wider">
-              {isLiveMode ? "Live Executions" : "Total Evaluated"}
+              Total Evaluated
             </span>
             {feeBadge}
           </div>
           <div className="font-mono text-xl sm:text-2xl font-bold text-chrome-ink mt-2">
-            {isLiveMode ? `${liveCount} Closed` : `${resolved.historicalTradesCount} Closed`}
+            {isAllHistorical && allHistoricalMetrics
+              ? `${allHistoricalMetrics.totalTrades.toLocaleString()} Closed`
+              : isLiveMode
+              ? `${liveCount} Closed`
+              : `${resolved.historicalTradesCount} Closed`}
           </div>
           <div className="font-mono text-[10px] text-chrome-dim mt-1 truncate">
-            {isLiveMode
-              ? `Live Window on ${resolved.assetKey === "ALL" ? "Portfolio" : resolved.assetKey}`
-              : isAll
-              ? "₹7,000 Portfolio (7 Assets)"
-              : `₹${resolved.allocatedCapitalINR.toLocaleString("en-IN")} Capital (${selectedAsset})`}
+            {isAllHistorical ? (
+              "₹7,000 Starting Portfolio"
+            ) : isLiveMode ? (
+              `Live Window on ${resolved.assetKey === "ALL" ? "Portfolio" : resolved.assetKey}`
+            ) : isAll ? (
+              "₹7,000 Portfolio (7 Assets)"
+            ) : (
+              `₹${resolved.allocatedCapitalINR.toLocaleString("en-IN")} Capital (${selectedAsset})`
+            )}
           </div>
         </div>
       </div>
 
       {/* Dedicated Indian Regulatory Platform Fee & Friction Breakdown Card */}
-      {isLiveMode && (
+      {(isLiveMode || isAllHistorical) && (
         <div className="w-full bg-white border border-chrome-line rounded-lg p-3 sm:p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs font-mono">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <div className="flex items-center gap-1.5 font-bold text-chrome-ink">
@@ -309,10 +378,10 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
               <span className="uppercase tracking-wider text-[11px]">Platform Fee Breakdown:</span>
             </div>
             <span className="bg-chrome-field px-2 py-0.5 rounded border border-chrome-line text-chrome-ink">
-              Base Fee: <strong className="text-chrome-ink font-bold">{feePercent.toFixed(3)}%</strong>
+              Base Fee: <strong className="text-chrome-ink font-bold">{isAllHistorical ? "0.040%" : `${feePercent.toFixed(3)}%`}</strong>
             </span>
             <span className="bg-chrome-field px-2 py-0.5 rounded border border-chrome-line text-chrome-ink">
-              GST (18%): <strong className="text-chrome-ink font-bold">+{(feePercent * 0.18).toFixed(3)}%</strong>
+              GST (18%): <strong className="text-chrome-ink font-bold">{isAllHistorical ? "+0.0072%" : `+${(feePercent * 0.18).toFixed(3)}%`}</strong>
             </span>
             <span className="bg-chrome-field px-2 py-0.5 rounded border border-chrome-line text-chrome-ink">
               Slippage: <strong className="text-chrome-ink font-bold">0.020% round-trip</strong>
@@ -322,17 +391,24 @@ export const HonestMetricsStrip: React.FC<HonestMetricsStripProps> = ({
           <div className="flex flex-wrap items-center gap-3 sm:gap-4 shrink-0">
             <div className="flex items-baseline gap-1">
               <span className="text-[10px] text-chrome-dim uppercase">Total Fees Deducted:</span>
-              <span className="text-accent font-bold">₹{dynamicTotalFees.toFixed(2)} INR</span>
+              <span className="text-accent font-bold">
+                ₹{isAllHistorical && allHistoricalMetrics ? (allHistoricalMetrics.totalTrades * 1.144).toFixed(2) : dynamicTotalFees.toFixed(2)} INR
+              </span>
             </div>
             <div className="flex items-baseline gap-1">
               <span className="text-[10px] text-chrome-dim uppercase">Current Net Profit:</span>
-              <span className={`font-bold ${dynamicNetProfit >= 0 ? "text-win" : "text-loss"}`}>
-                {dynamicNetProfit >= 0 ? "+" : ""}₹{dynamicNetProfit.toFixed(2)} INR
+              <span className={`font-bold ${(isAllHistorical && allHistoricalMetrics ? allHistoricalMetrics.netPnLINR : dynamicNetProfit) >= 0 ? "text-win" : "text-loss"}`}>
+                {(isAllHistorical && allHistoricalMetrics ? allHistoricalMetrics.netPnLINR : dynamicNetProfit) >= 0 ? "+" : ""}
+                ₹{isAllHistorical && allHistoricalMetrics ? allHistoricalMetrics.netPnLINR.toFixed(2) : dynamicNetProfit.toFixed(2)} INR
               </span>
             </div>
             <div className="flex items-baseline gap-1">
               <span className="text-[10px] text-chrome-dim uppercase">Current Total Capital:</span>
-              <span className="text-chrome-ink font-bold text-sm">₹{dynamicCapital.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} INR</span>
+              <span className="text-chrome-ink font-bold text-sm">
+                ₹{isAllHistorical && allHistoricalMetrics
+                  ? (allHistoricalMetrics.finalCapital ?? (7000 + allHistoricalMetrics.netPnLINR)).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                  : dynamicCapital.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} INR
+              </span>
             </div>
           </div>
         </div>

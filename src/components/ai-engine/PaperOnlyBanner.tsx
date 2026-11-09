@@ -831,6 +831,20 @@ interface PaperOnlyBannerProps {
   isLiveMode?: boolean;
   trades?: TradeOrder[];
   tradingFeePercent?: number;
+  tableTab?: "live" | "historical" | "all_historical";
+  allHistoricalMetrics?: {
+    totalTrades: number;
+    trueWinRate: number;
+    netWinRate: number;
+    avgNetR: number;
+    avgGrossR: number;
+    netProfitFactor: number;
+    tpSplit: number;
+    slSplit: number;
+    finalCapital: number;
+    netPnLINR: number;
+    maxDrawdown: number;
+  } | null;
 }
 
 export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
@@ -845,6 +859,8 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
   isLiveMode = true,
   trades = [],
   tradingFeePercent,
+  tableTab = "live",
+  allHistoricalMetrics = null,
 }) => {
   const isDistributed1H = selectedModelId === "distributed-1h-engine" || selectedModelId === "v1-distributed-1h-engine";
   const isDistributed4H = selectedModelId === "distributed-4h-engine" || selectedModelId === "v1-distributed-4h-engine";
@@ -882,10 +898,38 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
   const baseCapital = selectedAsset === "ALL" ? 7000 : 1000;
   const dynamicCapital = baseCapital + dynamicNetProfit;
 
-  // Differentiate live mode vs historical mode
-  const currentAvgNetR = isLiveMode ? dynamicAvgNetR : resolved.avgNetR;
-  const currentReturnR = isLiveMode ? dynamicReturnR : resolved.realizedReturnR;
-  const currentTradeCount = isLiveMode ? filteredLiveTrades.length : resolved.historicalTradesCount;
+  const isAllHistorical = tableTab === "all_historical" && allHistoricalMetrics != null;
+
+  // Differentiate live mode vs historical mode vs all-historical 6-year mode
+  const currentAvgNetR = isAllHistorical
+    ? allHistoricalMetrics.avgNetR
+    : isLiveMode
+    ? dynamicAvgNetR
+    : resolved.avgNetR;
+
+  const currentReturnR = isAllHistorical
+    ? Number((allHistoricalMetrics.avgNetR * allHistoricalMetrics.totalTrades).toFixed(2))
+    : isLiveMode
+    ? dynamicReturnR
+    : resolved.realizedReturnR;
+
+  const currentTradeCount = isAllHistorical
+    ? allHistoricalMetrics.totalTrades
+    : isLiveMode
+    ? filteredLiveTrades.length
+    : resolved.historicalTradesCount;
+
+  const currentNetPnL = isAllHistorical
+    ? allHistoricalMetrics.netPnLINR
+    : isLiveMode
+    ? dynamicNetProfit
+    : resolved.netPnLINR;
+
+  const currentCapital = isAllHistorical
+    ? (allHistoricalMetrics.finalCapital ?? (7000 + allHistoricalMetrics.netPnLINR))
+    : isLiveMode
+    ? dynamicCapital
+    : (7000 + resolved.netPnLINR);
 
   const isPositiveExpectancy = !isLegacy && currentAvgNetR >= 0;
   const isCommodityAsset = ["GC=F", "SI=F", "CL=F", "XAUUSDT", "XAGUSDT", "CLUSDT"].includes(selectedAsset);
@@ -913,7 +957,9 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
       {/* Subtle top indicator bar */}
       <div
         className={`absolute top-0 left-0 right-0 h-1 ${
-          isLiveMode
+          isAllHistorical
+            ? currentAvgNetR >= 0 ? "bg-win" : "bg-rose-500"
+            : isLiveMode
             ? currentAvgNetR >= 0 ? "bg-win" : "bg-amber-500"
             : isPositiveExpectancy ? "bg-win" : "bg-accent"
         }`}
@@ -923,27 +969,32 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
         {/* Left: Headline & Explanation */}
         <div className="flex flex-col gap-2.5 max-w-3xl">
           <div className="flex flex-wrap items-center gap-2">
-            {isLiveMode ? (
+            {isAllHistorical ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-100 text-amber-900 border border-amber-300 font-mono text-[11px] font-bold uppercase tracking-wider">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-700" />
+                6-YEAR COMPLETE HISTORICAL ARCHIVE [₹7,000 BASE CAPITAL] · [{assetDisplayLabel}]
+              </span>
+            ) : isLiveMode ? (
               currentAvgNetR >= 0 ? (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-win-tint text-chrome-green-ink border border-win/40 font-mono text-[11px] font-bold uppercase tracking-wider">
                   <ShieldCheck className="w-3.5 h-3.5 text-win" />
-                  LIVE REAL-TIME EXECUTION [${assetDisplayLabel}]
+                  LIVE REAL-TIME EXECUTION [{assetDisplayLabel}]
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-50 text-amber-800 border border-amber-300 font-mono text-[11px] font-bold uppercase tracking-wider">
                   <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
-                  LIVE FORWARD EXECUTION · DRAWDOWN CONSOLIDATION [${assetDisplayLabel}]
+                  LIVE FORWARD EXECUTION · DRAWDOWN CONSOLIDATION [{assetDisplayLabel}]
                 </span>
               )
             ) : isPositiveExpectancy ? (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-win-tint text-chrome-green-ink border border-win/40 font-mono text-[11px] font-bold uppercase tracking-wider">
                 <ShieldCheck className="w-3.5 h-3.5 text-win" />
-                ACTIVE · POSITIVE EXPECTANCY [${assetDisplayLabel}]
+                ACTIVE · POSITIVE EXPECTANCY [{assetDisplayLabel}]
               </span>
             ) : isRules ? (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-chrome-field text-chrome-dim border border-chrome-line font-mono text-[11px] font-bold uppercase tracking-wider">
                 <ShieldAlert className="w-3.5 h-3.5 text-chrome-dim" />
-                BENCHMARK ENGINE (NO AI FILTER) [${assetDisplayLabel}]
+                BENCHMARK ENGINE (NO AI FILTER) [{assetDisplayLabel}]
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-rose-50 text-rose-800 border border-rose-300 font-mono text-[11px] font-bold uppercase tracking-wider">
@@ -954,28 +1005,41 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
 
             <span
               className={`font-mono text-[10px] uppercase font-bold px-2 py-0.5 rounded border ${
-                isPositiveExpectancy
+                isAllHistorical
+                  ? "bg-amber-100 text-amber-900 border-amber-300"
+                  : isPositiveExpectancy
                   ? "bg-win-tint text-chrome-green-ink border-win/30"
                   : isTaker
                   ? "bg-accent-tint text-chrome-green-ink border-accent/30"
                   : "bg-blue-50 text-chrome-dim border-blue-200"
               }`}
             >
-              Fee Mode: {feeModeString}
+              Fee Mode: {isAllHistorical ? "Shark 0.100% Taker + 18% GST Deducted" : feeModeString}
             </span>
 
             <span className="font-mono text-[11px] text-chrome-dim font-bold">
-              ({currentTradeCount} {isLiveMode ? "Live Executions Tracked" : "Clean OOS Trades Evaluated"})
+              ({currentTradeCount.toLocaleString()} {isAllHistorical ? "6-Year Historical Transactions" : isLiveMode ? "Live Executions Tracked" : "Clean OOS Trades Evaluated"})
             </span>
           </div>
 
           <h1 className="font-brand text-2xl sm:text-3xl font-medium tracking-tight text-chrome-ink mt-1">
-            {isLiveMode
+            {isAllHistorical
+              ? `6-Year Net Expectancy: ${currentAvgNetR >= 0 ? `+${currentAvgNetR.toFixed(3)}` : currentAvgNetR.toFixed(3)} R / trade (${currentReturnR >= 0 ? `+${currentReturnR.toFixed(2)}` : currentReturnR.toFixed(2)} R Cumulative)`
+              : isLiveMode
               ? `Live Net Expectancy: ${currentAvgNetR >= 0 ? `+${currentAvgNetR.toFixed(3)}` : currentAvgNetR.toFixed(3)} R / trade (${currentReturnR >= 0 ? `+${currentReturnR.toFixed(2)}` : currentReturnR.toFixed(2)} R Realized)`
               : `Net Expectancy After Fees: ${currentAvgNetR >= 0 ? `+${currentAvgNetR.toFixed(3)}` : currentAvgNetR.toFixed(3)} R / trade`}
           </h1>
 
-          {isLiveMode ? (
+          {isAllHistorical && allHistoricalMetrics ? (
+            <p className="font-body text-xs sm:text-sm text-chrome-dim leading-relaxed">
+              <strong>6-Year Complete Processing:</strong> 2020-01-01 to 2026-10-20 &nbsp;|&nbsp;
+              <strong>Base Capital:</strong> ₹7,000.00 &nbsp;|&nbsp;
+              <strong>Ending Capital:</strong> <span className={currentCapital >= 7000 ? "text-win font-bold" : "text-loss font-bold"}>₹{currentCapital.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> &nbsp;|&nbsp;
+              <strong>Net Realized Profit:</strong> <span className={currentNetPnL >= 0 ? "text-win font-bold" : "text-loss font-bold"}>{currentNetPnL >= 0 ? "+" : ""}₹{currentNetPnL.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> &nbsp;|&nbsp;
+              <strong>Total Taker Friction Deducted:</strong> ₹{(allHistoricalMetrics.totalTrades * 1.144).toFixed(2)} &nbsp;|&nbsp;
+              <strong>{currentTradeCount.toLocaleString()} Total Trades Evaluated</strong>.
+            </p>
+          ) : isLiveMode ? (
             <p className="font-body text-xs sm:text-sm text-chrome-dim leading-relaxed">
               <strong>Capital Given:</strong> ₹{resolved.allocatedCapitalINR.toLocaleString("en-IN", { minimumFractionDigits: 2 })} {isAll ? "(₹1,000 / asset)" : ""} &nbsp;|&nbsp;
               <strong>Current Balance:</strong> <span className={dynamicCapital >= resolved.allocatedCapitalINR ? "text-win font-bold" : "text-loss font-bold"}>₹{dynamicCapital.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span> &nbsp;|&nbsp;
@@ -1001,7 +1065,7 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
                 Avg Net R
               </span>
               <span className="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded border bg-chrome-field text-chrome-dim border-chrome-line font-bold">
-                {isLiveMode ? "Live Window" : (isCommodityAsset ? "5 bps" : isAll ? "Multi-Asset" : "10 bps")}
+                {isAllHistorical ? "6-Yr Archive" : isLiveMode ? "Live Window" : (isCommodityAsset ? "5 bps" : isAll ? "Multi-Asset" : "10 bps")}
               </span>
             </div>
             <div
@@ -1019,7 +1083,7 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
               </span>
             </div>
             <span className="font-mono text-[10px] text-chrome-dim mt-0.5">
-              {isLiveMode ? "per live execution" : `per closed ${isAll ? "portfolio trade" : `${selectedAsset} trade`}`}
+              {isAllHistorical ? "per 6-yr historical trade" : isLiveMode ? "per live execution" : `per closed ${isAll ? "portfolio trade" : `${selectedAsset} trade`}`}
             </span>
           </div>
 
@@ -1027,10 +1091,10 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
           <div className="flex flex-col min-w-[140px] pl-4 border-l border-chrome-edge">
             <div className="flex items-center justify-between gap-2">
               <span className="font-mono text-[11px] uppercase font-bold text-chrome-dim">
-                {isLiveMode ? "Realized Live Return" : "Realized OOS Return"}
+                {isAllHistorical ? "6-Year Net Profit" : isLiveMode ? "Realized Live Return" : "Realized OOS Return"}
               </span>
               <span className="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded border bg-chrome-field text-chrome-dim border-chrome-line font-bold">
-                {isLiveMode ? "Live Edge" : "OOS Edge"}
+                {isAllHistorical ? "6-Yr Gain" : isLiveMode ? "Live Edge" : "OOS Edge"}
               </span>
             </div>
             <div
@@ -1038,10 +1102,14 @@ export const PaperOnlyBanner: React.FC<PaperOnlyBannerProps> = ({
                 isPositiveExpectancy ? "text-win" : "text-loss"
               }`}
             >
-              {currentReturnR >= 0 ? `+${currentReturnR.toFixed(2)} R` : `${currentReturnR.toFixed(2)} R`}
+              {isAllHistorical
+                ? (currentNetPnL >= 0 ? `+₹${Math.round(currentNetPnL).toLocaleString("en-IN")}` : `-₹${Math.abs(Math.round(currentNetPnL)).toLocaleString("en-IN")}`)
+                : (currentReturnR >= 0 ? `+${currentReturnR.toFixed(2)} R` : `${currentReturnR.toFixed(2)} R`)}
             </div>
             <span className="font-mono text-[10px] text-chrome-dim mt-0.5">
-              {isLiveMode
+              {isAllHistorical
+                ? `Cumulative Return: ${currentNetPnL >= 0 ? "+" : ""}${((currentNetPnL / 7000) * 100).toFixed(1)}% on ₹7k Base`
+                : isLiveMode
                 ? `Net: ${dynamicNetProfit >= 0 ? `+₹${dynamicNetProfit.toFixed(2)}` : `-₹${Math.abs(dynamicNetProfit).toFixed(2)}`} (Fees: ₹${dynamicTotalFees.toFixed(2)})`
                 : (isAll ? `₹${resolved.allocatedCapitalINR.toLocaleString("en-IN")} Allocated across 7 Assets` : `Dedicated ₹${resolved.allocatedCapitalINR.toLocaleString("en-IN")} Capital for ${selectedAsset}`)}
             </span>

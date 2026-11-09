@@ -137,7 +137,11 @@ export const ModelCard: React.FC<ModelCardProps> = ({
             <span className="text-[10px] text-chrome-dim uppercase font-bold">True Win Rate</span>
             <span className="text-base font-bold text-chrome-ink mt-0.5">{displayWinRate.toFixed(1)}%</span>
             <span className="text-[9px] text-chrome-dim font-sans">
-              {isLiveMode && liveCount > 0 ? `${liveWins} Wins / ${liveCount} Trades` : "TP / (TP + SL)"}
+              {isAllHistorical && allHistoricalMetrics
+                ? `${Math.round((allHistoricalMetrics.totalTrades * allHistoricalMetrics.trueWinRate) / 100).toLocaleString()} Wins / ${allHistoricalMetrics.totalTrades.toLocaleString()} Trades`
+                : isLiveMode && liveCount > 0
+                ? `${liveWins} Wins / ${liveCount} Trades`
+                : "TP / (TP + SL)"}
             </span>
           </div>
 
@@ -153,14 +157,18 @@ export const ModelCard: React.FC<ModelCardProps> = ({
             <div className="flex items-center justify-between gap-1">
               <span className="text-[10px] text-chrome-dim uppercase font-bold">Avg Net R</span>
               <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-accent-tint text-chrome-green-ink border border-accent/30 font-bold truncate">
-                {isLiveMode && liveCount > 0 ? "LIVE" : `${feePct.toFixed(3)}%`}
+                {isAllHistorical ? "6-YR ARCHIVE" : isLiveMode && liveCount > 0 ? "LIVE" : `${feePct.toFixed(3)}%`}
               </span>
             </div>
             <span className={`text-base font-bold mt-0.5 ${displayAvgNetR >= 0 ? "text-win" : "text-loss"}`}>
               {displayAvgNetR >= 0 ? "+" : ""}{displayAvgNetR.toFixed(3)} R
             </span>
             <span className="text-[9px] text-chrome-dim font-sans truncate">
-              {isLiveMode && liveCount > 0 ? "Live Executed Net" : `Friction: (${feePct.toFixed(3)}% + GST)`}
+              {isAllHistorical
+                ? "Friction: 0.100% + GST (Shark)"
+                : isLiveMode && liveCount > 0
+                ? "Live Executed Net"
+                : `Friction: (${feePct.toFixed(3)}% + GST)`}
             </span>
           </div>
 
@@ -169,7 +177,9 @@ export const ModelCard: React.FC<ModelCardProps> = ({
             <span className={`text-base font-bold mt-0.5 ${displayPF >= 1.0 ? "text-win" : "text-loss"}`}>
               {displayPF.toFixed(2)}
             </span>
-            <span className="text-[9px] text-chrome-dim font-sans">Net Win / Net Loss</span>
+            <span className="text-[9px] text-chrome-dim font-sans">
+              {isAllHistorical ? "Net PF (6-Yr Complete)" : "Net Win / Net Loss"}
+            </span>
           </div>
 
           <div className="bg-chrome-field/50 border border-chrome-line rounded p-2 flex flex-col overflow-hidden">
@@ -181,7 +191,9 @@ export const ModelCard: React.FC<ModelCardProps> = ({
               <span className="text-chrome-dim font-normal">/</span>
               <span className="text-loss-dark">{displaySlSplit.toFixed(1)}%</span>
             </span>
-            <span className="text-[9px] text-chrome-dim font-sans">Exit Distribution</span>
+            <span className="text-[9px] text-chrome-dim font-sans">
+              {isAllHistorical ? "Exit Distribution (2020-2026)" : "Exit Distribution"}
+            </span>
           </div>
 
           <div className="border rounded p-2 flex flex-col overflow-hidden bg-win-tint border-win/40">
