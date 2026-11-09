@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { TOP_MODELS, AIStrategyModel, EnginePerformanceMetrics, TradeOrder } from "@/lib/engineTypes";
+import { TOP_MODELS, ARCHIVED_MODELS, ALL_MODELS, AIStrategyModel, EnginePerformanceMetrics, TradeOrder } from "@/lib/engineTypes";
 import { Brain, Sparkles, ChevronDown } from "lucide-react";
 
 interface ModelCardProps {
@@ -27,7 +27,8 @@ export const ModelCard: React.FC<ModelCardProps> = ({
   tableTab = "live",
   allHistoricalMetrics = null,
 }) => {
-  const currentModel = TOP_MODELS.find((m) => m.id === selectedModelId) || null;
+  const currentModel = ALL_MODELS.find((m) => m.id === selectedModelId) || null;
+  const isArchived = currentModel?.rank === 99 || selectedModelId === "unified-1h-engine";
 
   // Exact Indian regulatory platform friction in R per trade
   const feePct = tradingFeePercent !== undefined ? tradingFeePercent : (isTaker ? 0.040 : 0.016);
@@ -90,16 +91,24 @@ export const ModelCard: React.FC<ModelCardProps> = ({
                 {currentModel ? currentModel.name : "All Top Models (Combined Portfolio)"}
               </span>
               {currentModel && (
-                <span className="text-[10px] font-mono font-bold bg-chrome-field text-chrome-ink px-2 py-0.5 rounded border border-chrome-line">
-                  RANK #{currentModel.rank}
+                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                  isArchived
+                    ? "bg-rose-50 text-rose-800 border-rose-300"
+                    : "bg-chrome-field text-chrome-ink border-chrome-line"
+                }`}>
+                  {isArchived ? "RETIRED" : `RANK #${currentModel.rank}`}
                 </span>
               )}
               <span className="text-[10px] font-mono font-bold bg-accent-tint text-chrome-green-ink px-2 py-0.5 rounded border border-accent/30">
                 {currentModel ? currentModel.timeframe.toUpperCase() : "MULTI-TIMEFRAME"}
               </span>
               {currentModel && (
-                <span className="text-[10px] font-mono font-bold bg-win-tint text-chrome-green-ink px-2 py-0.5 rounded border border-win/40">
-                  ACTIVE LIVE
+                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                  isArchived
+                    ? "bg-rose-100 text-rose-900 border-rose-400 font-black"
+                    : "bg-win-tint text-chrome-green-ink border-win/40"
+                }`}>
+                  {isArchived ? "ARCHIVED / RETIRED" : "ACTIVE LIVE"}
                 </span>
               )}
             </div>
@@ -121,11 +130,22 @@ export const ModelCard: React.FC<ModelCardProps> = ({
             onChange={(e) => onModelChange(e.target.value)}
             className="font-mono text-xs font-bold bg-chrome-field border border-chrome-line rounded px-3 py-1.5 text-chrome-ink hover:border-chrome-ink focus:outline-none focus:border-accent shadow-inner cursor-pointer"
           >
-            {TOP_MODELS.map((m) => (
-              <option key={m.id} value={m.id}>
-                #{m.rank}: {m.shortName}
-              </option>
-            ))}
+            <optgroup label="Active Production Models (Ranked 1 to 19)">
+              {TOP_MODELS.map((m) => (
+                <option key={m.id} value={m.id}>
+                  #{m.rank}: {m.shortName}
+                </option>
+              ))}
+            </optgroup>
+            {ARCHIVED_MODELS.length > 0 && (
+              <optgroup label="Archived / Retired Models">
+                {ARCHIVED_MODELS.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    [ARCHIVED] {m.shortName}
+                  </option>
+                ))}
+              </optgroup>
+            )}
           </select>
         </div>
       </div>

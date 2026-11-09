@@ -407,19 +407,19 @@ export const RESEARCH_STUDIES: StudyRecord[] = [
   {
     "id": "unified-1h-engine",
     "suite": "New",
-    "displaySuite": "New",
-    "strategy": "[New] Unified 1H Multi-Asset Engine [1 Universal Brain]",
+    "displaySuite": "ARCHIVED",
+    "strategy": "[Archived] [New] Unified 1H Multi-Asset Engine [Retired]",
     "timeframe": "1H",
     "sample": "9,785 Historical Trades (2020 - 2026/10/20)",
     "friction": "Shark Exchange 4 bps + 18% GST taker friction deducted",
-    "avgNetR": "-0.005 R / trade (₹-5,396.57 on ₹7k, 0.99 PF)",
+    "avgNetR": "-0.005 R / trade (-₹5,396.57 on ₹7k, 0.99 PF)",
     "winRate": "True: 37.9% · Net: 37.9%",
     "confidenceInterval": "TP: 16.9% | SL: 52.7% | End Cap: ₹1,603.43",
     "protocolCheck": "6-Year Complete Processing (2020-01-01 to 2026-10-20) on ₹7,000 Starting Capital. Zero lookahead bias.",
-    "verdict": "INCONCLUSIVE",
-    "verdictLabel": "INCONCLUSIVE (FEES DISSOLVE EDGE)",
-    "notes": "2024-2025 unconstrained 1H decision tree across 9,785 trades. Gross edge is positive (+0.051R), but taker friction and 18% GST pull net expectancy slightly negative (-0.005R, net -₹5,396.57). Requires dual-gating.",
-    "isProduction": true,
+    "verdict": "FAILED",
+    "verdictLabel": "ARCHIVED / RETIRED (FEE DRAG NEGATIVE)",
+    "notes": "ARCHIVED: Removed from active production rank #15 due to net loss (-₹5,396.57 on ₹7k base, 0.99 PF across 9,785 trades). Standalone 1H decision tree failed against retail taker friction and 18% GST. Replaced by dual-gating Consensus Committee and Stacking Meta-Learner.",
+    "isProduction": false,
     "trades6Yr": 9785,
     "netPnL6Yr": -5396.57,
     "profitFactor6Yr": 0.99,
@@ -585,7 +585,7 @@ export const ResearchResultsTable: React.FC = () => {
                 Walk-Forward Strategy Research &amp; Honest Verdicts
               </h2>
               <span className="font-mono text-[10px] bg-win-tint text-chrome-green-ink border border-win/40 px-2 py-0.5 rounded font-bold">
-                21 PRODUCTION MODELS + 5 BENCHMARKS (6-YR ₹7K AUDIT)
+                20 ACTIVE PRODUCTION MODELS + 6 ARCHIVED & BENCHMARKS (6-YR ₹7K AUDIT)
               </span>
             </div>
             <p className="font-body text-xs text-chrome-dim mt-0.5">
@@ -619,7 +619,7 @@ export const ResearchResultsTable: React.FC = () => {
               }`}
             >
               <Sparkles className="w-3 h-3" />
-              🏆 All 21 Production Models ({all21Count})
+              🏆 All 20 Active Production Models ({all21Count})
             </button>
 
             <button
@@ -694,7 +694,9 @@ export const ResearchResultsTable: React.FC = () => {
                   const isActive = study.verdict === "ACTIVE_EDGE";
                   const isFailed = study.verdict === "FAILED" || study.verdict === "NEGATIVE";
 
-                  const suiteBadge = study.displaySuite === "OPTION_A"
+                  const suiteBadge = study.displaySuite === "ARCHIVED"
+                    ? { bg: "bg-rose-100 text-rose-900 border-rose-300", text: "[ARCHIVED]" }
+                    : study.displaySuite === "OPTION_A"
                     ? { bg: "bg-amber-100 text-amber-900 border-amber-300", text: "[OPTION A 🏆]" }
                     : study.suite === "OM"
                     ? { bg: "bg-win-tint text-chrome-green-ink border-win/40", text: "[OM 6-YEAR]" }

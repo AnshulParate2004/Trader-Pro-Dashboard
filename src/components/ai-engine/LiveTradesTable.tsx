@@ -2,7 +2,7 @@
 import { toDisplaySymbol, toDisplayName } from "@/lib/symbolMapper";
 
 import React from "react";
-import { TradeOrder, TOP_MODELS } from "@/lib/engineTypes";
+import { TradeOrder, TOP_MODELS, ALL_MODELS } from "@/lib/engineTypes";
 import {
   Filter,
   ChevronLeft,
@@ -109,7 +109,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   handleAllHistOutcomeChange,
   allHistMetrics = null,
 }) => {
-  const activeModelMeta = TOP_MODELS.find((m) => m.id === selectedModelId);
+  const activeModelMeta = ALL_MODELS.find((m) => m.id === selectedModelId) || TOP_MODELS.find((m) => m.id === selectedModelId);
   const getFallbackCount = (mId: string) => {
     switch (mId) {
       case "om-distributed-4h-engine": return "364";
