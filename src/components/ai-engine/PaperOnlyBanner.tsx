@@ -36,6 +36,34 @@ export interface AssetPerformanceData {
 }
 
 export const ASSET_METRICS_MAP: Record<string, AssetPerformanceData> = {
+  OPTION_A_1H: {
+    assetKey: "ALL",
+    assetLabel: "[Option A] Hand-Written Neural Network [1H High-Conviction 🏆]",
+    timeframe: "1H Multi-Asset",
+    historicalTradesCount: 0,
+    liveTradesCount: 5,
+    avgNetR: 0.632,
+    realizedReturnR: 3.16,
+    netPnLINR: 316.00,
+    winRate: 80.0,
+    profitFactor: 4.13,
+    maxDrawdownR: -1.01,
+    tpPercent: 80.0,
+    slPercent: 20.0,
+    allocatedCapitalINR: 7000,
+    totalPortfolioCapitalINR: 7000,
+    description: "Zero-Training Hand-Written Neural Network (16->32->16->2 MLP): Closed-form mathematical weights. 5 Live trades on 1H (4W / 1L), 80.0% Win Rate, +3.16R net return, 4.13 Profit Factor.",
+    liveAvgNetR: 0.632,
+    liveRealizedReturnR: 3.16,
+    liveNetPnLINR: 316.00,
+    liveChargesINR: 12.80,
+    liveCurrentCapitalINR: 7316.00,
+    liveWinRate: 80.0,
+    liveProfitFactor: 4.13,
+    liveTpPercent: 80.0,
+    liveSlPercent: 20.0,
+    liveDescription: "Live paper trading executions on 1H (4W / 1L). 80.0% Win Rate, +3.16R net return, 4.13 Profit Factor under Shark Exchange friction."
+  },
   ALL: {
     assetKey: "ALL",
     assetLabel: "Portfolio - All 7 Assets",
@@ -774,6 +802,7 @@ export function getAssetMetrics(
     );
   }
 
+  if (selectedModelId === "option-a-1h-hand-written") return ASSET_METRICS_MAP["OPTION_A_1H"];
   if (selectedModelId === "v1-distributed-4h-engine") return ASSET_METRICS_MAP["V1_4H_DIST"];
   if (selectedModelId === "v1-stacking-meta-engine") return ASSET_METRICS_MAP["V1_STACKING_1H"];
   if (selectedModelId === "v1-distributed-1h-engine") return ASSET_METRICS_MAP["V1_1H_DIST"];

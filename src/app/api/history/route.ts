@@ -87,7 +87,10 @@ export async function GET(req: Request) {
     let targetCollection = "historical_trades_unified_1h";
     let fallbackFile = "unified_1h_historical_trades.json";
 
-    if (modelParam === "v1-distributed-4h-engine") {
+    if (modelParam === "option-a-1h-hand-written") {
+      targetCollection = "historical_trades_option_a_1h";
+      fallbackFile = "option_a_1h_unseen_trades.json";
+    } else if (modelParam === "v1-distributed-4h-engine") {
       targetCollection = "historical_trades_v1_distributed_4h";
       fallbackFile = "v1_distributed_4h_unseen_trades.json";
     } else if (modelParam === "v1-stacking-meta-engine") {

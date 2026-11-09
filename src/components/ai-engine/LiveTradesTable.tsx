@@ -87,6 +87,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
     switch (mId) {
       case "om-distributed-4h-engine": return "364";
       case "om-stacking-meta-engine": return "1,315";
+      case "option-a-1h-hand-written": return "0";
       case "om-distributed-1h-engine": return "1,369";
       case "om-unified-1h-engine": return "1,414";
       case "om-consensus-committee-engine": return "811";
@@ -111,6 +112,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   };
 
   const getDisplayModelName = (t: TradeOrder) => {
+    if (selectedModelId === "option-a-1h-hand-written") return "[Option A] Hand-Written Network [1H High-Conviction 🏆]";
     if (selectedModelId === "om-distributed-4h-engine") return "[OM] Distributed 4H Specialists [7 Models]";
     if (selectedModelId === "om-stacking-meta-engine") return "[OM] Stacking Meta-Learner";
     if (selectedModelId === "om-distributed-1h-engine") return "[OM] Distributed 1H Specialists [7 Models]";
