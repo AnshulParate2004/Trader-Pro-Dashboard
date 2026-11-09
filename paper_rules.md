@@ -24,8 +24,8 @@ Following an exhaustive code audit of [`src/lib/paperExecutor1HA.ts`](src/lib/pa
 - **Stop Loss (`lines 196, 246`)**: $1.0 \times \text{ATR}_{14}$ on closed 1H candles.
 - **Take Profit (`line 248`)**: $1.0 \times \text{ATR}_{14}$ from entry.
 - **Breakeven Trigger (`line 249`)**: $+0.30 \times \text{ATR}_{14}$.
-- **Breakeven Lock (`line 106`)**: Stop moves to $entry + (\text{slDistPct} \times price \times \text{cost\_R\_taker})$.
-- **Pre-Trade Cost Filter (`line 226`)**: Skips trade if $\text{cost\_R} > 0.15$ (logged to `paper_1h_a_skipped`).
+- **Breakeven Lock (`line 106`)**: Stop moves to $entry + (\text{slDistPct} \times price \times \text{cost}_{R,\text{taker}})$.
+- **Pre-Trade Cost Filter (`line 226`)**: Skips trade if $\text{cost}_R > 0.15$ (logged to `paper_1h_a_skipped`).
 
 ### C. Exit Evaluation Frequency & Intrahour Misses
 - **Cadence**: Triggered via cron (`/api/cron/paper-1h-a`) **once per hour** (`"1 * * * *"`).

@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary & Purpose
 
-Following the formal decommissioning of high-frequency intraday engines (5m/15m) due to fatal fee-drag ($\text{cost\_R} > 0.45\text{R}$), this pre-registration specifies the experimental design, econometric hypotheses, validation partitions, and falsification criteria for the **4-Hour (4H) Swing Meta-Labeling Engine**.
+Following the formal decommissioning of high-frequency intraday engines (5m/15m) due to fatal fee-drag ($\text{cost}_R > 0.45\text{R}$), this pre-registration specifies the experimental design, econometric hypotheses, validation partitions, and falsification criteria for the **4-Hour (4H) Swing Meta-Labeling Engine**.
 
 In accordance with institutional governance ([`docs/GOVERNANCE.md`](../GOVERNANCE.md)), all rules, barrier definitions, feature specifications, split horizons, and success thresholds are committed to version control prior to executing model training or backtest evaluation.
 
@@ -59,7 +59,7 @@ Labels are generated strictly according to the triple-barrier method (Marcos Ló
 5. **Round-Trip Transaction Friction:**
    - Standard exchange friction: $0.10\%$ ($10\text{ bps}$) round-trip deducted from every trade.
    - Cost in units of risk:
-     $$\text{cost\_R} = \frac{0.0010}{\delta_{\text{stop}}}$$
+     $$\text{cost}_R = \frac{0.0010}{\delta_{\text{stop}}}$$
 6. **Binary Classification Target ($y \in \{0, 1\}$):**
    - $y = 1$: Trade reaches upper barrier with realized net return $\ge +2.0\text{R}$.
    - $y = 0$: Trade hits stop loss, times out with net return $< +2.0\text{R}$, or is closed at breakeven.

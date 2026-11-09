@@ -2,7 +2,7 @@
 
 > [!WARNING]
 > **Pivoting to 4H / Daily Swing Meta-Labeling Architecture**  
-> **Intraday 5m/15m paper trading is deprecated due to fee-drag exceeding stop size ($\text{cost\_R} > 0.45\text{R}$). The repository is focused on 4H/1D macro regime filtering and volatility-targeted swing engines.**
+> **Intraday 5m/15m paper trading is deprecated due to fee-drag exceeding stop size ($\text{cost}_R > 0.45\text{R}$). The repository is focused on 4H/1D macro regime filtering and volatility-targeted swing engines.**
 
 Trader-Pro is an institutional-grade quantitative trading platform, research laboratory, and execution environment designed for cryptocurrency perpetual futures (BTCUSDT, ETHUSDT, SOLUSDT). Built with Next.js 14 App Router, TypeScript, TailwindCSS, MongoDB Atlas, and Python/LightGBM econometrics evaluators.
 
@@ -14,7 +14,7 @@ Trader-Pro is an institutional-grade quantitative trading platform, research lab
 | :--- | :---: | :--- |
 | `feat/daily-4h-swing-engine` | **ACTIVE** | **Primary R&D Branch**: 4H / Daily swing meta-labeling pipeline, triple-barrier labeling, leak-free feature extraction, and EWMA volatility-targeted position sizing. |
 | `feat/round2-residual-edge` | **SEALED** | Canonical Round 2 Macro Overlays (200-SMA trend filter, EWMA vol target), HAC-adjusted residual edge regression, Stage X historical exploration. |
-| `feat/cost-aware-1h` | **MAINTENANCE** | Cost-aware 1H execution engine with $\text{cost\_R} \le 0.08$ gating, runtime fill slippage, sub-hour 5m stream evaluation, and live-price cron guards. |
+| `feat/cost-aware-1h` | **MAINTENANCE** | Cost-aware 1H execution engine with $\text{cost}_R \le 0.08$ gating, runtime fill slippage, sub-hour 5m stream evaluation, and live-price cron guards. |
 | `feat/timesfm-benchmark` | **ARCHIVED** | Rigorous evaluation of Google TimesFM and Amazon Chronos foundation models against classic EWMA volatility baselines on 2024–2026 data. |
 | `main` | **STABLE** | Production dashboard, verified security infrastructure, historical paper trade audits, and performance visualization. |
 
@@ -31,7 +31,7 @@ The repository maintains strict separation between frozen historical runners and
    - Recorded 1,099+ forward paper trades.
 2. **Cost-Aware 1H Engine (`/api/cron/paper-1h-cost`)**:
    - Implemented in [`src/lib/paperExecutor1HCost.ts`](src/lib/paperExecutor1HCost.ts) and [`src/app/api/cron/paper-1h-cost/route.ts`](src/app/api/cron/paper-1h-cost/route.ts).
-   - Enforces mathematical identity $\text{cost\_R} = \frac{\text{Round-Trip Friction Pct}}{\text{Stop Distance Pct}} \le 0.08$.
+   - Enforces mathematical identity $\text{cost}_R = \frac{\text{Round-Trip Friction Pct}}{\text{Stop Distance Pct}} \le 0.08$.
    - Executes live price entry, sequential 5m candle stream evaluation, exit candle close-time tracking, and `NO_LIVE_PRICE` safety aborts.
 3. **Legacy Scalp Engine (`/api/cron/scalp`)**:
    - Implemented in [`src/lib/tradingEngine.ts`](src/lib/tradingEngine.ts).
@@ -50,7 +50,7 @@ Friction parameters are unified in [`src/lib/feeModel.ts`](src/lib/feeModel.ts):
 - **Bid-Ask Slippage**: `0.010%` per side for taker orders ($0.005\%$ for maker orders)
 - **Standard Round-Trip Taker Friction**: **`0.1144%` of notional**
 
-$$\text{cost\_R} = \frac{\text{Round-Trip Friction Pct}}{\text{Stop Distance Pct}}$$
+$$\text{cost}_R = \frac{\text{Round-Trip Friction Pct}}{\text{Stop Distance Pct}}$$
 
 On narrow 5m/15m stops (0.25% to 0.40%), friction consumes $0.28\text{R}$ to $0.45\text{R}$ of risk capital on every round trip. On 4H/Daily swing stops (2.0% to 5.0%), friction drops to a negligible **$0.02\text{R}$ to $0.05\text{R}$**.
 

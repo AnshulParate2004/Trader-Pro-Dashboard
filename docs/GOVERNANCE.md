@@ -73,7 +73,7 @@ To promote any strategy to real capital execution:
    - The lower bound of the block-bootstrapped 95% confidence interval of net R must strictly exceed zero:
      $$\text{CI}_{95\%}^{\text{lower}}(\text{Net R}) > 0.00\text{R}$$
 4. **Friction Ceiling**:
-   - Every executed trade must satisfy $\text{cost\_R} \le 0.08\text{R}$.
+   - Every executed trade must satisfy $\text{cost}_R \le 0.08\text{R}$.
 
 ---
 

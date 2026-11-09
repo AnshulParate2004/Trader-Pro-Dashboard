@@ -21,7 +21,7 @@ Technical analysis, indicators, and machine learning models account for a fracti
 ### 1.2 The Asymmetric Payoff Mathematics
 Trend following and breakout models operate with win rates between **35% and 55%**. Profitability is achieved through strict mathematical asymmetry:
 
-$$\bar{R}_{\text{net}} = (\text{Win Rate} \times \bar{R}_{\text{win}}) - ([1 - \text{Win Rate}] \times 1.0\text{R}) - \text{cost\_R}$$
+$$\bar{R}_{\text{net}} = (\text{Win Rate} \times \bar{R}_{\text{win}}) - ([1 - \text{Win Rate}] \times 1.0\text{R}) - \text{cost}_R$$
 
 - Losses are strictly capped at $-1.0\text{R}$ (or less via breakeven fee shielding).
 - Winners are allowed to expand to $+2.0\text{R}$, $+2.5\text{R}$, or trailed into multi-$R$ outliers.

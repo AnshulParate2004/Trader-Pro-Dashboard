@@ -68,7 +68,7 @@ Between September and November 2026, the autonomous paper engine executed thousa
 | :--- | :---: | :---: |
 | **Gross Expectancy** | **`-0.04R` to `-0.09R`** | **`+0.25R` to `+0.45R`** |
 | **Typical Stop Width** | $0.35\%$ | $3.50\%$ |
-| **Friction ($\text{cost\_R}$)** | **`0.327R` (32.7% of risk)** | **`0.033R` (3.3% of risk)** |
+| **Friction ($\text{cost}_R$)** | **`0.327R` (32.7% of risk)** | **`0.033R` (3.3% of risk)** |
 | **Net Realized Expectancy** | **`-0.56R` (Severe Loss)** | **`> +0.20R` (Profitable)** |
 
 **Conclusion**: Intraday 5m and 15m crypto scalping with retail taker fees is mathematically insolvent. The engine was formally retired.

@@ -72,14 +72,14 @@ This document logs what was attempted, why each flaw occurred, and the permanent
 ### Flaw 4: Exchange Fee Friction Drag on Tight Stops
 - **What Was Attempted:** Running high-frequency scalping and intraday swing systems on 15M and 1H candles.
 - **The Bug:** Overlooking the mathematical identity governing friction in R units:
-  $$\text{cost\_R} = \frac{\text{Round-Trip Exchange Fee \%}}{\text{Stop Loss Distance \%}}$$
+  $$\text{cost}_R = \frac{\text{Round-Trip Exchange Fee \%}}{\text{Stop Loss Distance \%}}$$
   On an exchange with $0.040\%$ taker fee $+ 18\%$ GST $+ 0.010\%$ slippage per side, round-trip friction is **$0.1144\%$ notional**.
 - **The Consequence:**
   - On a 15M scalper with an observed stop distance of $0.23\%$, fee friction is:
-    $$\text{cost\_R} = \frac{0.1144\%}{0.23\%} = \mathbf{0.497\text{R}}$$
+    $$\text{cost}_R = \frac{0.1144\%}{0.23\%} = \mathbf{0.497\text{R}}$$
     *Every single trade lost nearly half its risk unit ($0.50\text{R}$) immediately to fees upon entry.*
   - On a 1H model with a stop distance of $0.74\%$, fee friction is:
-    $$\text{cost\_R} = \frac{0.1144\%}{0.74\%} = \mathbf{0.155\text{R}}$$
+    $$\text{cost}_R = \frac{0.1144\%}{0.74\%} = \mathbf{0.155\text{R}}$$
 - **The Reality:** Even with a respectable gross edge of $+0.12\text{R}$ on 1H, subtracting $0.16\text{R}$ in fees guarantees a negative net expectancy of $-0.04\text{R}$ to $-0.18\text{R}$ per trade. Short-horizon crypto futures trading is an arithmetic impossibility for retail taker accounts.
 
 ---
@@ -128,9 +128,9 @@ Before any new strategy, signal, or timeframe may be committed, backtested, or p
 
 ### Gate 4: Cost Friction Feasibility Ratio
 - [ ] Calculate the friction-to-stop ratio before testing:
-  $$\text{cost\_R} = \frac{\text{Round-Trip Friction \%}}{\text{Median Stop Distance \%}}$$
-- [ ] **Pass Requirement:** $\text{cost\_R} \le 0.05$ (round-trip exchange friction must not consume more than $5.0\%$ of the initial stop distance).
-- [ ] **Economic Rationale:** At standard taker friction ($0.1144\%$ round turn), a $5\%$ cap mandates a minimum median stop distance of $\ge 2.29\%$. When fee drag exceeds $5\%$ of risk (such as scalping with $0.23\%$ stops where $\text{cost\_R} \approx 0.50$), even an exceptional gross edge is entirely wiped out by exchange fees. Capping $\text{cost\_R} \le 0.05$ guarantees that at least $95\%$ of gross trade expectation survives to net PnL.
+  $$\text{cost}_R = \frac{\text{Round-Trip Friction \%}}{\text{Median Stop Distance \%}}$$
+- [ ] **Pass Requirement:** $\text{cost}_R \le 0.05$ (round-trip exchange friction must not consume more than $5.0\%$ of the initial stop distance).
+- [ ] **Economic Rationale:** At standard taker friction ($0.1144\%$ round turn), a $5\%$ cap mandates a minimum median stop distance of $\ge 2.29\%$. When fee drag exceeds $5\%$ of risk (such as scalping with $0.23\%$ stops where $\text{cost}_R \approx 0.50$), even an exceptional gross edge is entirely wiped out by exchange fees. Capping $\text{cost}_R \le 0.05$ guarantees that at least $95\%$ of gross trade expectation survives to net PnL.
 
 ### Gate 5: Sealed Out-of-Sample Integrity
 - [ ] All model parameters, hyperparameters, and conviction thresholds must be fit strictly on data prior to a sealed cutoff date.
@@ -166,7 +166,7 @@ Before any new strategy, signal, or timeframe may be committed, backtested, or p
 
 ### Stop% and Friction Invariant Table (0.1144% Taker Round-Trip)
 
-| Dataset / Timeframe | Sample Count ($N$) | p10 Stop% | Median Stop% | $\text{cost\_R}$ at Median | p90 Stop% | $\text{cost\_R}$ at p90 |
+| Dataset / Timeframe | Sample Count ($N$) | p10 Stop% | Median Stop% | $\text{cost}_R$ at Median | p90 Stop% | $\text{cost}_R$ at p90 |
 |---|---:|---:|---:|---:|---:|---:|
 | **Stored MongoDB `trade_logs` (Live Scalp)** | 75 closed trades | 0.1144% | **0.2287%** | **0.5002R** | 0.4126% | **0.2773R** |
 | **Historical 15M Live ATR Rule** ($\min(1.0\text{ATR}, 5\%)$) | 239,138 bars | 0.1651% | **0.3506%** | **0.3263R** | 0.7099% | **0.1612R** |
@@ -180,8 +180,8 @@ Before any new strategy, signal, or timeframe may be committed, backtested, or p
 Historical backtests (`src/models/*/trades_main.csv`) artificially assumed a fixed stop distance of $\approx 1.00\%$, yielding an assumed fee drag of only $\approx 0.11\text{R}$ per trade. In reality, actual live trade execution and live ATR on 15M produced stops clustering between $0.23\%$ and $0.35\%$, resulting in real fee drag of **$0.33\text{R}$ to $0.50\text{R}$ per trade**—a **$3.0\times$ to $4.4\times$ friction explosion**.
 
 ### Required Stop Distance for Cost Viability
-- **Gate $\text{cost\_R} \le 0.10$**: Mandates stop distance $\ge \frac{0.1144\%}{0.10} = \mathbf{1.1440\%}$.
-- **Gate $\text{cost\_R} \le 0.08$**: Mandates stop distance $\ge \frac{0.1144\%}{0.08} = \mathbf{1.4300\%}$.
+- **Gate $\text{cost}_R \le 0.10$**: Mandates stop distance $\ge \frac{0.1144\%}{0.10} = \mathbf{1.1440\%}$.
+- **Gate $\text{cost}_R \le 0.08$**: Mandates stop distance $\ge \frac{0.1144\%}{0.08} = \mathbf{1.4300\%}$.
 
 At 15M, only **`0.97%`** of historical signals meet the 0.08 threshold (**`99.03%` rejected**), and even the surviving ~1% of signals produced negative strict net returns ($-0.236\text{R}$, 95% CI upper bound $-0.020\text{R}$). Fast scalping is mathematically unviable under realistic exchange fees.
 
@@ -211,7 +211,7 @@ A comprehensive benchmark was conducted on 3,232 daily BTC bars across 2,730 tot
 The frozen 15M engine (`BTCUSDT_15m`, `final_model_BTCUSDT_15m.joblib`, $2.0\text{ ATR}$ TP, $1.0\text{ ATR}$ SL, 24-bar horizon) was re-tested under realistic exchange execution invariants:
 - **Execution:** Next-bar open entry ($P_{\text{entry}} = O_{t+1}$).
 - **Priority:** Intra-bar worst-case priority (stop-loss checked **before** target within the same bar).
-- **Cost Tier:** 50 bps round-trip friction ($0.50\%$). Live stop distance: $\text{stop\_pct} = 1.0\text{ ATR} / P_{\text{entry}}$. Cost in R: $\text{cost\_R} = 0.0050 / \text{stop\_pct}$.
+- **Cost Tier:** 50 bps round-trip friction ($0.50\%$). Live stop distance: $\text{stop}_{\text{pct}} = 1.0\text{ ATR} / P_{\text{entry}}$. Cost in R: $\text{cost}_R = 0.0050 / \text{stop}_{\text{pct}}$.
 - **Partitioning:** Only trades entered after `2026-10-31 23:59:59 UTC` count as out-of-sample (OOS). Everything earlier is exploratory.
 
 ### Results Table: 50 bps vs 14 bps Friction Tiers
@@ -223,9 +223,9 @@ The frozen 15M engine (`BTCUSDT_15m`, `final_model_BTCUSDT_15m.joblib`, $2.0\tex
 | **Mean Cost R** | .1478\text{R}$ | .1427\text{R}$ | .8819\text{R}$ | .3214\text{R}$ | .3200\text{R}$ | .5269\text{R}$ |
 | **Net R / trade** | **$-1.0970\text{R}$** | **$-0.9763\text{R}$** | **$-2.3819\text{R}$** | **$-0.2925\text{R}$** | **$-0.1536\text{R}$** | **$-1.0269\text{R}$** |
 | **95% Bootstrap CI (=20$)** | $[\pm 0.025]$ | [-1.0995, -0.8465] | [-3.0931, -1.7549] | $[\pm 0.008]$ | [-0.2266, -0.0851] | [-1.0269, -1.0269] |
-| **Share Trades $\text{cost\_R} > 0.15$** | 100.0% | **99.71%** | **100.00%** | 86.5% | **85.94%** | **100.00%** |
+| **Share Trades $\text{cost}_R > 0.15$** | 100.0% | **99.71%** | **100.00%** | 86.5% | **85.94%** | **100.00%** |
 | **Below Noise Null?** | N/A | No | **Yes ($-2.38 < -1.10$)** | N/A | No | **Yes ($-1.03 < -0.29$)** |
 | **Verdict** | Baseline | **no edge** | **no edge** | Baseline | **no edge** | **no edge** |
 
 ### Definitive Invariant
-Even at the ultra-low 14 bps friction tier (.14\%$), over .9\%$ of exploratory trades and \%$ of out-of-sample trades exceed the $\text{cost\_R} \le 0.15$ budget. The out-of-sample net return ($-1.0269\text{R}$) drops far below the 14 bps noise-null baseline ($-0.2925\text{R}$). The 15M engine possesses **no edge** at any realistic fee level.
+Even at the ultra-low 14 bps friction tier (.14\%$), over .9\%$ of exploratory trades and \%$ of out-of-sample trades exceed the $\text{cost}_R \le 0.15$ budget. The out-of-sample net return ($-1.0269\text{R}$) drops far below the 14 bps noise-null baseline ($-0.2925\text{R}$). The 15M engine possesses **no edge** at any realistic fee level.

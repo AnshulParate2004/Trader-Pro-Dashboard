@@ -114,7 +114,7 @@ The quantitative universe spans 7 non-correlated liquid perpetual and commodity 
      C1DE3359D29A4B4C6BFB3662A65C2ABF5DD4001052BDF6CAA1A7AA50FB8B33A8
      ```
 5. **Structural Risk Filters**:
-   - Maximum cost drag: $\text{cost\_R} = \frac{\text{friction\_pct}}{\text{stop\_pct}} \le 0.08\text{R}$. Stops tighter than $1.43\%$ are systematically vetoed.
+   - Maximum cost drag: $\text{cost}_R = \frac{\text{friction}_{\text{pct}}}{\text{stop}_{\text{pct}}} \le 0.08\text{R}$. Stops tighter than $1.43\%$ are systematically vetoed.
    - Rolling 100-trade kill switch: triggers if average net $R < -0.05\text{R}$.
    - Daily loss circuit breaker: $-3.0\text{R}$ maximum drawdown per calendar day.
 

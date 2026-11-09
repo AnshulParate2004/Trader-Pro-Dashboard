@@ -29,7 +29,7 @@ Prior to executing any backtest return calculations or strategy PnL evaluations,
    - **Lookahead Verification:** The trading decision for bar $t$ occurs at bar $t$ close (`23:59:59 UTC`), and position entry executes at next-bar open (`00:00:01 UTC` on date $t+1$). Because the date $t$ OI value was snapshot at `00:00:00 UTC` on date $t$, it is **known 24 hours prior to entry** at $t+1$ open. The conservative 5-day delta $\Delta\text{OI}_{5d} = \text{OI}_t / \text{OI}_{t-5} - 1$ is strictly free of lookahead bias ($T_{\text{publish}} < T_{\text{signal}} < T_{\text{entry}}$).
 3. **Dynamic Universe Ranking & Prominent "SURVIVOR-BIASED" Disclosure:**
    - Universe selection follows the dynamic ranking rule: on each rebalance date $t$, eligible assets are the **Top 20 by trailing 90-day aggregate quote volume** among available coins:
-     $$\text{Volume}_{i, t-1} = \sum_{k=1}^{90} \text{quote\_volume}_{i, t-k}$$
+     $$\text{Volume}_{i, t-1} = \sum_{k=1}^{90} \text{quote volume}_{i, t-k}$$
    - **SURVIVORSHIP BIAS DISCLOSURE:** Because the candidate pool was downloaded from the top 20 liquid perpetual contracts as of November 2026, historically delisted or defunct contracts (e.g., LUNA, FTT) are not present in the historical pool. Consequently, **every backtest result is explicitly labeled "SURVIVOR-BIASED" in all report headers and summaries**.
 4. **Independent Observation Counting via Daily Portfolio Return Aggregation:**
    - To account for strong cross-sectional correlation across crypto assets and prevent artificial sample-size inflation, independent observations are **NOT counted as individual coin trade signals**.
@@ -107,7 +107,7 @@ Round 3 strictly abandons intraday pattern mining. It investigates whether genui
 ### Dynamic Universe Selection Rule (Uniform Across All 3 Hypotheses)
 To prevent survivorship and selection bias, the universe is **not fixed to today's survivors**. Instead, at each daily rebalance date $t$:
 - **Eligible Pool:** The top 20 liquid USDT perpetual contracts ranked by trailing 90-day aggregate quote volume:
-  $$\text{Volume}_{i, t-1} = \sum_{k=1}^{90} \text{quote\_volume}_{i, t-k}$$
+  $$\text{Volume}_{i, t-1} = \sum_{k=1}^{90} \text{quote volume}_{i, t-k}$$
 - **Data Integrity:** Sourced strictly from data published prior to $open[t]$. If a contract was listed less than 90 days prior, it is excluded until 90 days of continuous history accumulate.
 - **Survivorship Mitigation:** Any coin delisted or suspended in historical periods drops out dynamically as its volume evaporates.
 - **Tradability Status:** Unless confirmed against the user's live exchange tradable instrument manifest, this 20-coin universe is formally marked **`RESEARCH-ONLY`**.
@@ -121,7 +121,7 @@ To prevent survivorship and selection bias, the universe is **not fixed to today
 - **Exact Fixed Signal (Zero Search):**
   - **Rebalance Cadence:** Evaluated daily at 00:00 UTC.
   - **Metric:** Trailing 3-day (9 settlement intervals) cumulative funding rate:
-    $$F_{i, t-1} = \sum_{k=1}^9 \text{funding\_rate}_{i, t-k}$$
+    $$F_{i, t-1} = \sum_{k=1}^9 \text{funding rate}_{i, t-k}$$
   - **Point-in-Time Check:** Only funding settlements with published timestamps $T_{\text{publish}} \le open[t]$ are included.
   - **Long Entry Rule:** If $F_{i, t-1} < -0.150\%$ (annualized $\approx -18.25\%$, extreme short crowding) $\implies$ Enter Long at $open[t]$.
   - **Short Entry Rule:** If $F_{i, t-1} > +0.300\%$ (annualized $\approx +36.50\%$, extreme long crowding) $\implies$ Enter Short at $open[t]$.

@@ -80,7 +80,7 @@ trades = all_predictions >= threshold
 
 ### Remedy & Invariant
 - **Rule**: All probability thresholds, feature scaling parameters, and normalization statistics must be determined strictly **inside the training fold** (or using an expanding rolling window).
-- **Implementation**: In walk-forward cross-validation, $\tau_k = \text{Quantile}(P_{\text{train\_k}}, q)$, applied out-of-sample to fold $k+1$ without recalculation.
+- **Implementation**: In walk-forward cross-validation, $\tau_k = \text{Quantile}(P_{\text{train}_k}, q)$, applied out-of-sample to fold $k+1$ without recalculation.
 
 ---
 
@@ -114,9 +114,9 @@ Backtests assumed an idealized flat fee of $0.05\%$ or $0.10\%$ without modeling
 For a 15m scalp trading 10 times per day with a $0.35\%$ stop-loss:
 - Round-trip exchange fee + GST + slippage: **`0.1144%` of notional**.
 - Friction per trade in units of risk:
-  $$\text{cost\_R} = \frac{0.1144\%}{0.35\%} = 0.3269\text{R}$$
+  $$\text{cost}_R = \frac{0.1144\%}{0.35\%} = 0.3269\text{R}$$
 Over 100 trades, the trader loses **$32.7\text{R}$ in fees alone**. Adding a $1\%$ TDS on every sell leg mathematically guarantees capital insolvency within weeks for any intraday strategy.
 
 ### Remedy & Invariant
-- Intraday strategies with $\text{cost\_R} > 0.08\text{R}$ are permanently prohibited.
-- Capital is reallocated exclusively to 4H and Daily swing timeframes where stops are $2.5\% - 6.0\%$, reducing friction to $\text{cost\_R} < 0.04\text{R}$ and trade turnover to sustainable levels.
+- Intraday strategies with $\text{cost}_R > 0.08\text{R}$ are permanently prohibited.
+- Capital is reallocated exclusively to 4H and Daily swing timeframes where stops are $2.5\% - 6.0\%$, reducing friction to $\text{cost}_R < 0.04\text{R}$ and trade turnover to sustainable levels.

@@ -35,7 +35,7 @@ This variant introduces a **"slow, small" cost-aware filter**:
  */
 export const MAX_COST_R_THRESHOLD = 0.08;
 ```
-* **Gate Logic:** If $\text{cost\_R} > 0.08$, the signal is skipped.
+* **Gate Logic:** If $\text{cost}_R > 0.08$, the signal is skipped.
 * **Logging Requirement:** Skipped trades must be logged to the database and console with:
   `status: "SKIPPED_COST_R"`, `reason: "skipped: cost_R"`, recording the exact `cost_R`, `stop_pct`, and `round_trip_cost_pct`.
 
@@ -113,7 +113,7 @@ To declare statistical edge, the strategy must satisfy **ALL** of the following:
    The empirical simulation script (`analysis/evaluate_cost_aware_1h.py`) generates signals using raw 20-period Donchian channel breakouts (`close > rolling_high_20` / `close < rolling_low_20`), rather than loading the binary 1H-A LightGBM model artifact (`src/models/1h/final_model_BTCUSDT_1h.joblib`) or applying the frozen expanding-window conviction threshold (`FROZEN_CONVICTION_THRESHOLD = 0.582`).
 
 2. **Infeasibility of 50 bps Friction Tier by Construction:**
-   Under the pre-registered cost gate rule ($\text{cost\_R} = \frac{\text{round\_trip\_cost\_pct}}{\text{stop\_pct}} \le 0.08$), a 50 bps ($0.5000\%$) friction tier requires an initial stop distance of at least $\frac{0.0050}{0.08} = 6.25\%$. Because the execution engine caps stop distances at $5.0\%$ of entry price (`min(1.0 * ATR14, 0.05 * Price)`), any trade evaluated at 50 bps will have $\text{cost\_R} \ge \frac{0.0050}{0.0500} = 0.10 > 0.08$. Consequently, $100\%$ of trades are skipped at 50 bps ($n = 0$), making this tier infeasible by construction.
+   Under the pre-registered cost gate rule ($\text{cost}_R = \frac{\text{round trip cost}_{\text{pct}}}{\text{stop}_{\text{pct}}} \le 0.08$), a 50 bps ($0.5000\%$) friction tier requires an initial stop distance of at least $\frac{0.0050}{0.08} = 6.25\%$. Because the execution engine caps stop distances at $5.0\%$ of entry price (`min(1.0 * ATR14, 0.05 * Price)`), any trade evaluated at 50 bps will have $\text{cost}_R \ge \frac{0.0050}{0.0500} = 0.10 > 0.08$. Consequently, $100\%$ of trades are skipped at 50 bps ($n = 0$), making this tier infeasible by construction.
 
 3. **Mode B vs. Mode A Friction Schedule Divergence:**
    Mode B fee friction ($0.0525\%$) differs from Mode A friction ($0.1144\%$ and $0.5000\%$). Mode B assumes a maker fee schedule ($0.018\%$ base fee $+ 18\%$ GST $+ 0.005\%$ maker slippage per side $= 0.05248\% \approx 0.0525\%$ round-trip), whereas Mode A assumes taker market execution ($0.040\%$ base fee $+ 18\%$ GST $+ 0.010\%$ taker slippage per side $= 0.1144\%$ round-trip).
@@ -147,7 +147,7 @@ To declare statistical edge, the strategy must satisfy **ALL** of the following:
 
 1. **Re-Evaluation Bug (Past Candle Ratchet Contamination):**
    - *Problem:* In prior versions, active trades re-evaluated the entire recent 5m candle buffer on every cron execution (`candle.openTime >= entryTimestamp`). When a trade achieved the breakeven ratchet trigger in candle $k$, updating its stop loss to entry price (`stop_loss = intended_price`), subsequent cron runs re-evaluated earlier candles $1 \dots k-1$. If an earlier candle dipped below entry price (which is common and valid prior to reaching BE), this past historical dip falsely triggered a breakeven exit ($0.0\text{R}$) on the subsequent run.
-   - *Fix:* The trade document must persist `last_evaluated_candle_time` (Unix millisecond timestamp of the latest evaluated candle). Each execution run strictly filters and evaluates only candles satisfying $\text{candle.openTime} > \text{last\_evaluated\_candle\_time}$. Upon evaluating each candle, `last_evaluated_candle_time` is updated.
+   - *Fix:* The trade document must persist `last_evaluated_candle_time` (Unix millisecond timestamp of the latest evaluated candle). Each execution run strictly filters and evaluates only candles satisfying $\text{candle.openTime} > \text{last evaluated candle time}$. Upon evaluating each candle, `last_evaluated_candle_time` is updated.
 
 2. **Silent Fallback Bug (Unverified 1H Fallback on Missing 5M Data):**
    - *Problem:* When 5m Binance klines could not be fetched, the executor silently fell back to evaluating the entire 1H `liveCandle`, whose open time pre-dated mid-hour entries and could falsely trigger stops.
