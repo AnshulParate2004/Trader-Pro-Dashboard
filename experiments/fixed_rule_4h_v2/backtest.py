@@ -25,7 +25,13 @@ def load_config(override_clamp_mode=None, override_direction=None):
         cfg["direction"] = override_direction
     return cfg
 
+CANDLE_CACHE = {}
+FUNDING_CACHE = {}
+
 def load_candles(asset, tf='4h'):
+    key = (asset, tf)
+    if key in CANDLE_CACHE:
+        return CANDLE_CACHE[key]
     paths = [
         os.path.join(DATA_DIR, tf, f"{asset}_{tf}.parquet"),
         os.path.join(DATA_DIR, f"{asset}_{tf}.parquet"),
@@ -48,10 +54,14 @@ def load_candles(asset, tf='4h'):
                     df['datetime'] = pd.to_datetime(df[col])
             if df['datetime'].dt.tz is not None:
                 df['datetime'] = df['datetime'].dt.tz_localize(None)
-            return df.sort_values('datetime').reset_index(drop=True)
+            clean_df = df.sort_values('datetime').reset_index(drop=True)
+            CANDLE_CACHE[key] = clean_df
+            return clean_df
     raise FileNotFoundError(f"Candles not found for {asset}_{tf}")
 
 def load_funding_rates(asset):
+    if asset in FUNDING_CACHE:
+        return FUNDING_CACHE[asset]
     path = os.path.join(FUNDING_DIR, f"funding_{asset}.parquet")
     if os.path.exists(path):
         df = pd.read_parquet(path)
@@ -60,7 +70,9 @@ def load_funding_rates(asset):
         if df['datetime'].dt.tz is not None:
             df['datetime'] = df['datetime'].dt.tz_localize(None)
         df['fundingRate'] = df['fundingRate'].astype(float)
-        return df[['datetime', 'fundingRate']].sort_values('datetime').reset_index(drop=True)
+        res = df[['datetime', 'fundingRate']].sort_values('datetime').reset_index(drop=True)
+        FUNDING_CACHE[asset] = res
+        return res
     return None
 
 def calculate_real_funding(asset, entry_dt, exit_dt, direction, funding_df, fallback_rate_8h):
@@ -125,8 +137,7 @@ def run_candidate_generator(cfg):
     btc_sma200 = pd.Series(btc_c).rolling(sma_n).mean().values
     btc_ema50 = pd.Series(btc_c).ewm(span=ema_n, adjust=False).mean().values
     btc_slope = np.zeros(len(btc_c))
-    for idx in range(ema_slope_bars, len(btc_c)):
-        btc_slope[idx] = (btc_ema50[idx] - btc_ema50[idx - ema_slope_bars]) / btc_ema50[idx - ema_slope_bars]
+    btc_slope[ema_slope_bars:] = (btc_ema50[ema_slope_bars:] - btc_ema50[:-ema_slope_bars]) / btc_ema50[:-ema_slope_bars]
     btc_regime_lookup = pd.DataFrame({
         'datetime': btc_df['datetime'],
         'btc_bull': (btc_c > btc_sma200) & (btc_slope > gate_cfg["btc_ema_slope_min"]),
@@ -159,12 +170,20 @@ def run_candidate_generator(cfg):
         ll10 = pd.Series(l).shift(1).rolling(stop_cfg["lookback_bars"]).min().values
         hh10 = pd.Series(h).shift(1).rolling(stop_cfg["lookback_bars"]).max().values
 
-        # Wilder ATR-14
-        tr = np.zeros(n)
-        tr[0] = h[0] - l[0]
-        for i in range(1, n):
-            tr[i] = max(h[i] - l[i], abs(h[i] - c[i-1]), abs(l[i] - c[i-1]))
+        # Vectorized True Range & Wilder ATR-14
+        prev_c = np.roll(c, 1)
+        prev_c[0] = c[0]
+        tr = np.maximum(h - l, np.maximum(np.abs(h - prev_c), np.abs(l - prev_c)))
         atr14 = pd.Series(tr).rolling(atr_n).mean().values
+
+        # Vectorized BTC Regime Gate Alignment for Altcoins
+        if gate_cfg["enabled_for_alts"] and symbol != "BTCUSDT":
+            merged = pd.merge_asof(df[['datetime']], btc_regime_lookup.reset_index(), on='datetime', direction='backward')
+            btc_bull_arr = merged['btc_bull'].fillna(False).values
+            btc_bear_arr = merged['btc_bear'].fillna(False).values
+        else:
+            btc_bull_arr = np.ones(n, dtype=bool)
+            btc_bear_arr = np.ones(n, dtype=bool)
 
         last_exit_bar = -1
 
@@ -190,11 +209,8 @@ def run_candidate_generator(cfg):
 
             # BTC Regime Gate for Altcoins (ETH)
             if gate_cfg["enabled_for_alts"] and symbol != "BTCUSDT":
-                btc_matches = btc_regime_lookup.loc[:sig_dt]
-                if len(btc_matches) > 0:
-                    latest_btc = btc_matches.iloc[-1]
-                    if rule_long and not latest_btc['btc_bull']: continue
-                    if rule_short and not latest_btc['btc_bear']: continue
+                if rule_long and not btc_bull_arr[t]: continue
+                if rule_short and not btc_bear_arr[t]: continue
 
             # Rule: EMA50 Slope over 10 bars
             ema_slope = (ema50[t] - ema50[t - ema_slope_bars]) / ema50[t - ema_slope_bars]
