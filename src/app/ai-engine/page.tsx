@@ -64,7 +64,17 @@ export default function AiEnginePage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Table View Tabs & Interactive Filtering / Pagination
-  const [tableTab, setTableTab] = useState<"live" | "historical">("live");
+  const [tableTab, setTableTab] = useState<"live" | "historical" | "all_historical">("live");
+
+  const [allHistoricalTrades, setAllHistoricalTrades] = useState<any[]>([]);
+  const [totalAllHistoricalCount, setTotalAllHistoricalCount] = useState<number>(0);
+  const [allHistMetrics, setAllHistMetrics] = useState<any>(null);
+  const [isLoadingAllHistorical, setIsLoadingAllHistorical] = useState(false);
+  const [allHistPage, setAllHistPage] = useState<number>(1);
+  const [allHistLimit, setAllHistLimit] = useState<number>(50);
+  const [allHistSideFilter, setAllHistSideFilter] = useState<"ALL" | "LONG" | "SHORT">("ALL");
+  const [allHistOutcomeFilter, setAllHistOutcomeFilter] = useState<string>("ALL");
+  const [allHistTotalPages, setAllHistTotalPages] = useState<number>(1);
   const [liveSideFilter, setLiveSideFilter] = useState<"ALL" | "LONG" | "SHORT">("ALL");
   const [liveSymbolFilter, setLiveSymbolFilter] = useState<string>("ALL");
   const [liveLimit, setLiveLimit] = useState<number>(100);
@@ -137,6 +147,69 @@ export default function AiEnginePage() {
     }
   };
 
+  const fetchAllHistoricalTrades = async (
+    modelIdToFetch?: string,
+    page: number = allHistPage,
+    limit: number = allHistLimit,
+    side: "ALL" | "LONG" | "SHORT" = allHistSideFilter,
+    outcome: string = allHistOutcomeFilter,
+    symbol: string = selectedAsset
+  ) => {
+    setIsLoadingAllHistorical(true);
+    try {
+      const activeM = modelIdToFetch || selectedModelId;
+      const params = new URLSearchParams({
+        modelId: activeM,
+        page: page.toString(),
+        limit: limit.toString(),
+        side: side,
+        outcome: outcome,
+        symbol: symbol,
+      });
+      const res = await fetch(`/api/all-history?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setAllHistoricalTrades(data.trades || []);
+          setTotalAllHistoricalCount(data.totalHistoricalTrades || 0);
+          setAllHistTotalPages(data.totalPages || 1);
+          setAllHistPage(data.page || page);
+          if (data.metrics) {
+            setAllHistMetrics(data.metrics);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("Could not fetch all historical trades:", err);
+    } finally {
+      setIsLoadingAllHistorical(false);
+    }
+  };
+
+  const handleAllHistPageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > allHistTotalPages) return;
+    setAllHistPage(newPage);
+    fetchAllHistoricalTrades(selectedModelId, newPage, allHistLimit, allHistSideFilter, allHistOutcomeFilter, selectedAsset);
+  };
+
+  const handleAllHistLimitChange = (newLimit: number) => {
+    setAllHistLimit(newLimit);
+    setAllHistPage(1);
+    fetchAllHistoricalTrades(selectedModelId, 1, newLimit, allHistSideFilter, allHistOutcomeFilter, selectedAsset);
+  };
+
+  const handleAllHistSideChange = (newSide: "ALL" | "LONG" | "SHORT") => {
+    setAllHistSideFilter(newSide);
+    setAllHistPage(1);
+    fetchAllHistoricalTrades(selectedModelId, 1, allHistLimit, newSide, allHistOutcomeFilter, selectedAsset);
+  };
+
+  const handleAllHistOutcomeChange = (newOutcome: string) => {
+    setAllHistOutcomeFilter(newOutcome);
+    setAllHistPage(1);
+    fetchAllHistoricalTrades(selectedModelId, 1, allHistLimit, allHistSideFilter, newOutcome, selectedAsset);
+  };
+
   const handleHistPageChange = (newPage: number) => {
     if (newPage < 1 || newPage > histTotalPages) return;
     setHistPage(newPage);
@@ -169,6 +242,7 @@ export default function AiEnginePage() {
     setHistPage(1);
     fetchData(selectedModelId, activeFeeRef.current, liveLimitRef.current, newAsset);
     fetchHistoricalTrades(selectedModelId, 1, histLimit, histSideFilter, histOutcomeFilter, newAsset);
+    fetchAllHistoricalTrades(selectedModelId, 1, allHistLimit, allHistSideFilter, allHistOutcomeFilter, newAsset);
   };
 
   const handleHistSymbolChange = (newSymbol: string) => {
@@ -224,6 +298,7 @@ export default function AiEnginePage() {
   useEffect(() => {
     fetchData(selectedModelId, config.tradingFeePercent, liveLimit, selectedAsset);
     fetchHistoricalTrades(selectedModelId);
+    fetchAllHistoricalTrades(selectedModelId, 1, allHistLimit, allHistSideFilter, allHistOutcomeFilter, selectedAsset);
     const interval = setInterval(() => {
       fetchData(selectedModelIdRef.current, activeFeeRef.current, liveLimitRef.current, selectedAssetRef.current);
     }, 4000);
@@ -260,8 +335,10 @@ export default function AiEnginePage() {
       }
     }
     setHistPage(1);
+    setAllHistPage(1);
     fetchData(newModelId, activeFeeRef.current);
     fetchHistoricalTrades(newModelId, 1, histLimit, histSideFilter, histOutcomeFilter);
+    fetchAllHistoricalTrades(newModelId, 1, allHistLimit, allHistSideFilter, allHistOutcomeFilter);
   };
 
   // Update Fee Percentage (Shark Exchange presets)
@@ -523,11 +600,11 @@ export default function AiEnginePage() {
             with the PAPER ONLY status. Most prominent element.
            ========================================================================= */}
         <PaperOnlyBanner
-          avgNetR={currentAssetData.avgNetR}
-          netPnLINR={currentAssetData.netPnLINR}
+          avgNetR={tableTab === "all_historical" && allHistMetrics ? allHistMetrics.avgNetR : currentAssetData.avgNetR}
+          netPnLINR={tableTab === "all_historical" && allHistMetrics ? allHistMetrics.netPnLINR : currentAssetData.netPnLINR}
           isTaker={isTaker}
           feePercent={["GC=F", "SI=F", "CL=F", "XAUUSDT", "XAGUSDT", "CLUSDT"].includes(selectedAsset) ? 0.05 : currentFeePercent}
-          closedTradesCount={tableTab === "live" ? currentAssetData.liveTradesCount : currentAssetData.historicalTradesCount}
+          closedTradesCount={tableTab === "all_historical" && allHistMetrics ? allHistMetrics.totalTrades : (tableTab === "live" ? currentAssetData.liveTradesCount : currentAssetData.historicalTradesCount)}
           selectedModelId={selectedModelId}
           selectedAsset={selectedAsset}
           assetData={currentAssetData}
@@ -606,6 +683,8 @@ export default function AiEnginePage() {
                 tradingFeePercent={config.tradingFeePercent}
                 trades={trades}
                 isLiveMode={true}
+                tableTab={tableTab}
+                allHistoricalMetrics={allHistMetrics}
               />
 
               {/* Autonomous AI Scalp Engine Execution Controls */}
@@ -717,6 +796,19 @@ export default function AiEnginePage() {
           feePercent={currentFeePercent}
           selectedAsset={selectedAsset}
           onAssetChange={handleAssetChange}
+          allHistoricalTrades={allHistoricalTrades}
+          totalAllHistoricalCount={totalAllHistoricalCount}
+          isLoadingAllHistorical={isLoadingAllHistorical}
+          allHistPage={allHistPage}
+          allHistLimit={allHistLimit}
+          allHistSideFilter={allHistSideFilter}
+          allHistOutcomeFilter={allHistOutcomeFilter}
+          allHistTotalPages={allHistTotalPages}
+          handleAllHistPageChange={handleAllHistPageChange}
+          handleAllHistLimitChange={handleAllHistLimitChange}
+          handleAllHistSideChange={handleAllHistSideChange}
+          handleAllHistOutcomeChange={handleAllHistOutcomeChange}
+          allHistMetrics={allHistMetrics}
         />
 
 

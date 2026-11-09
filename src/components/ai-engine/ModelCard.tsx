@@ -12,6 +12,8 @@ interface ModelCardProps {
   metrics?: EnginePerformanceMetrics | null;
   trades?: TradeOrder[];
   isLiveMode?: boolean;
+  tableTab?: "live" | "historical" | "all_historical";
+  allHistoricalMetrics?: any;
 }
 
 export const ModelCard: React.FC<ModelCardProps> = ({
@@ -22,6 +24,8 @@ export const ModelCard: React.FC<ModelCardProps> = ({
   metrics,
   trades = [],
   isLiveMode = true,
+  tableTab = "live",
+  allHistoricalMetrics = null,
 }) => {
   const currentModel = TOP_MODELS.find((m) => m.id === selectedModelId) || null;
 
@@ -46,12 +50,31 @@ export const ModelCard: React.FC<ModelCardProps> = ({
   const tpSplit = liveCount > 0 ? Number(((tpCount / liveCount) * 100).toFixed(1)) : 0;
   const slSplit = liveCount > 0 ? Number((((liveCount - tpCount) / liveCount) * 100).toFixed(1)) : 0;
 
-  // Display values: if live mode and live trades exist, show actual live metrics; otherwise holdout benchmark
-  const displayWinRate = isLiveMode && liveCount > 0 ? liveWinRate : (currentModel?.trueWinRate ?? 0);
-  const displayAvgNetR = isLiveMode && liveCount > 0 ? liveAvgNetR : (currentModel ? Number(((currentModel.avgGrossR ?? currentModel.avgNetR) - frictionR).toFixed(3)) : 0);
-  const displayPF = isLiveMode && liveCount > 0 ? livePF : (currentModel?.netProfitFactor ?? 1.0);
-  const displayTpSplit = isLiveMode && liveCount > 0 ? tpSplit : (currentModel?.tpSplit ?? 0);
-  const displaySlSplit = isLiveMode && liveCount > 0 ? slSplit : (currentModel?.slSplit ?? 0);
+  // Display values:
+  // 1. If all_historical mode, show the full 6-year historical metrics computed on ₹7k starting capital
+  // 2. If live mode and live trades exist, show actual live metrics
+  // 3. Otherwise holdout benchmark
+  const isAllHistorical = tableTab === "all_historical";
+  
+  const displayWinRate = isAllHistorical && allHistoricalMetrics
+    ? allHistoricalMetrics.trueWinRate
+    : (isLiveMode && liveCount > 0 ? liveWinRate : (currentModel?.trueWinRate ?? 0));
+
+  const displayAvgNetR = isAllHistorical && allHistoricalMetrics
+    ? allHistoricalMetrics.avgNetR
+    : (isLiveMode && liveCount > 0 ? liveAvgNetR : (currentModel ? Number(((currentModel.avgGrossR ?? currentModel.avgNetR) - frictionR).toFixed(3)) : 0));
+
+  const displayPF = isAllHistorical && allHistoricalMetrics
+    ? allHistoricalMetrics.netProfitFactor
+    : (isLiveMode && liveCount > 0 ? livePF : (currentModel?.netProfitFactor ?? 1.0));
+
+  const displayTpSplit = isAllHistorical && allHistoricalMetrics
+    ? allHistoricalMetrics.tpSplit
+    : (isLiveMode && liveCount > 0 ? tpSplit : (currentModel?.tpSplit ?? 0));
+
+  const displaySlSplit = isAllHistorical && allHistoricalMetrics
+    ? allHistoricalMetrics.slSplit
+    : (isLiveMode && liveCount > 0 ? slSplit : (currentModel?.slSplit ?? 0));
 
   return (
     <div className="bg-white border border-chrome-line rounded-lg p-4 sm:p-5 flex flex-col gap-4 shadow-xs">
@@ -162,12 +185,18 @@ export const ModelCard: React.FC<ModelCardProps> = ({
           </div>
 
           <div className="border rounded p-2 flex flex-col overflow-hidden bg-win-tint border-win/40">
-            <span className="text-[10px] uppercase font-bold text-chrome-green-ink">Live Status</span>
-            <span className="text-xs font-bold mt-1 text-win-dark font-mono">
-              ACTIVE LIVE
+            <span className="text-[10px] uppercase font-bold text-chrome-green-ink">
+              {isAllHistorical ? "6-Year Archive" : "Live Status"}
             </span>
-            <span className="text-[9px] text-chrome-dim font-sans">
-              {isLiveMode && liveCount > 0 ? `${liveCount} Live Executions` : "Watermark Delta Cached"}
+            <span className="text-xs font-bold mt-1 text-win-dark font-mono truncate">
+              {isAllHistorical ? "₹7K BASE ARCHIVE" : "ACTIVE LIVE"}
+            </span>
+            <span className="text-[9px] text-chrome-dim font-sans truncate">
+              {isAllHistorical && allHistoricalMetrics
+                ? `${allHistoricalMetrics.totalTrades.toLocaleString()} Trades (2020-2026)`
+                : isLiveMode && liveCount > 0
+                ? `${liveCount} Live Executions`
+                : "Watermark Delta Cached"}
             </span>
           </div>
         </div>

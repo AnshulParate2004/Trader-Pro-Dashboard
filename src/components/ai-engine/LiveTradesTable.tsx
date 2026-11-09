@@ -17,8 +17,8 @@ interface LiveTradesTableProps {
   trades: TradeOrder[];
   filteredLiveTrades: TradeOrder[];
   livePredictionLogs?: any[];
-  tableTab: "live" | "historical";
-  setTableTab: (tab: "live" | "historical") => void;
+  tableTab: "live" | "historical" | "all_historical";
+  setTableTab: (tab: "live" | "historical" | "all_historical") => void;
   liveSideFilter: "ALL" | "LONG" | "SHORT";
   setLiveSideFilter: (filter: "ALL" | "LONG" | "SHORT") => void;
   liveSymbolFilter?: string;
@@ -46,6 +46,20 @@ interface LiveTradesTableProps {
   selectedAsset?: string;
   onAssetChange?: (asset: string) => void;
   selectedModelId?: string;
+  // All Historical Transactions (2020-2026/10/20) Props
+  allHistoricalTrades?: any[];
+  totalAllHistoricalCount?: number;
+  isLoadingAllHistorical?: boolean;
+  allHistPage?: number;
+  allHistLimit?: number;
+  allHistSideFilter?: "ALL" | "LONG" | "SHORT";
+  allHistOutcomeFilter?: string;
+  allHistTotalPages?: number;
+  handleAllHistPageChange?: (newPage: number) => void;
+  handleAllHistLimitChange?: (newLimit: number) => void;
+  handleAllHistSideChange?: (newSide: "ALL" | "LONG" | "SHORT") => void;
+  handleAllHistOutcomeChange?: (newOutcome: string) => void;
+  allHistMetrics?: any;
 }
 
 export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
@@ -81,6 +95,19 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   selectedAsset = "ALL",
   onAssetChange,
   selectedModelId = "om-distributed-4h-engine",
+  allHistoricalTrades = [],
+  totalAllHistoricalCount = 0,
+  isLoadingAllHistorical = false,
+  allHistPage = 1,
+  allHistLimit = 50,
+  allHistSideFilter = "ALL",
+  allHistOutcomeFilter = "ALL",
+  allHistTotalPages = 1,
+  handleAllHistPageChange,
+  handleAllHistLimitChange,
+  handleAllHistSideChange,
+  handleAllHistOutcomeChange,
+  allHistMetrics = null,
 }) => {
   const activeModelMeta = TOP_MODELS.find((m) => m.id === selectedModelId);
   const getFallbackCount = (mId: string) => {
@@ -226,11 +253,23 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
             >
               📊 Unseen Trades ({totalHistoricalCount ? totalHistoricalCount.toLocaleString() : (selectedAsset === "ALL" ? getFallbackCount(selectedModelId) : "0")})
             </button>
+            <button
+              onClick={() => setTableTab("all_historical")}
+              className={`px-3 py-1.5 rounded font-bold transition-all cursor-pointer ${
+                tableTab === "all_historical"
+                  ? "bg-white text-chrome-ink shadow-xs"
+                  : "text-chrome-dim hover:text-chrome-ink"
+              }`}
+            >
+              📜 Historical Transactions (2020 - 2026/10/20) ({totalAllHistoricalCount ? totalAllHistoricalCount.toLocaleString() : (allHistMetrics?.totalTrades ? allHistMetrics.totalTrades.toLocaleString() : "...")})
+            </button>
           </div>
         </div>
 
         <div className="text-xs text-chrome-dim font-mono">
-          {tableTab === "live"
+          {tableTab === "all_historical"
+            ? `All Historical Transactions (2020-01-01 to 2026-10-20 | 6-Year Complete Processing on ₹7,000 Capital | ${activeModelMeta?.name || selectedModelId})`
+            : tableTab === "live"
             ? selectedModelId === "om-distributed-4h-engine"
               ? "[OM] Distributed 4H Specialists (Train 2020-2023 | Forward Live: Oct 21 - Nov 07, 2026)"
               : selectedModelId === "om-stacking-meta-engine"
@@ -280,7 +319,129 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
 
       {/* Filter Toolbar */}
       <div className="px-3 sm:px-4 py-2.5 bg-white border-b border-chrome-edge flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
-        {tableTab === "historical" ? (
+        {tableTab === "all_historical" ? (
+          <>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <span className="text-chrome-dim font-bold flex items-center gap-1">
+                <Filter className="w-3.5 h-3.5 text-chrome-dim" /> 6Yr Filters:
+              </span>
+
+              {/* Asset Filter */}
+              <div className="flex items-center gap-1.5 bg-chrome-field border border-chrome-line rounded px-2.5 py-1">
+                <span className="text-[11px] text-chrome-dim">Asset:</span>
+                <select
+                  value={selectedAsset}
+                  onChange={(e) => onAssetChange && onAssetChange(e.target.value)}
+                  aria-label="Filter historical transactions by asset"
+                  className="bg-transparent font-bold text-chrome-ink outline-none cursor-pointer text-xs"
+                >
+                  <option value="ALL">All Assets (7)</option>
+                  <option value="BTCUSDT">BTCUSDT (Bitcoin)</option>
+                  <option value="ETHUSDT">ETHUSDT (Ethereum)</option>
+                  <option value="SOLUSDT">SOLUSDT (Solana)</option>
+                  <option value="DOTUSDT">DOTUSDT (Polkadot)</option>
+                  <option value="XAUUSDT">Gold (XAUUSDT)</option>
+                  <option value="XAGUSDT">Silver (XAGUSDT)</option>
+                  <option value="CLUSDT">Crude Oil (CLUSDT)</option>
+                </select>
+              </div>
+
+              {/* Direction Filter */}
+              <div className="flex items-center gap-1.5 bg-chrome-field border border-chrome-line rounded px-2.5 py-1">
+                <span className="text-[11px] text-chrome-dim">Direction:</span>
+                <select
+                  value={allHistSideFilter}
+                  onChange={(e) => handleAllHistSideChange && handleAllHistSideChange(e.target.value as any)}
+                  aria-label="Filter historical transactions by direction"
+                  className="bg-transparent font-bold text-chrome-ink outline-none cursor-pointer text-xs"
+                >
+                  <option value="ALL">All Directions</option>
+                  <option value="LONG">🟢 LONG Only</option>
+                  <option value="SHORT">🔴 SHORT Only</option>
+                </select>
+              </div>
+
+              {/* Outcome Filter */}
+              <div className="flex items-center gap-1.5 bg-chrome-field border border-chrome-line rounded px-2.5 py-1">
+                <span className="text-[11px] text-chrome-dim">Outcome:</span>
+                <select
+                  value={allHistOutcomeFilter}
+                  onChange={(e) => handleAllHistOutcomeChange && handleAllHistOutcomeChange(e.target.value)}
+                  aria-label="Filter historical transactions by outcome"
+                  className="bg-transparent font-bold text-chrome-ink outline-none cursor-pointer text-xs"
+                >
+                  <option value="ALL">All Outcomes</option>
+                  <option value="TAKE_PROFIT">🎯 Take Profit (+2.5R)</option>
+                  <option value="TIME_EXPIRY">⏱️ Time Barrier Exit</option>
+                  <option value="STOP_LOSS">🛑 Stop Loss (-1.0R)</option>
+                </select>
+              </div>
+
+              {/* Rows */}
+              <div className="flex items-center gap-1.5 bg-chrome-field border border-chrome-line rounded px-2.5 py-1">
+                <span className="text-[11px] text-chrome-dim">Rows:</span>
+                <select
+                  value={allHistLimit}
+                  onChange={(e) => handleAllHistLimitChange && handleAllHistLimitChange(parseInt(e.target.value, 10))}
+                  aria-label="Select rows per page"
+                  className="bg-transparent font-bold text-chrome-ink outline-none cursor-pointer text-xs"
+                >
+                  <option value={25}>25 per page</option>
+                  <option value={50}>50 per page</option>
+                  <option value={100}>100 per page</option>
+                  <option value={250}>250 per page</option>
+                  <option value={500}>500 per page</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="flex items-center gap-2 ml-auto">
+              <span className="text-[11px] text-chrome-dim whitespace-nowrap">
+                Page <strong className="text-chrome-ink">{allHistPage}</strong> of{" "}
+                <strong className="text-chrome-ink">{allHistTotalPages}</strong> ({totalAllHistoricalCount.toLocaleString()} total)
+              </span>
+
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => handleAllHistPageChange && handleAllHistPageChange(1)}
+                  disabled={allHistPage <= 1 || isLoadingAllHistorical}
+                  className="p-1.5 rounded border border-chrome-line bg-white hover:bg-chrome-field disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs"
+                  title="First Page"
+                >
+                  <ChevronsLeft className="w-3.5 h-3.5 text-chrome-ink" />
+                </button>
+                <button
+                  onClick={() => handleAllHistPageChange && handleAllHistPageChange(allHistPage - 1)}
+                  disabled={allHistPage <= 1 || isLoadingAllHistorical}
+                  className="p-1.5 rounded border border-chrome-line bg-white hover:bg-chrome-field disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs"
+                  title="Previous Page"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5 text-chrome-ink" />
+                </button>
+                <span className="px-2 py-0.5 text-[11px] font-bold text-chrome-ink bg-chrome-field rounded border border-chrome-line">
+                  {allHistPage}
+                </span>
+                <button
+                  onClick={() => handleAllHistPageChange && handleAllHistPageChange(allHistPage + 1)}
+                  disabled={allHistPage >= allHistTotalPages || isLoadingAllHistorical}
+                  className="p-1.5 rounded border border-chrome-line bg-white hover:bg-chrome-field disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs"
+                  title="Next Page"
+                >
+                  <ChevronRight className="w-3.5 h-3.5 text-chrome-ink" />
+                </button>
+                <button
+                  onClick={() => handleAllHistPageChange && handleAllHistPageChange(allHistTotalPages)}
+                  disabled={allHistPage >= allHistTotalPages || isLoadingAllHistorical}
+                  className="p-1.5 rounded border border-chrome-line bg-white hover:bg-chrome-field disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-2xs"
+                  title="Last Page"
+                >
+                  <ChevronsRight className="w-3.5 h-3.5 text-chrome-ink" />
+                </button>
+              </div>
+            </div>
+          </>
+        ) : tableTab === "historical" ? (
           <>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               <span className="text-chrome-dim font-bold flex items-center gap-1">
@@ -873,6 +1034,113 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
 
           </div>
           </>
+        ) : tableTab === "all_historical" ? (
+          <table className="w-full min-w-full lg:min-w-0 text-left border-collapse font-mono text-xs">
+            <thead>
+              <tr className="bg-chrome-field/70 border-b border-chrome-line text-chrome-dim uppercase text-[10px] tracking-wider">
+                <th className="py-2 px-2 sm:px-2.5">#</th>
+                <th className="py-2 px-2 sm:px-2.5">Entry Time (UTC)</th>
+                <th className="py-2 px-2 sm:px-2.5">Exit Time (UTC)</th>
+                <th className="py-2 px-2 sm:px-2.5">Pair</th>
+                <th className="py-2 px-2 sm:px-2.5">Direction</th>
+                <th className="py-2 px-2 sm:px-2.5">Entry Price</th>
+                <th className="py-2 px-2 sm:px-2.5">Exit Price</th>
+                <th className="py-2 px-2 sm:px-2.5">Position</th>
+                <th className="py-2 px-2 sm:px-2.5">Fee (w/ GST)</th>
+                <th className="py-2 px-2 sm:px-2.5">Net R</th>
+                <th className="py-2 px-2 sm:px-2.5">Net PnL (INR)</th>
+                <th className="py-2 px-2 sm:px-2.5">Running Capital (₹7K)</th>
+                <th className="py-2 px-2 sm:px-2.5">Outcome Trigger</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-chrome-edge">
+              {allHistoricalTrades.length > 0 ? (
+                allHistoricalTrades.map((t, idx) => {
+                  const isWin = (t.net_r ?? t.outcomeR ?? 0) > 0;
+                  const isTP = t.exitReason === "TAKE_PROFIT" || (t.net_r ?? 0) >= 1.0;
+                  const isBE = (t.net_r ?? 0) > 0 && (t.net_r ?? 0) < 0.2;
+
+                  return (
+                    <tr key={t.id || idx} className="hover:bg-chrome-field/50 transition-colors">
+                      <td className="py-2 px-2 sm:px-2.5 text-chrome-dim text-[11px] font-bold">
+                        #{t.pos || idx + 1}
+                      </td>
+                      <td className="py-2 px-2 sm:px-2.5 text-chrome-dim text-[11px] whitespace-nowrap">
+                        {t.entryTime || t.entry_time}
+                      </td>
+                      <td className="py-2 px-2 sm:px-2.5 text-chrome-dim text-[11px] whitespace-nowrap">
+                        {t.exitTime || t.exit_time}
+                      </td>
+                      <td className="py-2 px-2 sm:px-2.5 font-bold text-chrome-ink">
+                        {toDisplaySymbol(t.symbol || "BTCUSDT")}
+                      </td>
+                      <td className="py-2 px-2 sm:px-2.5">
+                        <span
+                          className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                            t.side === "LONG" || t.direction === "LONG"
+                              ? "bg-win-tint text-win-dark border border-win/30"
+                              : "bg-loss-tint text-loss-dark border border-loss/30"
+                          }`}
+                        >
+                          {t.side || t.direction}
+                        </span>
+                      </td>
+                      <td className="py-2 px-2 sm:px-2.5 font-mono text-chrome-ink">
+                        ${typeof t.entryPrice === "number" ? t.entryPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : t.entry_price}
+                      </td>
+                      <td className="py-2 px-2 sm:px-2.5 font-mono text-chrome-ink">
+                        ${typeof t.exitPrice === "number" ? t.exitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : t.exit_price}
+                      </td>
+                      <td className="py-2 px-2 sm:px-2.5 text-chrome-dim font-mono">
+                        ₹{(t.positionSizeINR || 1000).toLocaleString()}
+                      </td>
+                      <td className="py-2 px-2 sm:px-2.5 text-chrome-dim font-mono">
+                        ₹{(t.totalFeeINR ?? t.fee ?? 1.14).toFixed(2)}
+                      </td>
+                      <td className="py-2 px-2 sm:px-2.5 font-bold font-mono">
+                        <span className={isWin ? "text-win" : "text-loss"}>
+                          {(t.net_r ?? t.outcomeR ?? 0) >= 0 ? "+" : ""}
+                          {(t.net_r ?? t.outcomeR ?? 0).toFixed(3)}R
+                        </span>
+                      </td>
+                      <td className="py-2 px-2 sm:px-2.5 font-bold font-mono">
+                        <span className={isWin ? "text-win font-black" : "text-loss"}>
+                          {(t.pnlNetINR ?? 0) >= 0 ? "+₹" : "-₹"}
+                          {Math.abs(t.pnlNetINR ?? 0).toFixed(2)}
+                        </span>
+                      </td>
+                      <td className="py-2 px-2 sm:px-2.5 font-mono font-bold text-chrome-ink bg-chrome-field/30">
+                        ₹{typeof t.capital === "number" ? t.capital.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "7,000.00"}
+                      </td>
+                      <td className="py-2 px-2 sm:px-2.5">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                            isTP
+                              ? "bg-win-tint text-win-dark border-win/30"
+                              : isBE
+                              ? "bg-accent-tint text-accent border-accent/30"
+                              : "bg-loss-tint text-loss-dark border-loss/30"
+                          }`}
+                        >
+                          {t.exitReason === "TAKE_PROFIT"
+                            ? "🎯 Take Profit (+2.5R)"
+                            : t.exitReason === "TIME_EXPIRY"
+                            ? `⏱️ Time Barrier (${(t.net_r ?? 0) >= 0 ? "+" : ""}${(t.net_r ?? 0).toFixed(2)}R)`
+                            : "🛑 Stop Loss (-1.0R)"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={13} className="py-12 text-center text-chrome-dim">
+                    {isLoadingAllHistorical ? "Loading 6-year complete historical transactions from MongoDB Atlas..." : "No historical transactions found for this filter."}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         ) : (
           <table className="w-full min-w-full lg:min-w-0 text-left border-collapse font-mono text-xs">
             <thead>
@@ -969,6 +1237,51 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
           </table>
         )}
       </div>
+
+      {/* Bottom Pagination Toolbar for 6-Year Historical Transactions */}
+      {tableTab === "all_historical" && totalAllHistoricalCount > 0 && (
+        <div className="p-3 border-t border-chrome-line bg-chrome-field flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono">
+          <span className="text-chrome-dim text-[11px]">
+            Showing <strong className="text-chrome-ink">{Math.min(totalAllHistoricalCount, (allHistPage - 1) * allHistLimit + 1)}</strong> to{" "}
+            <strong className="text-chrome-ink">{Math.min(totalAllHistoricalCount, allHistPage * allHistLimit)}</strong> of{" "}
+            <strong className="text-chrome-ink">{totalAllHistoricalCount.toLocaleString()}</strong> historical transactions (2020-2026)
+          </span>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => handleAllHistPageChange && handleAllHistPageChange(1)}
+              disabled={allHistPage <= 1 || isLoadingAllHistorical}
+              className="px-2.5 py-1 rounded border border-chrome-line bg-white hover:bg-chrome-field disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors font-bold text-[11px] shadow-2xs"
+            >
+              ⏮ First
+            </button>
+            <button
+              onClick={() => handleAllHistPageChange && handleAllHistPageChange(allHistPage - 1)}
+              disabled={allHistPage <= 1 || isLoadingAllHistorical}
+              className="px-2.5 py-1 rounded border border-chrome-line bg-white hover:bg-chrome-field disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors font-bold text-[11px] shadow-2xs"
+            >
+              ◀ Prev
+            </button>
+            <span className="px-3 py-1 font-bold text-chrome-ink bg-white rounded border border-chrome-line text-[11px]">
+              Page {allHistPage} of {allHistTotalPages}
+            </span>
+            <button
+              onClick={() => handleAllHistPageChange && handleAllHistPageChange(allHistPage + 1)}
+              disabled={allHistPage >= allHistTotalPages || isLoadingAllHistorical}
+              className="px-2.5 py-1 rounded border border-chrome-line bg-white hover:bg-chrome-field disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors font-bold text-[11px] shadow-2xs"
+            >
+              Next ▶
+            </button>
+            <button
+              onClick={() => handleAllHistPageChange && handleAllHistPageChange(allHistTotalPages)}
+              disabled={allHistPage >= allHistTotalPages || isLoadingAllHistorical}
+              className="px-2.5 py-1 rounded border border-chrome-line bg-white hover:bg-chrome-field disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors font-bold text-[11px] shadow-2xs"
+            >
+              Last ⏭
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Bottom Pagination Toolbar for Historical Trades */}
       {tableTab === "historical" && totalHistoricalCount > 0 && (
