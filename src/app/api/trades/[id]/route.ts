@@ -3,16 +3,18 @@ import { closeTrade } from "@/lib/tradingEngine";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  return handleClose(req, params.id);
+  const { id } = await params;
+  return handleClose(req, id);
 }
 
 export async function POST(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  return handleClose(req, params.id);
+  const { id } = await params;
+  return handleClose(req, id);
 }
 
 async function handleClose(req: Request, tradeId: string) {

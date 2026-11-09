@@ -7,7 +7,7 @@ import { AUTH_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
 export async function POST() {
   try {
     // Defense-in-depth: Require verified signed admin session
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const sessionCookie = cookieStore.get(AUTH_COOKIE_NAME)?.value;
     const user = sessionCookie ? await verifySessionToken(sessionCookie) : null;
 
