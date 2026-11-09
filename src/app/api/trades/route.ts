@@ -1,3 +1,5 @@
+import optionALiveTrades from "@/data/option_a_1h_live_trades.json";
+import optionALivePredictionLogs from "@/data/live_prediction_logs_option-a-1h-hand-written.json";
 import fs from "fs";
 
 import path from "path";
@@ -553,13 +555,17 @@ export async function GET(req: Request) {
     }
 
     if (rawRecords.length === 0) {
-      const p = path.join(process.cwd(), "src", "data", fallbackFile);
-      if (fs.existsSync(p)) {
-        rawRecords = JSON.parse(fs.readFileSync(p, "utf-8"));
-      } else if (targetCollection === "paper_trades_unified_4h") {
-        rawRecords = getInMemorySwingTrades();
+      if (activeModelId === "option-a-1h-hand-written") {
+        rawRecords = optionALiveTrades;
       } else {
-        rawRecords = getInMemoryCommodityTrades();
+        const p = path.join(process.cwd(), "src", "data", fallbackFile);
+        if (fs.existsSync(p)) {
+          rawRecords = JSON.parse(fs.readFileSync(p, "utf-8"));
+        } else if (targetCollection === "paper_trades_unified_4h") {
+          rawRecords = getInMemorySwingTrades();
+        } else {
+          rawRecords = getInMemoryCommodityTrades();
+        }
       }
     }
 
