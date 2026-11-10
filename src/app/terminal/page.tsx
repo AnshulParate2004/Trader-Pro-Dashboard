@@ -953,31 +953,7 @@ export default function TerminalPage() {
         }`}>
           
           {/* Edge-to-Edge Live TradingView Chart */}
-          <div className="flex-1 w-full h-full relative bg-white overflow-hidden group">
-            {/* Quick Chart Expand / Restore Overlay Button */}
-            <div className="absolute top-2.5 right-12 z-20">
-              <button
-                onClick={() => setIsChartMaximized((prev) => !prev)}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono font-bold shadow-md transition-all cursor-pointer backdrop-blur-md ${
-                  isChartMaximized
-                    ? "bg-blue-600 text-white hover:bg-blue-700 border border-blue-500 shadow-blue-500/20"
-                    : "bg-white/95 text-slate-800 hover:bg-white border border-slate-200/90 hover:text-black shadow-slate-300/40"
-                }`}
-                title={isChartMaximized ? "Restore Panels (Minimize Graph)" : "Maximize Graph (Full Screen)"}
-              >
-                {isChartMaximized ? (
-                  <>
-                    <Minimize2 className="w-3.5 h-3.5 text-white" />
-                    <span>Minimize Graph</span>
-                  </>
-                ) : (
-                  <>
-                    <Maximize2 className="w-3.5 h-3.5 text-blue-600" />
-                    <span className="hidden md:inline">Maximize Graph</span>
-                  </>
-                )}
-              </button>
-            </div>
+          <div className="flex-1 w-full h-full relative bg-white overflow-hidden">
             <TradingViewChart symbol={getTradingViewSymbol(symbol)} interval={timeframe} />
           </div>
 
