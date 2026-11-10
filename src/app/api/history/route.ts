@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { getDb } from "@/lib/mongodb";
+import routerUnseenTrades from "@/data/4hr_timeframe_router_unseen_trades.json";
 
 export const dynamic = "force-dynamic";
 
@@ -213,10 +214,18 @@ export async function GET(req: Request) {
       }
     }
 
-    // 2. Fallback directly to dedicated JSON file
-    const targetPath = path.join(process.cwd(), "src", "data", fallbackFile);
-    if (fs.existsSync(targetPath)) {
-      const raw = JSON.parse(fs.readFileSync(targetPath, "utf-8"));
+    // 2. Fallback directly to dedicated JSON file or in-memory bundle
+    let raw: any[] | null = null;
+    if (activeModelId === "4hr-timeframe-router" || activeModelId === "router-c-4h") {
+      raw = routerUnseenTrades;
+    } else {
+      const targetPath = path.join(process.cwd(), "src", "data", fallbackFile);
+      if (fs.existsSync(targetPath)) {
+        raw = JSON.parse(fs.readFileSync(targetPath, "utf-8"));
+      }
+    }
+
+    if (raw && raw.length > 0) {
       let filtered = raw;
 
       if (symbolParam && symbolParam !== "ALL") {

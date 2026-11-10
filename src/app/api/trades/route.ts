@@ -1,5 +1,7 @@
 import optionALiveTrades from "@/data/option_a_1h_live_trades.json";
 import optionALivePredictionLogs from "@/data/live_prediction_logs_option-a-1h-hand-written.json";
+import routerLiveTrades from "@/data/4hr_timeframe_router_live_trades.json";
+import routerLivePredictionLogs from "@/data/live_prediction_logs_4hr_timeframe_router.json";
 import fs from "fs";
 
 import path from "path";
@@ -372,7 +374,7 @@ function mapRecordToTradeOrder(
 async function getLivePredictionLogs(
   modelId: string = "unified-1h-engine",
   assetClass: "crypto" | "commodities" | "all" = "all",
-  limit: number = 200
+  limit: number = 500
 ): Promise<any[]> {
   try {
     const db = await getDb();
@@ -385,7 +387,7 @@ async function getLivePredictionLogs(
       const docs = await col
         .find(query)
         .sort({ timestamp_ms: -1 })
-        .limit(limit > 0 ? limit : 200)
+        .limit(limit > 0 ? limit : 500)
         .toArray();
 
       if (docs && docs.length > 0) {
@@ -399,6 +401,20 @@ async function getLivePredictionLogs(
     }
   } catch (err) {
     console.warn(`DB prediction logs fetch error for ${modelId}, falling back to JSON:`, err);
+  }
+
+  if (modelId === "4hr-timeframe-router" || modelId === "router-c-4h") {
+    const raw = routerLivePredictionLogs;
+    const filtered = assetClass === "all" ? raw : raw.filter((r: any) => r.asset_class === assetClass);
+    const slice = limit > 0 ? filtered.slice(0, limit) : filtered;
+    return slice.map((d: any) => ({
+      ...d,
+      price: d.price ?? d.close ?? 0,
+      sma_200: d.sma_200 ?? d.sma200 ?? 0,
+      donchian_high: d.donchian_high ?? d.dh ?? 0,
+      donchian_low: d.donchian_low ?? d.dl ?? 0,
+      conviction_p: d.conviction_p ?? d.probability ?? 0.5,
+    }));
   }
 
   try {
@@ -564,6 +580,8 @@ export async function GET(req: Request) {
     if (rawRecords.length === 0) {
       if (activeModelId === "option-a-1h-hand-written") {
         rawRecords = optionALiveTrades;
+      } else if (activeModelId === "4hr-timeframe-router" || activeModelId === "router-c-4h") {
+        rawRecords = routerLiveTrades;
       } else {
         const p = path.join(process.cwd(), "src", "data", fallbackFile);
         if (fs.existsSync(p)) {
@@ -812,7 +830,7 @@ export async function GET(req: Request) {
 
 
 
-    const livePredictionLogs = await getLivePredictionLogs(activeModelId, "all", limit);
+    const livePredictionLogs = await getLivePredictionLogs(activeModelId, "all", 500);
 
 
 

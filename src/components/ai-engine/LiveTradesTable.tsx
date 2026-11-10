@@ -188,7 +188,10 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
     const latestBySymbol = new Map<string, any>();
     for (const log of (livePredictionLogs || [])) {
       const disp = toDisplaySymbol(log.symbol || "");
-      latestBySymbol.set(disp, log);
+      // Keep newest (first encountered) record
+      if (!latestBySymbol.has(disp)) {
+        latestBySymbol.set(disp, log);
+      }
     }
     const result: any[] = [];
     for (const sym of symbolOrder) {
