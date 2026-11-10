@@ -257,3 +257,40 @@ In November 2026, a clean, honest, no-ML fixed-rule 4H trend following engine (`
    - Strategy achieved 95% block-bootstrap CI of `[-0.0283R, +0.4052R]`. Because it crosses zero, it is not statistically distinguishable from noise at 95% confidence.
    - Gate 7 OLS regression against buy-and-hold produced $t_{\text{HAC}} = 1.267 < 2.0$.
    - **Verdict:** Classified as an honest, robust reference baseline with zero simulator bias (Gate 2 noise null **`-0.0083R`**), but **no statistically proven alpha edge**. Forward paper testing is logged post-2026-10-31.
+
+
+---
+
+## 9. The Master 18-Engine Forensic Audit: Deduplication, The 1.43 Breakeven Threshold (Section 115BBH), and OOS Collapse of 1H ML
+
+In November 2026, an exhaustive cross-engine audit compared all 7 fixed-rule candidate setups against all 18 dashboard production engines across 6 years (2020–2026) using next-bar-open execution, 0.1144% taker round trip, and 10-day block bootstrap 95% CIs on portfolio daily returns (\docs/research/COMPLETE_HONEST_ENGINE_AUDIT_REPORT.md\).
+
+### Key Quantitative Invariants Discovered:
+
+1. **Inventory Deduplication Invariant (Never Double-Count Twins):**
+   - Trade-for-trade hashing (\symbol\, \entry_time\, \exit_time\, et_r\) revealed that all 6 \1-*\ engines in the dashboard were bit-for-bit identical to their \om-*\ counterparts. Option-A appeared in both candidate lists.
+   - The true operational universe consists of exactly **18 DISTINCT ENGINES** (6 Fixed-Rule, 1 Hand-Crafted MLP, 11 Machine Learning models).
+
+2. **The Section 115BBH 1.43 Breakeven Profit Factor Law:**
+   - Under Indian Crypto Tax Section 115BBH (flat 30% tax on gross winning trades with 0 deduction for loss trades), an algorithm's after-tax net PnL is given by:
+     \\text{Net PnL}_{\\text{after-tax}} = (1 - 0.30) \\times \\sum \\text{Gains} - \\sum \\text{Losses}
+   - To prevent capital decay:
+     (1 - 0.30) \\times \\text{Gains} \\ge \\text{Losses} \\implies \\mathbf{\\text{Profit Factor} = \\frac{\\text{Gains}}{\\text{Losses}} \\ge \\frac{1}{0.70} \\approx 1.4286}
+   - **Lesson:** Any trading strategy with $\\text{PF} < 1.43$ mathematically loses money in an Indian bank account. Across the 11 ML engines tested, **none achieved PF $\\ge 1.43$**, resulting in aggregate after-tax losses of -₹7,800 to -₹79,000 per engine.
+
+3. **The Out-of-Sample Collapse of 1H Machine Learning:**
+   - High-turnover 1H LightGBM models (generating 4,000 to 9,000 trades) showed deceptive in-sample backtest means of $+0.02\\text{R}$ to $+0.04\\text{R}$.
+   - When evaluated strictly on unseen out-of-sample data (2024–2026 for OM models), the edge vanished completely:
+     - \om-distributed-1h-engine\: **$-0.001\\text{R}$ avg, 1.00 PF, 95% CI \[-0.043, +0.038]\**.
+     - \om-stacking-meta-engine\: **$-0.002\\text{R}$ avg, 1.00 PF, 95% CI \[-0.045, +0.040]\**.
+   - **Lesson:** Fast 1H ML classifications capture in-sample noise and regime-specific quirks. In production, taker fees and gross-win taxation rapidly destroy account equity.
+
+4. **The Three Economically Viable Architectures:**
+   - Only three engines cleared the 1.43 breakeven hurdle and demonstrated statistically defensible positive edge:
+     1. **\ixed_4h_clamp_btc_eth\ (4H Trailing Stop with Stop Clamping):** **PF 1.66**, $+0.256\\text{R}$ avg, **$+₹864.85$ after-tax profit** (+12.4% net account return).
+     2. **\option-a-1h-hand-written\ (BTC Hand-Crafted MLP):** **PF 1.58 on BTC**, static weights with zero backprop, positive after tax, and uncorrelated to swing models.
+     3. **\ixed_rule_4h_v1\ (Base 4H Trailing Stop):** **PF 1.47**, $+0.192\\text{R}$ avg, $+₹130.68$ after tax.
+
+5. **ETH Concentration Trap & Option-A Diversification:**
+   - Across all 4H trend systems, **ETHUSDT accounts for 60% to 80% of all gross profits**. Removing ETH collapses most multi-asset engines below viability.
+   - **Exception:** \option-a-1h-hand-written\ performance actually improves when dropping ETH (+0.142R base -> **+0.167R ex-ETH**), proving it is the only true non-ETH alpha generator in the repository.

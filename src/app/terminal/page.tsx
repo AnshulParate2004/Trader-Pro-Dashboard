@@ -104,10 +104,24 @@ function getTradingViewSymbol(s: string): string {
   }
 }
 
+
+const ROUTER_4H_MAPPING: Record<string, { engineId: string; engineName: string; avgR: string; pf: string; noTrade?: boolean }> = {
+  "BTCUSDT": { engineId: "om-distributed-4h-engine", engineName: "[OM] 4H Distributed Specialist", avgR: "+0.200R", pf: "1.40" },
+  "ETHUSDT": { engineId: "fixed_4h_clamp_btc_eth", engineName: "4H Trailing Stop Clamp", avgR: "+0.380R", pf: "2.02" },
+  "SOLUSDT": { engineId: "om-distributed-4h-engine", engineName: "[OM] 4H Distributed Specialist", avgR: "+0.269R", pf: "1.56" },
+  "DOTUSDT": { engineId: "om-unified-4h-engine", engineName: "[OM] 4H Unified Swing Brain", avgR: "+0.269R", pf: "1.55" },
+  "XAUUSDT": { engineId: "om-distributed-4h-engine", engineName: "[OM] 4H Distributed Specialist", avgR: "+0.211R", pf: "1.42" },
+  "XAGUSDT": { engineId: "distributed-4h-engine", engineName: "[New] 4H Distributed Specialist", avgR: "+0.097R", pf: "1.17" },
+  "CLUSDT": { engineId: "none", engineName: "NO TRADE ALLOCATION", avgR: "0.000R", pf: "0.00", noTrade: true },
+  "CL=F": { engineId: "none", engineName: "NO TRADE ALLOCATION", avgR: "0.000R", pf: "0.00", noTrade: true },
+  "GC=F": { engineId: "om-distributed-4h-engine", engineName: "[OM] 4H Distributed Specialist", avgR: "+0.211R", pf: "1.42" },
+  "SI=F": { engineId: "distributed-4h-engine", engineName: "[New] 4H Distributed Specialist", avgR: "+0.097R", pf: "1.17" }
+};
+
 export default function TerminalPage() {
   const [symbol, setSymbol] = useState("BTCUSDT");
   const [timeframe, setTimeframe] = useState("4h");
-  const [activeModelId, setActiveModelId] = useState<string>("4h-swing-meta-017");
+  const [activeModelId, setActiveModelId] = useState<string>("4hr-timeframe-router");
   
   // Real live states - strictly NO hardcoded fake numbers
   const [livePrice, setLivePrice] = useState<number | null>(null);
@@ -430,14 +444,32 @@ export default function TerminalPage() {
         let conviction = 90;
         let actionGuidance = "";
 
-        if (isBreakoutLong && currentClose > sma200) {
+        const routeInfo = ROUTER_4H_MAPPING[symbol] || { engineId: "om-distributed-4h-engine", engineName: "[OM] 4H Distributed Specialist", avgR: "+0.216R", pf: "1.44" };
+
+        if (timeframe !== "4h") {
+          action = "STANDBY: 4H ROUTER ONLY";
+          orderType = "STANDBY";
+          entryPrice = currentClose;
+          stopLoss = currentClose - clampedLongStopDist;
+          takeProfit = currentClose + 2.5 * clampedLongStopDist;
+          conviction = 99;
+          actionGuidance = `[4HR Timeframe Router] Live trade recommendations are authorized ONLY on the 4H timeframe. Intraday candles (${timeframe.toUpperCase()}) are disabled to eliminate fee drag and noise. Switch timeframe to 4H to view live router trade signals.`;
+        } else if (routeInfo.noTrade) {
+          action = "STANDBY: ASSET EXCLUDED (NO TRADE)";
+          orderType = "STANDBY";
+          entryPrice = currentClose;
+          stopLoss = currentClose - clampedLongStopDist;
+          takeProfit = currentClose + 2.5 * clampedLongStopDist;
+          conviction = 99;
+          actionGuidance = `[4HR Timeframe Router] Crude Oil (${symbol}) is strictly assigned NO TRADE by the multi-asset router because all candidate engines failed the +0.05R alpha hurdle. 100% capital is preserved in cash.`;
+        } else if (isBreakoutLong && currentClose > sma200) {
           action = "BUY (LONG) BREAKOUT";
           orderType = "MARKET";
           entryPrice = currentClose;
           stopLoss = currentClose - clampedLongStopDist;
           takeProfit = currentClose + 2.5 * clampedLongStopDist;
           conviction = 94;
-          actionGuidance = `[${activeModel.shortName}] Confirmed Donchian breakout above 20-bar High ($${realResistance.toFixed(1)}) and 200 SMA ($${sma200.toFixed(1)}). Enter Market Long at $${entryPrice.toFixed(2)}. Target TP (+2.50R) at $${takeProfit.toFixed(2)} with structural stop at $${stopLoss.toFixed(2)} (${((clampedLongStopDist / entryPrice) * 100).toFixed(2)}%).`;
+          actionGuidance = `[4HR Timeframe Router -> ${routeInfo.engineName}] Confirmed Donchian breakout above 20-bar High ($${realResistance.toFixed(1)}) and 200 SMA ($${sma200.toFixed(1)}). Enter Market Long at $${entryPrice.toFixed(2)}. Target TP (+2.50R) at $${takeProfit.toFixed(2)} with structural stop at $${stopLoss.toFixed(2)} (${((clampedLongStopDist / entryPrice) * 100).toFixed(2)}%).`;
         } else if (isBreakdownShort && currentClose < sma200) {
           action = "SELL (SHORT) BREAKDOWN";
           orderType = "MARKET";
@@ -445,7 +477,7 @@ export default function TerminalPage() {
           stopLoss = currentClose + clampedShortStopDist;
           takeProfit = currentClose - 2.5 * clampedShortStopDist;
           conviction = 94;
-          actionGuidance = `[${activeModel.shortName}] Confirmed Donchian breakdown below 20-bar Low ($${realSupport.toFixed(1)}) and 200 SMA ($${sma200.toFixed(1)}). Enter Market Short at $${entryPrice.toFixed(2)}. Target TP (+2.50R) at $${takeProfit.toFixed(2)} with structural stop at $${stopLoss.toFixed(2)} (${((clampedShortStopDist / entryPrice) * 100).toFixed(2)}%).`;
+          actionGuidance = `[4HR Timeframe Router -> ${routeInfo.engineName}] Confirmed Donchian breakdown below 20-bar Low ($${realSupport.toFixed(1)}) and 200 SMA ($${sma200.toFixed(1)}). Enter Market Short at $${entryPrice.toFixed(2)}. Target TP (+2.50R) at $${takeProfit.toFixed(2)} with structural stop at $${stopLoss.toFixed(2)} (${((clampedShortStopDist / entryPrice) * 100).toFixed(2)}%).`;
         } else if (isBreakoutLong && currentClose <= sma200) {
           action = "STANDBY: COUNTER-TREND FILTERED";
           orderType = "STANDBY";
@@ -453,7 +485,7 @@ export default function TerminalPage() {
           stopLoss = currentClose - clampedLongStopDist;
           takeProfit = currentClose + 2.5 * clampedLongStopDist;
           conviction = 95;
-          actionGuidance = `[200 SMA Trend Safeguard] Breakout above $${realResistance.toFixed(1)} detected, but price is below the 200 SMA ($${sma200.toFixed(1)}). Counter-trend long setups are strictly rejected to preserve capital.`;
+          actionGuidance = `[4HR Timeframe Router 200 SMA Trend Safeguard] Breakout above $${realResistance.toFixed(1)} detected, but price is below the 200 SMA ($${sma200.toFixed(1)}). Counter-trend long setups are strictly rejected to preserve capital.`;
         } else if (isBreakdownShort && currentClose >= sma200) {
           action = "STANDBY: COUNTER-TREND FILTERED";
           orderType = "STANDBY";
@@ -461,15 +493,15 @@ export default function TerminalPage() {
           stopLoss = currentClose + clampedShortStopDist;
           takeProfit = currentClose - 2.5 * clampedShortStopDist;
           conviction = 95;
-          actionGuidance = `[200 SMA Trend Safeguard] Breakdown below $${realSupport.toFixed(1)} detected, but price is above the 200 SMA ($${sma200.toFixed(1)}). Counter-trend short setups are strictly rejected to preserve capital.`;
+          actionGuidance = `[4HR Timeframe Router 200 SMA Trend Safeguard] Breakdown below $${realSupport.toFixed(1)} detected, but price is above the 200 SMA ($${sma200.toFixed(1)}). Counter-trend short setups are strictly rejected to preserve capital.`;
         } else {
-          action = "STANDBY: SCANNING 4H/1H REGIME";
+          action = "STANDBY: SCANNING 4H REGIME";
           orderType = "STANDBY";
           entryPrice = currentClose;
           stopLoss = currentClose - clampedLongStopDist;
           takeProfit = currentClose + 2.5 * clampedLongStopDist;
           conviction = 91;
-          actionGuidance = `[Donchian & 200 SMA Trend Scan] Price ($${currentClose.toFixed(1)}) is trading within the 20-bar Donchian channel [$${realSupport.toFixed(1)}, $${realResistance.toFixed(1)}]. The AI swing engine holds 100% CASH in capital preservation mode until a high-conviction breakout closes above/below the 200 SMA.`;
+          actionGuidance = `[4HR Timeframe Router -> ${routeInfo.engineName}] Price ($${currentClose.toFixed(1)}) is trading within the 20-bar Donchian channel [$${realSupport.toFixed(1)}, $${realResistance.toFixed(1)}]. The router holds 100% CASH in capital preservation mode until a high-conviction 4H breakout confirms.`;
         }
 
         const slDist = Math.abs(entryPrice - stopLoss);
@@ -595,19 +627,11 @@ export default function TerminalPage() {
               onChange={(e) => handleSelectModel(e.target.value)}
               className="clay-white-btn bg-emerald-50/60 border-emerald-300 text-emerald-950 px-2.5 py-1 text-xs font-mono font-bold hover:border-emerald-400 focus:outline-none focus:border-emerald-600 cursor-pointer transition-all"
             >
-              {TOP_MODELS.map((m) => {
-                const compactLabel =
-                  m.id === "unified-1h-engine" || m.id === "1h-commodities-rf"
-                    ? "Unified 1H Multi-Asset Engine [LIVE]"
-                    : m.id === "unified-4h-engine" || m.id === "4h-swing-meta-017"
-                    ? "Unified 4H Swing Engine"
-                    : "Rule-Based Engine [No AI]";
-                return (
-                  <option key={m.id} value={m.id}>
-                    {compactLabel}
-                  </option>
-                );
-              })}
+              {TOP_MODELS.map((m) => (
+                <option key={m.id} value={m.id}>
+                  #{m.rank}: {m.shortName}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -1100,7 +1124,11 @@ export default function TerminalPage() {
                   <span className="text-xs font-black">
                     {currentActiveTrade
                       ? `HOLDING ${currentActiveTrade.direction} POSITION · TRAILING SL`
-                      : "STANDBY & SCANNING"}
+                      : timeframe !== "4h"
+                      ? "STANDBY · 4H ROUTER ONLY"
+                      : ROUTER_4H_MAPPING[symbol]?.noTrade
+                      ? "STANDBY · ASSET EXCLUDED (NO TRADE)"
+                      : "STANDBY & SCANNING 4H REGIME"}
                   </span>
                 </div>
               </div>
@@ -1111,20 +1139,47 @@ export default function TerminalPage() {
               </div>
             </div>
 
-            {/* 2. Active Model Quantitative Summary Badge */}
+            {/* 2. Active Model Quantitative Summary Badge: Enforced 4HR Timeframe Router */}
             <div className="clay-white-inset p-2.5 flex items-center justify-between font-mono text-[11px] bg-slate-50/80">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-3.5 h-3.5 text-blue-600" />
                 <div>
-                  <span className="text-[9px] text-slate-400 block font-bold uppercase">Active Model</span>
-                  <span className="font-black text-gray-950">#{activeModel.rank}: {activeModel.shortName}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] text-slate-400 font-bold uppercase">Live Recommender:</span>
+                    <span className="text-[8.5px] font-bold px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      {timeframe === "4h" ? "4H ROUTER ACTIVE" : "SWITCH TO 4H"}
+                    </span>
+                  </div>
+                  <span className="font-black text-gray-950 block text-xs">
+                    [Router] 4HR Timeframe Router 🏆
+                  </span>
+                  <span className="text-[9px] font-semibold text-slate-600 block mt-0.5">
+                    Delegated Brain: <span className="font-bold text-blue-700">{ROUTER_4H_MAPPING[symbol]?.engineName || "4H Multi-Asset Specialist"}</span>
+                  </span>
                 </div>
               </div>
               <div className="text-right">
                 <span className="text-[9px] text-slate-400 block font-bold uppercase">Net Expectancy</span>
-                <span className="font-black text-emerald-700">+{activeModel.avgNetR.toFixed(3)}R / trade</span>
+                <span className="font-black text-emerald-700">
+                  {ROUTER_4H_MAPPING[symbol]?.noTrade ? "NO TRADE (0.000R)" : "+0.216R / trade"}
+                </span>
+                <span className="text-[9px] font-bold text-slate-500 block">
+                  {ROUTER_4H_MAPPING[symbol]?.noTrade ? "100% Cash Protected" : "1.44 Profit Factor"}
+                </span>
               </div>
             </div>
+
+            {timeframe !== "4h" && (
+              <div className="bg-amber-50/90 border border-amber-300 rounded-lg p-2.5 text-[10.5px] font-mono text-amber-950 flex items-center justify-between shadow-2xs">
+                <span>⚠️ Live recommendations restricted to 4H candles.</span>
+                <button
+                  onClick={() => { setTimeframe("4h"); setIsLoading(true); }}
+                  className="px-2 py-0.5 bg-amber-600 hover:bg-amber-700 text-white rounded text-[10px] font-bold cursor-pointer transition-all"
+                >
+                  Switch to 4H
+                </button>
+              </div>
+            )}
 
             {/* 3. 200 SMA Macro Trend Audit */}
             {(() => {

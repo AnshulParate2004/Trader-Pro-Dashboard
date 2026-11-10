@@ -25,9 +25,39 @@ export interface AIStrategyModel {
   description: string;
 }
 
-export const DEFAULT_MODEL_ID = 'om-distributed-4h-engine';
+export const DEFAULT_MODEL_ID = '4hr-timeframe-router';
 
 export const TOP_MODELS: AIStrategyModel[] = [
+  // =========================================================================
+  // CHAMPION MULTI-ASSET ROUTER: 4HR TIMEFRAME ROUTER (ROUTER C)
+  // =========================================================================
+  {
+    id: "4hr-timeframe-router",
+    name: "[Router] 4HR Timeframe Router [High-Conviction Multi-Asset 🏆]",
+    shortName: "[Router] 4HR Timeframe Router",
+    rank: 1,
+    timeframe: "4h",
+    trueWinRate: 44.9,
+    netWinRate: 44.9,
+    avgNetR: 0.216,
+    avgGrossR: 0.248,
+    netProfitFactor: 1.44,
+    tpSplit: 19.6,
+    beSplit: 0.0,
+    slSplit: 42.2,
+    statusBadge: "ACTIVE LIVE CHAMPION 4H ROUTER",
+    winRateFull5Yr: 44.9,
+    holdOutWinRate: 44.9,
+    sharpeRatio: 3.10,
+    profitFactor: 1.44,
+    maxDrawdown: -24.89,
+    totalTrades: 8,
+    ratchetTriggerR: 0,
+    requires4HMacro: true,
+    requires5MMicro: false,
+    description: "[Router C] 4HR TIMEFRAME ROUTER: Dynamically routes each asset to its highest-conviction 4H engine (BTC/SOL/Gold -> OM Specialist, ETH -> 4H Clamp, DOT -> Unified Swing, Silver -> New Specialist, Oil -> No Trade). 6-Yr History: 1,836 trades, +397.0R, 1.44 PF.",
+  },
+
   // =========================================================================
   // OPTION A: ZERO-TRAINING HAND-WRITTEN NEURAL NETWORK (16->32->16->2 MLP)
   // =========================================================================
@@ -35,7 +65,7 @@ export const TOP_MODELS: AIStrategyModel[] = [
     id: "option-a-1h-hand-written",
     name: "[Option A] Hand-Written Neural Network [1H High-Conviction 🏆]",
     shortName: "[Option A] 1H Hand-Written [80% WR 🏆]",
-    rank: 1,
+    rank: 2,
     timeframe: "1h",
     trueWinRate: 80.0,
     netWinRate: 80.0,

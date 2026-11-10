@@ -55,10 +55,19 @@ All documentation in `docs/` is organized into logical pillars:
 | **Trading Playbooks** | [`playbook/`](file:///D:/Projects_Main/Trade-Pro/Trader-Pro-Dashboard/docs/playbook) | Tactical playbooks covering market structure, Fibonacci confluence, macro cycle regimes, systematic risk management, and the Master Trading Manual PDF. |
 | **Deep Learning Frontiers** | [`Trader-Pro/notebooks/03_deep_learning_hf_foundation_model_frontiers.ipynb`](file:///D:/Projects_Main/Trade-Pro/Trader-Pro/notebooks/03_deep_learning_hf_foundation_model_frontiers.ipynb) | High-Frequency L2/L3 DeepLOB, Continuous 256-Bar Temporal WaveNet & Self-Supervised Masked Autoencoders (Time-MAE). |
 | **Preregistration Logs** | [`prereg/`](file:///D:/Projects_Main/Trade-Pro/Trader-Pro-Dashboard/docs/prereg) | Hypothesis pre-registrations for walk-forward studies, statistical power calculations, and cost-aware filters. |
+| **Master Engine Audit** | [`research/COMPLETE_HONEST_ENGINE_AUDIT_REPORT.md`](file:///D:/Projects_Main/Trade-Pro/Trader-Pro-Dashboard/docs/research/COMPLETE_HONEST_ENGINE_AUDIT_REPORT.md) | Exhaustive 6-year forensic audit of all 18 distinct engines, deduplication of v1 twins, out-of-sample ML collapse, and Section 115BBH 1.43 breakeven PF math. |
+| **Router Strategies Audit** | [`research/ROUTER_STRATEGIES_AND_BASELINES_COMPARISON_REPORT.md`](file:///D:/Projects_Main/Trade-Pro/Trader-Pro-Dashboard/docs/research/ROUTER_STRATEGIES_AND_BASELINES_COMPARISON_REPORT.md) | Rigorous comparison of walk-forward Router A (best past result) vs fixed-mapping Router B vs single-engine baselines (2020–2026). |
+| **Router C Audit & Selection Bias** | [`research/ROUTER_C_PERFORMANCE_AND_SELECTION_BIAS_REPORT.md`](file:///D:/Projects_Main/Trade-Pro/Trader-Pro-Dashboard/docs/research/ROUTER_C_PERFORMANCE_AND_SELECTION_BIAS_REPORT.md) | Full 6-year performance of hindsight-optimized Router C vs causal walk-forward test, revealing a +0.107R to +0.145R selection-bias gap and statutory tax failure. |
 
 ---
 
-## 3. The 14 Production Trading Engines (Dual-Suite Platform)
+## 3. Production Trading Engines & The 18-Engine Forensic Audit
+
+> [!IMPORTANT]
+> **November 2026 Master Audit Update:** Forensic deduplication revealed that all 6 `v1-*` engines in the dashboard were bit-for-bit identical trade duplicates of their `om-*` twins, and `Option-A` was duplicated across fixed-rule and ML suites. The canonical audit evaluating all **18 distinct engines** across 6 years (2020–2026) under realistic exchange fees and Indian Section 115BBH 30% gross-profit tax is published in [`docs/research/COMPLETE_HONEST_ENGINE_AUDIT_REPORT.md`](research/COMPLETE_HONEST_ENGINE_AUDIT_REPORT.md).
+> Key Finding: Under Section 115BBH, any engine with **Profit Factor < 1.43 loses money**. All 1H ML engines collapsed out-of-sample ($-0.001\text{R}$, PF 1.00), leaving only **three profitable engines**: `fixed_4h_clamp_btc_eth` (PF 1.66), `option-a-1h-hand-written` on BTC (PF 1.58), and `fixed_rule_4h_v1` (PF 1.47).
+
+### Historical Dual-Suite Baseline (Archival Overview)
 
 Trader-Pro features 14 concurrent engines accessible via the `/ai-engine` selector and live REST APIs, hosting both the **`v1` Suite (Trained 2020–2023 | Unseen 2024–2025)** and the **`New` Suite (Trained 2024–2025 | Unseen 2020–2023)** side-by-side:
 

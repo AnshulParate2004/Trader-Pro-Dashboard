@@ -87,7 +87,10 @@ export async function GET(req: Request) {
     let targetCollection = "historical_trades_unified_1h";
     let fallbackFile = "unified_1h_historical_trades.json";
 
-    if (modelParam === "option-a-1h-hand-written") {
+    if (modelParam === "4hr-timeframe-router" || modelParam === "router-c-4h") {
+      targetCollection = "historical_trades_4hr_timeframe_router";
+      fallbackFile = "4hr_timeframe_router_unseen_trades.json";
+    } else if (modelParam === "option-a-1h-hand-written") {
       targetCollection = "historical_trades_option_a_1h";
       fallbackFile = "option_a_1h_unseen_trades.json";
     } else if (modelParam === "v1-distributed-4h-engine") {

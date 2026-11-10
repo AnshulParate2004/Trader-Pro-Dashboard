@@ -42,7 +42,11 @@ async function syncDeltaWatermark(modelId: string, db: any): Promise<void> {
   let seedFile = "live_executed_trades.json";
   let is4H = modelId.includes("4h") || modelId === "4h-swing-meta-017";
 
-  if (modelId === "option-a-1h-hand-written") {
+  if (modelId === "4hr-timeframe-router" || modelId === "router-c-4h") {
+    collectionName = "paper_trades_4hr_timeframe_router";
+    seedFile = "4hr_timeframe_router_live_trades.json";
+    is4H = true;
+  } else if (modelId === "option-a-1h-hand-written") {
     collectionName = "paper_trades_option_a_1h";
     seedFile = "option_a_1h_live_trades.json";
   } else if (modelId === "v1-distributed-4h-engine") {
@@ -507,7 +511,7 @@ export async function GET(req: Request) {
     } else if (activeModelId === "new-stacking-meta-engine") {
       targetCollection = "paper_trades_new_stacking_1h";
       fallbackFile = "new_stacking_1h_live_trades.json";
-    } else if (activeModelId === "om-distributed-4h-engine") {
+    } else if (activeModelId === "4hr-timeframe-router" || activeModelId === "om-distributed-4h-engine") {
       targetCollection = "paper_trades_om_distributed_4h";
       fallbackFile = "om_distributed_4h_live_trades.json";
     } else if (activeModelId === "om-stacking-meta-engine") {

@@ -271,5 +271,18 @@
     "finalCapital": -6726.08,
     "netPnLINR": -13726.08,
     "maxDrawdown": -129.16
+  },
+  "4hr-timeframe-router": {
+    "totalTrades": 1836,
+    "trueWinRate": 19.55,
+    "netWinRate": 44.88,
+    "avgNetR": 0.2162,
+    "avgGrossR": 0.2482,
+    "netProfitFactor": 1.44,
+    "tpSplit": 19.55,
+    "slSplit": 42.2,
+    "finalCapital": 34788.75,
+    "netPnLINR": 27788.75,
+    "maxDrawdown": -24.89
   }
 }
