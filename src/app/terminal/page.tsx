@@ -723,37 +723,30 @@ export default function TerminalPage() {
     <div className="h-screen w-screen flex flex-col bg-[#fafafc] overflow-hidden font-sans text-gray-900 select-none">
       
       {/* 1. Full-Screen Edge-to-Edge Pure White Tactile Header Bar */}
-      <header className="h-12 w-full bg-white border-b border-slate-200/80 px-2 sm:px-4 flex items-center justify-between shrink-0 z-30 shadow-2xs overflow-x-auto no-scrollbar max-w-full">
+      <header className="h-12 w-full bg-white border-b border-slate-200/80 px-2 sm:px-3 flex items-center justify-between shrink-0 z-30 shadow-2xs gap-1.5 sm:gap-2">
         
-        {/* Left Section: macOS Chrome Lights + Brand + Pair Selector + Live Ticker + ATR */}
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-          {/* macOS Chrome Dots (Stagehand clean hardware style) */}
-          <div className="hidden sm:flex items-center gap-1.5 pr-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#ff5f57] border border-black/10 inline-block shadow-2xs cursor-pointer hover:opacity-80 transition-opacity" title="Window active" />
-            <span className="w-2.5 h-2.5 rounded-full bg-[#febc2e] border border-black/10 inline-block shadow-2xs cursor-pointer hover:opacity-80 transition-opacity" title="Live stream active" />
-            <span className="w-2.5 h-2.5 rounded-full bg-[#28c840] border border-black/10 inline-block shadow-2xs cursor-pointer hover:opacity-80 transition-opacity" title="AI engine connected" />
-          </div>
-
-          <Link href="/" className="flex items-center gap-1.5 sm:gap-2 group mr-0.5 sm:mr-1 shrink-0" title="Back to Home">
+        {/* Left Section: Brand + Pair Selector + Model Dropdown + Live Price */}
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <Link href="/" className="flex items-center gap-1.5 group shrink-0" title="Back to Home">
             <div className="w-6 h-6 rounded bg-accent flex items-center justify-center text-white font-mono text-xs font-bold shadow-xs">
               TP
             </div>
-            <span className="font-mono text-xs font-bold tracking-tight text-gray-900 group-hover:text-accent transition-colors hidden sm:inline">
+            <span className="font-mono text-xs font-bold tracking-tight text-gray-900 group-hover:text-accent transition-colors hidden xl:inline">
               TRADER-PRO
             </span>
           </Link>
 
-          <div className="h-4 w-px bg-slate-200"></div>
+          <div className="h-4 w-px bg-slate-200 hidden sm:block shrink-0"></div>
 
           {/* Pair Selector Dropdown with Clay White styling */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center shrink-0">
             <select
               value={symbol}
               onChange={(e) => {
                 setSymbol(e.target.value);
                 setIsLoading(true);
               }}
-              className="clay-white-btn px-2.5 py-1 text-xs font-mono font-bold text-gray-900 hover:border-slate-400 focus:outline-none focus:border-emerald-500 cursor-pointer transition-all"
+              className="clay-white-btn px-2 py-1 text-xs font-mono font-bold text-gray-900 hover:border-slate-400 focus:outline-none focus:border-emerald-500 cursor-pointer transition-all"
             >
               <option value="BTCUSDT">BTCUSDT</option>
               <option value="ETHUSDT">ETHUSDT</option>
@@ -768,22 +761,21 @@ export default function TerminalPage() {
             </select>
           </div>
 
-          <div className="h-4 w-px bg-slate-200 hidden md:block"></div>
+          <div className="h-4 w-px bg-slate-200 hidden md:block shrink-0"></div>
 
           {/* AI Strategy Model Selector Dropdown in Terminal Header */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-[10px] font-mono font-bold text-slate-400 hidden lg:inline uppercase tracking-wider">AI Model:</span>
+          <div className="flex items-center min-w-0">
             <select
               value={activeModelId}
               onChange={(e) => handleSelectModel(e.target.value)}
-              className="clay-white-btn bg-emerald-50/60 border-emerald-300 text-emerald-950 px-2.5 py-1 text-xs font-mono font-bold hover:border-emerald-400 focus:outline-none focus:border-emerald-600 cursor-pointer transition-all"
+              className="clay-white-btn bg-emerald-50/60 border-emerald-300 text-emerald-950 px-2 py-1 text-xs font-mono font-bold hover:border-emerald-400 focus:outline-none focus:border-emerald-600 cursor-pointer transition-all max-w-[125px] sm:max-w-[155px] md:max-w-[185px] lg:max-w-[220px] truncate"
             >
               {/* Group 1: Champion Multi-Asset Routers & Hand-Crafted Models */}
               <optgroup label="🏆 Champion Routers & Hand-Crafted Models">
                 {TOP_MODELS.filter((m) => m.id === "4hr-timeframe-router" || m.id === "option-a-1h-hand-written").map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.id === "4hr-timeframe-router"
-                      ? "🏆 [Router] 4HR Timeframe Router (6-Yr Master Champion)"
+                      ? "🏆 4HR Timeframe Router"
                       : `🏆 ${m.shortName}`}
                   </option>
                 ))}
@@ -845,97 +837,88 @@ export default function TerminalPage() {
             </select>
           </div>
 
-          <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>
+          <div className="h-4 w-px bg-slate-200 hidden lg:block shrink-0"></div>
 
           {/* Real Live Price Ticker */}
-          <div className="flex items-center gap-1.5 sm:gap-2 font-mono shrink-0">
-            <span className="text-slate-400 text-[10px] font-bold tracking-wider hidden md:inline uppercase">Price:</span>
+          <div className="hidden lg:flex items-center gap-1 font-mono shrink-0">
             <span className="text-sm font-black text-gray-950 tracking-tight tabular-nums">
-              {livePrice ? `$${livePrice.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
-            </span>
-          </div>
-
-          <div className="h-4 w-px bg-slate-200 hidden xl:block"></div>
-
-          {/* ATR 14 Dynamic */}
-          <div className="hidden xl:flex items-center gap-1.5 font-mono">
-            <span className="text-slate-400 text-[10px] font-bold tracking-wider uppercase">ATR (14):</span>
-            <span className="text-xs font-bold text-blue-600 tabular-nums">
-              {indicators ? indicators.atr.toFixed(1) : "—"}
+              {livePrice ? `$${livePrice.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}` : "—"}
             </span>
           </div>
         </div>
 
-        {/* Center: Tactile Pure White Segmented Timeframe Selector */}
-        <div className="flex clay-white-inset p-0.5 gap-0.5 font-mono text-xs shrink-0 mx-1 sm:mx-2">
-          {["5m", "15m", "1h", "4h"].map((tf) => (
-            <button
-              key={tf}
-              onClick={() => {
-                setTimeframe(tf);
-                setIsLoading(true);
-              }}
-              className={`px-3 py-0.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                timeframe === tf
-                  ? "bg-white text-gray-900 shadow-2xs border border-slate-200/90 font-black"
-                  : "text-slate-500 hover:text-slate-900"
-              }`}
-            >
-              {tf.toUpperCase()}
-            </button>
-          ))}
+        {/* Center: Tactile Pure White Segmented Timeframe Selector + Maximize */}
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+          <div className="flex clay-white-inset p-0.5 gap-0.5 font-mono text-xs">
+            {["5m", "15m", "1h", "4h"].map((tf) => (
+              <button
+                key={tf}
+                onClick={() => {
+                  setTimeframe(tf);
+                  setIsLoading(true);
+                }}
+                className={`px-2 sm:px-2.5 py-0.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                  timeframe === tf
+                    ? "bg-white text-gray-900 shadow-2xs border border-slate-200/90 font-black"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                {tf.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          {/* Maximize / Minimize Graph Button */}
+          <button
+            onClick={() => setIsChartMaximized((prev) => !prev)}
+            className={`flex items-center gap-1 px-2 py-1 text-xs font-mono font-bold rounded-lg transition-all cursor-pointer shrink-0 ${
+              isChartMaximized
+                ? "bg-blue-600 text-white shadow-sm border border-blue-700 hover:bg-blue-700"
+                : "clay-white-btn text-slate-700 hover:text-gray-900 border border-slate-200"
+            }`}
+            title={isChartMaximized ? "Minimize Graph (Show sidebar & bottom dock)" : "Maximize Graph (Full screen chart)"}
+          >
+            {isChartMaximized ? (
+              <>
+                <Minimize2 className="w-3.5 h-3.5" />
+                <span className="hidden xl:inline">Minimize</span>
+              </>
+            ) : (
+              <>
+                <Maximize2 className="w-3.5 h-3.5 text-blue-600" />
+                <span className="hidden xl:inline">Maximize</span>
+              </>
+            )}
+          </button>
         </div>
 
-        {/* Maximize / Minimize Graph Button */}
-        <button
-          onClick={() => setIsChartMaximized((prev) => !prev)}
-          className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-bold rounded-lg transition-all cursor-pointer shrink-0 ${
-            isChartMaximized
-              ? "bg-blue-600 text-white shadow-sm border border-blue-700 hover:bg-blue-700"
-              : "clay-white-btn text-slate-700 hover:text-gray-900 border border-slate-200"
-          }`}
-          title={isChartMaximized ? "Minimize Graph (Show sidebar & bottom dock)" : "Maximize Graph (Full screen chart)"}
-        >
-          {isChartMaximized ? (
-            <>
-              <Minimize2 className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Minimize</span>
-            </>
-          ) : (
-            <>
-              <Maximize2 className="w-3.5 h-3.5 text-blue-600" />
-              <span className="hidden sm:inline">Maximize</span>
-            </>
-          )}
-        </button>
-
-        {/* Right Section: Capital Badge + AI Engine Link + Live Status */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 clay-white-pill font-mono text-xs shrink-0" title="Live Portfolio Capital (₹7,000 Baseline + Realized PnL)">
-            <span className="text-slate-400 text-[10px] font-bold uppercase hidden md:inline">Capital:</span>
-            <span className="font-black text-emerald-700 tabular-nums">
-              ₹{(accountBalanceINR || 7000.00).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+        {/* Right Section: Capital Badge + AI Engine Link + Live Status + User Profile */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Capital Badge */}
+          <div className="flex items-center gap-1 px-2 py-1 clay-white-pill font-mono text-xs shrink-0" title="Live Portfolio Capital: ₹7,000 Baseline + Realized PnL">
+            <span className="text-slate-400 text-[10px] font-bold uppercase hidden md:inline">Cap:</span>
+            <span className="font-black text-emerald-700 tabular-nums text-xs">
+              ₹{(accountBalanceINR || 7000.00).toLocaleString("en-IN", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
             </span>
           </div>
 
+          {/* AI Engine Link */}
           <Link
             href="/ai-engine"
-            className="hidden md:flex items-center gap-1 px-2 py-1 text-xs font-mono font-bold text-slate-700 clay-white-btn hover:text-gray-900 transition-all cursor-pointer shrink-0"
+            className="flex items-center gap-1 px-2 py-1 text-xs font-mono font-bold text-slate-700 clay-white-btn hover:text-gray-900 transition-all cursor-pointer shrink-0"
+            title="AI Strategy Engine"
           >
             <Zap className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="hidden sm:inline">AI Engine</span>
+            <span className="hidden md:inline">AI Engine</span>
           </Link>
 
-          <div className="flex items-center gap-1.5 font-mono text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-300 px-2 py-0.5 sm:px-2.5 rounded-full shadow-2xs shrink-0">
+          {/* LIVE status badge */}
+          <div className="flex items-center gap-1 font-mono text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full shadow-2xs shrink-0">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_#10b981]"></span>
             <span className="font-black hidden sm:inline">LIVE</span>
           </div>
 
-          <div className="flex items-center gap-1 text-[11px] font-mono text-slate-400 shrink-0">
-            <RotateCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-emerald-600" : "text-slate-400"}`} />
-            <span className="hidden lg:inline tabular-nums">{lastUpdated}</span>
-          </div>
-
+          {/* User Auth Pill */}
           <div className="shrink-0">
             <UserAuthPill />
           </div>
