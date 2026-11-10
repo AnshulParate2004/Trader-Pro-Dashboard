@@ -1,0 +1,70 @@
+{
+  "version": "1.0.0",
+  "engine_name": "fixed_rule_4h_v1",
+  "timeframe": "4h",
+  "assets": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "entry": {
+    "donchian_lookback": 20,
+    "sma_filter_period": 200,
+    "eval_bar": "closed_bar_t",
+    "fill_bar": "open_bar_t_plus_1"
+  },
+  "filters": {
+    "ema_period": 50,
+    "ema_slope_bars": 10,
+    "ema_slope_threshold": 0.0005,
+    "stretch_atr_mult": 3.0,
+    "min_body_atr_ratio": 0.25,
+    "close_quantile_ratio": 0.6,
+    "min_volume_mult": 0.85,
+    "volume_sma_period": 50,
+    "atr_period": 14,
+    "cowen_macro_risk_gate": true,
+    "cowen_risk_threshold": 0.75
+  },
+  "btc_regime_gate": {
+    "enabled_for_alts": true,
+    "btc_symbol": "BTCUSDT",
+    "btc_sma_period": 200,
+    "btc_ema_period": 50,
+    "btc_ema_slope_bars": 10,
+    "btc_ema_slope_min": 0.0
+  },
+  "stop": {
+    "lookback_bars": 10,
+    "min_stop_pct": 0.023,
+    "max_stop_pct": 0.06,
+    "clamp_mode": "skip"
+  },
+  "exit": {
+    "type": "chandelier_trailing",
+    "chandelier_atr_mult": 3.0,
+    "chandelier_atr_period": 14,
+    "chandelier_anchor": "highest_close",
+    "chandelier_activation": "next_bar_after_entry",
+    "max_hold_bars": 42
+  },
+  "execution_realism": {
+    "same_bar_ambiguity": "stop_first",
+    "trail_update_delay": "next_bar"
+  },
+  "costs": {
+    "taker_round_trip_friction": 0.001144,
+    "funding_rate_fallback_8h_long": 0.0001,
+    "funding_rate_fallback_8h_short": 0.0,
+    "use_binance_funding_history": true
+  },
+  "sizing": {
+    "starting_capital_inr": 7000.0,
+    "risk_per_trade_pct": 1.0,
+    "risk_per_trade_inr": 70.0,
+    "max_total_open_risk_pct": 2.0,
+    "max_concurrent_positions": 2,
+    "correlated_group": true
+  },
+  "direction": "BOTH",
+  "variant_name": "v5_cowen_log_risk_gate"
+}
