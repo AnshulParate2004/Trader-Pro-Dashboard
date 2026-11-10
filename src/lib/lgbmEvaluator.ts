@@ -262,6 +262,43 @@ export async function getModelPrediction(
       }
       break;
 
+    case "4hr-timeframe-router":
+    case "router-c-4h":
+    case "om-distributed-4h-engine":
+    case "distributed-4h-engine":
+    case "om-unified-4h-engine":
+      modelName = "[Router] 4HR Timeframe Router (6-Yr Master Champion)";
+      ratchetR = 0.0;
+      {
+        const candles4hRef = candles4h && candles4h.length >= 20 ? candles4h : candles15m;
+        const curPrice4h = candles4hRef[candles4hRef.length - 1].close;
+        const closed4h = candles4hRef.slice(0, -1);
+        const lookback4h = closed4h.slice(-20);
+        const donHigh4h = Math.max(...lookback4h.map((c) => c.high));
+        const donLow4h = Math.min(...lookback4h.map((c) => c.low));
+        
+        const smaPeriod = Math.min(200, closed4h.length);
+        const smaCloses = closed4h.slice(-smaPeriod).map((c) => c.close);
+        const sma200Val = smaCloses.reduce((a, b) => a + b, 0) / smaCloses.length;
+        
+        const isBullishSma = curPrice4h > sma200Val;
+        const donBreakoutL = curPrice4h > donHigh4h;
+        const donBreakoutS = curPrice4h < donLow4h;
+        donchianBreakout = donBreakoutL ? "BULLISH" : donBreakoutS ? "BEARISH" : "NONE";
+        
+        if (isBullishSma && donBreakoutL && p4hL >= 0.50) {
+          signal = "BUY";
+          confidence = Math.round(p4hL * 100);
+        } else if (!isBullishSma && donBreakoutS && p4hS >= 0.50) {
+          signal = "SELL";
+          confidence = Math.round(p4hS * 100);
+        } else {
+          signal = "NEUTRAL";
+          confidence = Math.round(Math.max(p4hL, p4hS) * 100);
+        }
+      }
+      break;
+
     case "5m-15m-confluence":
       modelName = "5M + 15M Confluence Sniper";
       ratchetR = 0.30;
@@ -292,16 +329,27 @@ export async function getModelPrediction(
   }
 
   // Calculate strict stop loss and target levels
-  const is5MModel = (modelId.startsWith("5m") || modelId.includes("master")) && !modelId.startsWith("15m");
-  const maxSlPct = is5MModel ? 0.03 : 0.05;
-  const slDist = Math.min(1.0 * atr15, maxSlPct * currentPrice);
+  const is4HModel = modelId === "4hr-timeframe-router" || modelId.includes("4h");
+  const is5MModel = !is4HModel && (modelId.startsWith("5m") || modelId.includes("master")) && !modelId.startsWith("15m");
+  const maxSlPct = is4HModel ? 0.04 : (is5MModel ? 0.03 : 0.05);
+  const activeAtr = is4HModel && candles4h && candles4h.length >= 14 ? (candles4h.slice(-14).reduce((sum, c, idx, arr) => idx === 0 ? c.high - c.low : sum + Math.max(c.high - c.low, Math.abs(c.high - arr[idx-1].close)), 0) / 14) : atr15;
+  const slDist = Math.min(1.5 * activeAtr, maxSlPct * currentPrice);
 
   const suggestedStopLoss = signal === "BUY" ? currentPrice - slDist : currentPrice + slDist;
-  const suggestedTakeProfit = signal === "BUY" ? currentPrice + 1.0 * atr15 : currentPrice - 1.0 * atr15;
-  const suggestedRatchetTrigger = signal === "BUY" ? currentPrice + ratchetR * atr15 : currentPrice - ratchetR * atr15;
+  const targetMultiplier = is4HModel ? 2.5 : 1.0;
+  const suggestedTakeProfit = signal === "BUY" ? currentPrice + targetMultiplier * slDist : currentPrice - targetMultiplier * slDist;
+  const suggestedRatchetTrigger = signal === "BUY" ? currentPrice + ratchetR * activeAtr : currentPrice - ratchetR * activeAtr;
 
   let recommendation = "Standby: Wait for Donchian breakout and model probability confirmation.";
-  if (signal === "BUY") {
+  if (is4HModel) {
+    if (signal === "BUY") {
+      recommendation = `4HR ROUTER LONG: Confirmed Donchian breakout. Set clamped stop at $${suggestedStopLoss.toFixed(1)} and Target TP (+2.50R) at $${suggestedTakeProfit.toFixed(1)}.`;
+    } else if (signal === "SELL") {
+      recommendation = `4HR ROUTER SHORT: Confirmed Donchian breakdown. Set clamped stop at $${suggestedStopLoss.toFixed(1)} and Target TP (+2.50R) at $${suggestedTakeProfit.toFixed(1)}.`;
+    } else {
+      recommendation = `Cash Protection Protocol Active: 4H price is consolidating or below 200 SMA. 100% capital shielded in cash against bear drawdowns.`;
+    }
+  } else if (signal === "BUY") {
     recommendation = `LONG BTC: Model indicates ${confidence}% upside edge (HTF Score: ${htfScore.toFixed(2)}). Set SL at $${suggestedStopLoss.toFixed(1)} and lock BE (+0.05R) at $${suggestedRatchetTrigger.toFixed(1)}.`;
   } else if (signal === "SELL") {
     recommendation = `SHORT BTC: Model indicates ${confidence}% downside edge (HTF Score: ${htfScore.toFixed(2)}). Set SL at $${suggestedStopLoss.toFixed(1)} and lock BE (+0.05R) at $${suggestedRatchetTrigger.toFixed(1)}.`;
@@ -310,7 +358,7 @@ export async function getModelPrediction(
   return {
     modelId,
     modelName,
-    timeframe: is5MModel ? "5m" : "15m",
+    timeframe: is4HModel ? "4h" : (is5MModel ? "5m" : "15m"),
     signal,
     confidence,
     pLong: Number(p15L.toFixed(4)),
@@ -323,10 +371,10 @@ export async function getModelPrediction(
     htfScore,
     ratchetR,
     stopLossR: 1.0,
-    takeProfitR: 1.0,
+    takeProfitR: is4HModel ? 2.5 : 1.0,
     recommendation,
     currentPrice,
-    atr: Number(atr15.toFixed(2)),
+    atr: Number(activeAtr.toFixed(2)),
     suggestedStopLoss: Number(suggestedStopLoss.toFixed(2)),
     suggestedTakeProfit: Number(suggestedTakeProfit.toFixed(2)),
     suggestedRatchetTrigger: Number(suggestedRatchetTrigger.toFixed(2)),

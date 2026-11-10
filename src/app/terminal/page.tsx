@@ -229,6 +229,8 @@ export default function TerminalPage() {
   const [autonomousStatus, setAutonomousStatus] = useState<string>("Autonomous AI Engine: Scanning 4H Multi-Asset Router feeds...");
   const [lastActionTick, setLastActionTick] = useState<string>("");
   const [lastUpdated, setLastUpdated] = useState<string>("Connecting...");
+  const [secondsUntilNextLiveTick, setSecondsUntilNextLiveTick] = useState<number>(120);
+  const [liveTriggerStatus, setLiveTriggerStatus] = useState<string>("Active · 2-Min Live Engine");
 
   const activeModel = TOP_MODELS.find((m) => m.id === activeModelId) || TOP_MODELS[0];
   const requires4H = activeModel.requires4HMacro;
@@ -275,42 +277,51 @@ export default function TerminalPage() {
     }
   };
 
-  // Autonomous Background AI Market Evaluation & Execution Loop (Automatic Trade & Hold)
-  useEffect(() => {
-    let isMounted = true;
-    if (!autoTradingEnabled) return;
-
-    const runAutonomousCycle = async () => {
-      try {
-        const cronEndpoint =
-          activeModelId === "1h-commodities-rf"
-            ? "/api/cron/paper-1h-commodities"
-            : "/api/cron/paper-4h-swing";
-        const res = await fetch(cronEndpoint);
-        if (res.ok) {
-          const data = await res.json();
-          if (isMounted) {
-            if (data.actions && data.actions.length > 0) {
-              setAutonomousStatus(data.actions[0]);
-              setLastActionTick(new Date().toLocaleTimeString());
-            } else if (data.message) {
-              setAutonomousStatus(data.message);
-            }
-            fetchCurrentBalance();
-          }
+  // Programmatic 2-Minute Live Evaluation & Continuous Router Prediction Engine (Zero Cron Jobs Required)
+  const runProgrammatic2MinLiveCycle = async () => {
+    try {
+      setLiveTriggerStatus("Evaluating live 7-asset predictions...");
+      const resRouter = await fetch("/api/router/live-evaluate?force=true");
+      if (resRouter.ok) {
+        const json = await resRouter.json();
+        if (json.logs && Array.isArray(json.logs) && json.logs.length > 0) {
+          setLivePredictionLogs((prev) => {
+            const liveMap = new Map();
+            json.logs.forEach((l: any) => liveMap.set(l.symbol, l));
+            const existing = (prev || []).filter((p: any) => !liveMap.has(p.symbol));
+            return [...json.logs, ...existing];
+          });
         }
-      } catch (err) {
-        console.warn("Autonomous loop cycle error:", err);
       }
-    };
 
-    runAutonomousCycle();
-    const cycleInterval = setInterval(runAutonomousCycle, 12000);
+      await fetchModelPrediction(activeModelId);
+      await fetchCurrentBalance();
+
+      setLastActionTick(new Date().toLocaleTimeString());
+      setLiveTriggerStatus("Live 2-Min Calculation Synced");
+      setSecondsUntilNextLiveTick(120);
+    } catch (err) {
+      console.warn("Live 2-min calculation error:", err);
+      setLiveTriggerStatus("Calculation Error · Retrying");
+    }
+  };
+
+  useEffect(() => {
+    runProgrammatic2MinLiveCycle();
+
+    const interval2Min = setInterval(() => {
+      runProgrammatic2MinLiveCycle();
+    }, 120000);
+
+    const countdownInterval = setInterval(() => {
+      setSecondsUntilNextLiveTick((prev) => (prev <= 1 ? 120 : prev - 1));
+    }, 1000);
+
     return () => {
-      isMounted = false;
-      clearInterval(cycleInterval);
+      clearInterval(interval2Min);
+      clearInterval(countdownInterval);
     };
-  }, [autoTradingEnabled, activeModelId]);
+  }, [activeModelId]);
 
   // Toggle Autonomous Trading Engine state
   const handleToggleAutoTrading = async () => {
@@ -1328,10 +1339,20 @@ export default function TerminalPage() {
                   AI Mind State &amp; Market Regime
                 </span>
               </div>
-              <span className="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-md flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_#10b981]" />
-                LIVE SYNC
-              </span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => runProgrammatic2MinLiveCycle()}
+                  title="Trigger immediate live re-evaluation on all 7 assets"
+                  className="text-[9px] font-mono font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded cursor-pointer transition-all flex items-center gap-1"
+                >
+                  <RotateCw className="w-2.5 h-2.5 text-blue-600" />
+                  <span>2-Min Live: {secondsUntilNextLiveTick}s</span>
+                </button>
+                <span className="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-md flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_#10b981]" />
+                  LIVE (NO CRON)
+                </span>
+              </div>
             </div>
 
             {/* 1. Live Status Badge: STANDBY & SCANNING · 100% CAPITAL IN CASH (₹1,000 PROTECTED) */}

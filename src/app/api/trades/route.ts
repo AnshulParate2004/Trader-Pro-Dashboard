@@ -2,6 +2,7 @@ import optionALiveTrades from "@/data/option_a_1h_live_trades.json";
 import optionALivePredictionLogs from "@/data/live_prediction_logs_option-a-1h-hand-written.json";
 import routerLiveTrades from "@/data/4hr_timeframe_router_live_trades.json";
 import routerLivePredictionLogs from "@/data/live_prediction_logs_4hr_timeframe_router.json";
+import { getRouterLiveEvaluations } from "@/lib/routerLiveEvaluator";
 import fs from "fs";
 
 import path from "path";
@@ -404,15 +405,21 @@ async function getLivePredictionLogs(
   }
 
   if (modelId === "4hr-timeframe-router" || modelId === "router-c-4h") {
-    const raw = routerLivePredictionLogs;
-    const filtered = assetClass === "all" ? raw : raw.filter((r: any) => r.asset_class === assetClass);
+    let livePrefix: any[] = [];
+    try {
+      livePrefix = await getRouterLiveEvaluations(false);
+    } catch (e) {
+      console.warn("Could not fetch live router evaluations for trades route:", e);
+    }
+    const raw = [...livePrefix, ...routerLivePredictionLogs];
+    const filtered = assetClass === "all" ? raw : raw.filter((r: any) => r.asset_class === assetClass || !r.asset_class);
     const slice = limit > 0 ? filtered.slice(0, limit) : filtered;
     return slice.map((d: any) => ({
       ...d,
       price: d.price ?? d.close ?? 0,
       sma_200: d.sma_200 ?? d.sma200 ?? 0,
-      donchian_high: d.donchian_high ?? d.dh ?? 0,
-      donchian_low: d.donchian_low ?? d.dl ?? 0,
+      donchian_high: d.donchian_high ?? d.dh ?? d.donchian_high_20 ?? 0,
+      donchian_low: d.donchian_low ?? d.dl ?? d.donchian_low_20 ?? 0,
       conviction_p: d.conviction_p ?? d.probability ?? 0.5,
     }));
   }

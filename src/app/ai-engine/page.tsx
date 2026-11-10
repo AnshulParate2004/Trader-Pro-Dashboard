@@ -307,19 +307,31 @@ export default function AiEnginePage() {
     return () => clearInterval(interval);
   }, [selectedModelId, config.tradingFeePercent, selectedAsset]);
 
-  // Autonomous Background AI Market Evaluation Loop
+  // Programmatic 2-Minute Live Evaluation Loop (Zero Cron Jobs)
   useEffect(() => {
-    if (!config.autoTradingEnabled) return;
-    const aiInterval = setInterval(async () => {
+    const triggerLiveRouter = async () => {
       try {
-        await fetch("/api/cron/scalp");
-        fetchData(selectedModelIdRef.current, activeFeeRef.current);
+        const res = await fetch("/api/router/live-evaluate?force=true");
+        if (res.ok) {
+          const json = await res.json();
+          if (json.logs && Array.isArray(json.logs)) {
+            setLivePredictionLogs((prev) => {
+              const liveMap = new Map();
+              json.logs.forEach((l: any) => liveMap.set(l.symbol, l));
+              const existing = (prev || []).filter((p: any) => !liveMap.has(p.symbol));
+              return [...json.logs, ...existing];
+            });
+          }
+        }
       } catch (err) {
-        // background market tick
+        console.warn("Could not trigger live router evaluation:", err);
       }
-    }, 15000);
-    return () => clearInterval(aiInterval);
-  }, [config.autoTradingEnabled, selectedModelId, config.tradingFeePercent]);
+    };
+
+    triggerLiveRouter();
+    const twoMinInterval = setInterval(triggerLiveRouter, 120000);
+    return () => clearInterval(twoMinInterval);
+  }, [selectedModelId]);
 
   // Handle Model Selection Change
   const handleModelChange = async (newModelId: string) => {

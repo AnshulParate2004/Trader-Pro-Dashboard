@@ -793,8 +793,9 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                 <div>
                   <div className="font-mono text-xs font-black text-chrome-ink flex flex-wrap items-center gap-2">
                     <span>LIVE PREDICTION &amp; REGIME EVALUATION FEED</span>
-                    <span className="text-[10px] font-bold bg-blue-100 text-blue-900 border border-blue-300 px-2 py-0.5 rounded-full">
-                      UNSEEN WINDOW: OCT 21 – NOV 7, 2026
+                    <span className="text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_#10b981]" />
+                      LIVE 2-MIN ENGINE (ZERO CRON)
                     </span>
                     <span className="text-[10px] font-bold bg-amber-50 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full">
                       ACTIVE ENGINE: {activeModelMeta?.shortName || activeModelMeta?.name || selectedModelId || "Unified 1H"}
