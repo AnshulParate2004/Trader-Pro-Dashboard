@@ -14,6 +14,7 @@ import {
   RotateCw,
   TrendingUp,
   Maximize2,
+  Minimize2,
   CheckCircle2,
   ArrowUpRight,
   Target,
@@ -209,6 +210,7 @@ const ROUTER_4H_MAPPING: Record<string, {
 
 export default function TerminalPage() {
   const [symbol, setSymbol] = useState("BTCUSDT");
+  const [isChartMaximized, setIsChartMaximized] = useState(false);
   const [timeframe, setTimeframe] = useState("4h");
   const [activeModelId, setActiveModelId] = useState<string>("4hr-timeframe-router");
   
@@ -233,6 +235,24 @@ export default function TerminalPage() {
   const riskPercent = 1.0; // 1% risk = ₹10.00 on ₹1,000
   const activeTrades = recentTrades.filter((t) => t.status === "ACTIVE" || t.status === "BE_ACTIVATED");
   const currentActiveTrade = activeTrades[0] || null;
+
+  // Handle ESC key to minimize chart and trigger resize on TradingView
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isChartMaximized) {
+        setIsChartMaximized(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isChartMaximized]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event("resize"));
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [isChartMaximized]);
 
   // Fetch current live account balance and trade logs from MongoDB Atlas
   const fetchCurrentBalance = async () => {
@@ -866,6 +886,29 @@ export default function TerminalPage() {
           ))}
         </div>
 
+        {/* Maximize / Minimize Graph Button */}
+        <button
+          onClick={() => setIsChartMaximized((prev) => !prev)}
+          className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-mono font-bold rounded-lg transition-all cursor-pointer shrink-0 ${
+            isChartMaximized
+              ? "bg-blue-600 text-white shadow-sm border border-blue-700 hover:bg-blue-700"
+              : "clay-white-btn text-slate-700 hover:text-gray-900 border border-slate-200"
+          }`}
+          title={isChartMaximized ? "Minimize Graph (Show sidebar & bottom dock)" : "Maximize Graph (Full screen chart)"}
+        >
+          {isChartMaximized ? (
+            <>
+              <Minimize2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Minimize</span>
+            </>
+          ) : (
+            <>
+              <Maximize2 className="w-3.5 h-3.5 text-blue-600" />
+              <span className="hidden sm:inline">Maximize</span>
+            </>
+          )}
+        </button>
+
         {/* Right Section: Capital Badge + AI Engine Link + Live Status */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 clay-white-pill font-mono text-xs shrink-0" title="Live Portfolio Capital (₹7,000 Baseline + Realized PnL)">
@@ -900,18 +943,48 @@ export default function TerminalPage() {
       </header>
 
       {/* 2. Main Full-Screen Split Workspace (Chart + Right Intelligence Panel) */}
-      <div className="flex-1 w-full grid grid-cols-1 lg:grid-cols-[1fr_430px] overflow-hidden bg-white">
+      <div className={`flex-1 w-full overflow-hidden bg-white ${
+        isChartMaximized ? "flex flex-col" : "grid grid-cols-1 lg:grid-cols-[1fr_430px]"
+      }`}>
         
         {/* Left Column: Full-Height Interactive TradingView Candlestick Chart + Bottom Dock */}
-        <div className="flex flex-col h-full overflow-hidden border-r border-slate-200/80 bg-white">
+        <div className={`flex flex-col h-full overflow-hidden bg-white ${
+          isChartMaximized ? "w-full" : "border-r border-slate-200/80"
+        }`}>
           
           {/* Edge-to-Edge Live TradingView Chart */}
-          <div className="flex-1 w-full h-full relative bg-white overflow-hidden">
+          <div className="flex-1 w-full h-full relative bg-white overflow-hidden group">
+            {/* Quick Chart Expand / Restore Overlay Button */}
+            <div className="absolute top-2.5 right-12 z-20">
+              <button
+                onClick={() => setIsChartMaximized((prev) => !prev)}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono font-bold shadow-md transition-all cursor-pointer backdrop-blur-md ${
+                  isChartMaximized
+                    ? "bg-blue-600 text-white hover:bg-blue-700 border border-blue-500 shadow-blue-500/20"
+                    : "bg-white/95 text-slate-800 hover:bg-white border border-slate-200/90 hover:text-black shadow-slate-300/40"
+                }`}
+                title={isChartMaximized ? "Restore Panels (Minimize Graph)" : "Maximize Graph (Full Screen)"}
+              >
+                {isChartMaximized ? (
+                  <>
+                    <Minimize2 className="w-3.5 h-3.5 text-white" />
+                    <span>Minimize Graph</span>
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="w-3.5 h-3.5 text-blue-600" />
+                    <span className="hidden md:inline">Maximize Graph</span>
+                  </>
+                )}
+              </button>
+            </div>
             <TradingViewChart symbol={getTradingViewSymbol(symbol)} interval={timeframe} />
           </div>
 
           {/* Bottom Dock Header with Tabs */}
-          <div className="bg-white border-t border-slate-200/80 px-3.5 py-1.5 flex items-center justify-between shrink-0 font-mono text-xs">
+          {!isChartMaximized && (
+            <>
+              <div className="bg-white border-t border-slate-200/80 px-3.5 py-1.5 flex items-center justify-between shrink-0 font-mono text-xs">
             <div className="flex clay-white-inset p-0.5 gap-0.5">
               <button
                 onClick={() => setDockTab("radar")}
@@ -1236,9 +1309,12 @@ export default function TerminalPage() {
               </div>
             )}
           </div>
+            </>
+          )}
         </div>
 
         {/* Right Column: Prominent Actionable Trading Recommendation Card & Execution (Beautiful Pure White Claymorphic Theme) */}
+        {!isChartMaximized && (
         <aside className="bg-[#fafafc] p-3.5 flex flex-col gap-3 overflow-y-auto border-l border-slate-200/80 h-full">
           
           {/* Active Model Quantitative Specs Badge */}
@@ -1815,6 +1891,7 @@ export default function TerminalPage() {
           </div>
 
         </aside>
+        )}
 
       </div>
 
