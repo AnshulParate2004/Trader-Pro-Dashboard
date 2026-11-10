@@ -2769,7 +2769,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -2788,10 +2788,10 @@
     "passes_gate": false,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": null,
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -2923,7 +2923,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -2942,10 +2942,10 @@
     "passes_gate": false,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": null,
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -3077,7 +3077,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -3096,10 +3096,10 @@
     "passes_gate": false,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": null,
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -3231,7 +3231,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -3250,10 +3250,10 @@
     "passes_gate": false,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": null,
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -3385,7 +3385,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -3404,10 +3404,10 @@
     "passes_gate": false,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": null,
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -3539,7 +3539,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -3558,10 +3558,10 @@
     "passes_gate": false,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": null,
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -3693,7 +3693,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -3712,10 +3712,10 @@
     "passes_gate": false,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": null,
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -3847,7 +3847,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -3866,10 +3866,10 @@
     "passes_gate": false,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": null,
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -4001,7 +4001,7 @@
     "decision_reason": "Price below 200 SMA (Trend Filtered)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -4020,10 +4020,10 @@
     "passes_gate": false,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": null,
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -4155,7 +4155,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -4174,7 +4174,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -4185,7 +4185,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -4317,7 +4317,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -4336,7 +4336,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -4347,7 +4347,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -4479,7 +4479,7 @@
     "decision_reason": "Price below 200 SMA (Trend Filtered)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -4498,7 +4498,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -4509,7 +4509,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -4641,7 +4641,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -4660,7 +4660,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -4671,7 +4671,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -4803,7 +4803,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -4822,7 +4822,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -4833,7 +4833,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -4965,7 +4965,7 @@
     "decision_reason": "Price below 200 SMA (Trend Filtered)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -4984,7 +4984,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -4995,7 +4995,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -5127,7 +5127,7 @@
     "decision_reason": "Price below 200 SMA (Trend Filtered)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -5146,7 +5146,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -5157,7 +5157,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -5289,7 +5289,7 @@
     "decision_reason": "Price below 200 SMA (Trend Filtered)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -5308,7 +5308,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -5319,7 +5319,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -5451,7 +5451,7 @@
     "decision_reason": "Price below 200 SMA (Trend Filtered)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -5470,7 +5470,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -5481,7 +5481,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -5525,7 +5525,7 @@
     "decision_reason": "Price below 200 SMA (Trend Filtered)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -5544,7 +5544,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -5555,7 +5555,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -5599,7 +5599,7 @@
     "decision_reason": "Price below 200 SMA (Trend Filtered)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -5618,7 +5618,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -5629,7 +5629,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -5673,7 +5673,7 @@
     "decision_reason": "Price below 200 SMA (Trend Filtered)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -5692,7 +5692,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -5703,7 +5703,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -5747,7 +5747,7 @@
     "decision_reason": "Price below 200 SMA (Trend Filtered)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -5766,7 +5766,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -5777,7 +5777,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -5821,7 +5821,7 @@
     "decision_reason": "Price below 200 SMA (Trend Filtered)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -5840,7 +5840,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -5851,7 +5851,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -5895,7 +5895,7 @@
     "decision_reason": "Price below 200 SMA (Trend Filtered)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -5914,7 +5914,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -5925,7 +5925,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -5969,7 +5969,7 @@
     "decision_reason": "Price below 200 SMA (Trend Filtered)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -5988,7 +5988,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -5999,7 +5999,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6043,7 +6043,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6062,7 +6062,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -6073,7 +6073,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6117,7 +6117,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6136,7 +6136,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -6147,7 +6147,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6191,7 +6191,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6210,7 +6210,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -6221,7 +6221,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6265,7 +6265,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6284,7 +6284,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -6295,7 +6295,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6339,7 +6339,7 @@
     "decision_reason": "AI Conviction 41.6% < cutoff 50.0% (Rejected)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6358,7 +6358,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -6369,7 +6369,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6413,7 +6413,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6432,7 +6432,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -6443,7 +6443,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6487,7 +6487,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6506,7 +6506,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -6517,7 +6517,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6561,7 +6561,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6580,7 +6580,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -6591,7 +6591,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6635,7 +6635,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6654,7 +6654,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -6665,7 +6665,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6709,7 +6709,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6728,7 +6728,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -6739,7 +6739,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6783,7 +6783,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6802,7 +6802,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -6813,7 +6813,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6857,7 +6857,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6876,7 +6876,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -6887,7 +6887,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6931,7 +6931,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -6950,7 +6950,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -6961,7 +6961,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -7005,7 +7005,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -7024,7 +7024,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -7035,7 +7035,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -7079,7 +7079,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -7098,7 +7098,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -7109,7 +7109,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -7153,7 +7153,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -7172,7 +7172,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -7183,7 +7183,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -7227,7 +7227,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -7246,7 +7246,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -7257,7 +7257,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -7301,7 +7301,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -7320,7 +7320,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -7331,7 +7331,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -7375,7 +7375,7 @@
     "decision_reason": "AI Conviction 44.2% < cutoff 50.0% (Rejected)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -7394,7 +7394,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -7405,7 +7405,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -7449,7 +7449,7 @@
     "decision_reason": "AI Conviction 44.5% < cutoff 50.0% (Rejected)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -7468,7 +7468,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -7479,7 +7479,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -7523,7 +7523,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -7542,7 +7542,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -7553,7 +7553,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -7597,7 +7597,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -7616,7 +7616,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -7627,7 +7627,7 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -7671,7 +7671,7 @@
     "decision_reason": "Price inside Donchian channel (No Breakout)",
     "trade_details": null,
     "routed_engine": "distributed-4h-engine",
-    "routed_engine_label": "New 4H Specialist"
+    "routed_engine_label": "New 4H Silver Specialist"
   },
   {
     "model_id": "4hr-timeframe-router",
@@ -7690,7 +7690,7 @@
     "passes_gate": true,
     "regime": "BEARISH",
     "decision": "CASH_SHIELD",
-    "decision_reason": "Crude Oil (CLUSDT) Filtered: Friction > Stop Distance (No-Trade Guard Active)",
+    "decision_reason": "Crude Oil Filtered: Friction > Stop Distance (No-Trade Guard Active)",
     "trade_details": {
       "side": "SHORT",
       "entry_price": 92.09,
@@ -7701,6 +7701,6 @@
       "bars_held": 12
     },
     "routed_engine": "no_trade_policy",
-    "routed_engine_label": "No Trade Policy (Friction Filter)"
+    "routed_engine_label": "No-Trade Policy"
   }
 ]

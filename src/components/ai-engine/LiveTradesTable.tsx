@@ -140,29 +140,37 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   };
 
   const getDisplayModelName = (t: TradeOrder) => {
-    if (selectedModelId === "4hr-timeframe-router") return "[Router] 4HR Timeframe Router [High-Conviction 🏆]";
-    if (selectedModelId === "option-a-1h-hand-written") return "[Option A] Hand-Written Network [1H High-Conviction 🏆]";
-    if (selectedModelId === "om-distributed-4h-engine") return "[OM] Distributed 4H Specialists [7 Models]";
-    if (selectedModelId === "om-stacking-meta-engine") return "[OM] Stacking Meta-Learner";
-    if (selectedModelId === "om-distributed-1h-engine") return "[OM] Distributed 1H Specialists [7 Models]";
-    if (selectedModelId === "om-unified-1h-engine") return "[OM] Unified 1H Multi-Asset";
-    if (selectedModelId === "om-consensus-committee-engine") return "[OM] Consensus Committee";
-    if (selectedModelId === "om-unified-4h-engine") return "[OM] Unified 4H Swing";
-    if (selectedModelId === "v1-distributed-4h-engine") return "[v1] Distributed 4H Specialists [7 Models]";
-    if (selectedModelId === "v1-stacking-meta-engine") return "[v1] Stacking Meta-Learner";
-    if (selectedModelId === "v1-distributed-1h-engine") return "[v1] Distributed 1H Specialists [7 Models]";
-    if (selectedModelId === "v1-unified-1h-engine") return "[v1] Unified 1H Multi-Asset";
-    if (selectedModelId === "v1-consensus-committee-engine") return "[v1] Consensus Committee";
-    if (selectedModelId === "v1-unified-4h-engine") return "[v1] Unified 4H Swing";
-    if (selectedModelId === "new-consensus-committee-engine") return "[New] Consensus Committee";
-    if (selectedModelId === "new-stacking-meta-engine") return "[New] Stacking Meta-Learner";
-    if (selectedModelId === "distributed-4h-engine") return "[New] Distributed 4H Specialists [7 Models]";
-    if (selectedModelId === "distributed-1h-engine") return "[New] Distributed 1H Specialists [7 Models]";
-    if (selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017") return "[New] Unified 4H Swing Engine [ACTIVE LIVE]";
-    if (selectedModelId === "pure-rules-4h-baseline") return "Rule-Based Engine (4H) [BENCHMARK]";
-    if (selectedModelId === "pure-rules-1h-baseline" || selectedModelId === "pure-rules-baseline") return "Rule-Based Engine (1H) [BENCHMARK]";
-    if (t.modelName && !t.modelName.includes("4H Swing Meta")) return t.modelName;
-    return "[New] Unified 1H Multi-Asset Engine [ACTIVE LIVE]";
+    if (selectedModelId === "4hr-timeframe-router") {
+      const sym = t.symbol || t.rawSymbol;
+      const routed = (t as any).routedEngine;
+      if (routed === "fixed_4h_clamp_btc_eth" || sym === "ETHUSDT") return "4H Clamp";
+      if (routed === "om-unified-4h-engine" || sym === "DOTUSDT") return "4H Unified";
+      if (routed === "distributed-4h-engine" || sym === "XAGUSDT") return "4H Spec (New)";
+      if (routed === "om-distributed-4h-engine") return "4H Spec (OM)";
+      return "4H Router";
+    }
+    if (selectedModelId === "option-a-1h-hand-written") return "Option A (1H)";
+    if (selectedModelId === "om-distributed-4h-engine") return "OM 4H Spec";
+    if (selectedModelId === "om-stacking-meta-engine") return "OM Stacking";
+    if (selectedModelId === "om-distributed-1h-engine") return "OM 1H Spec";
+    if (selectedModelId === "om-unified-1h-engine") return "OM 1H Uni";
+    if (selectedModelId === "om-consensus-committee-engine") return "OM Consensus";
+    if (selectedModelId === "om-unified-4h-engine") return "OM 4H Uni";
+    if (selectedModelId === "v1-distributed-4h-engine") return "v1 4H Spec";
+    if (selectedModelId === "v1-stacking-meta-engine") return "v1 Stacking";
+    if (selectedModelId === "v1-distributed-1h-engine") return "v1 1H Spec";
+    if (selectedModelId === "v1-unified-1h-engine") return "v1 1H Uni";
+    if (selectedModelId === "v1-consensus-committee-engine") return "v1 Consensus";
+    if (selectedModelId === "v1-unified-4h-engine") return "v1 4H Uni";
+    if (selectedModelId === "new-consensus-committee-engine") return "New Consensus";
+    if (selectedModelId === "new-stacking-meta-engine") return "New Stacking";
+    if (selectedModelId === "distributed-4h-engine") return "New 4H Spec";
+    if (selectedModelId === "distributed-1h-engine") return "New 1H Spec";
+    if (selectedModelId === "unified-4h-engine" || selectedModelId === "4h-swing-meta-017") return "New 4H Uni";
+    if (selectedModelId === "pure-rules-4h-baseline") return "4H Rules";
+    if (selectedModelId === "pure-rules-1h-baseline" || selectedModelId === "pure-rules-baseline") return "1H Rules";
+    if (t.modelName && !t.modelName.includes("4H Swing Meta")) return t.modelName.slice(0, 14);
+    return "Unified 1H";
   };
   // Live Prediction Logs Filter & Pagination State
   const [logAssetFilter, setLogAssetFilter] = React.useState<"ALL" | "crypto" | "commodities">("ALL");
@@ -173,7 +181,16 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   const filteredLogs = React.useMemo(() => {
     return (livePredictionLogs || []).filter((log: any) => {
       if (logAssetFilter !== "ALL" && log.asset_class !== logAssetFilter) return false;
-      if (logDecisionFilter !== "ALL" && log.decision !== logDecisionFilter) return false;
+      if (logDecisionFilter !== "ALL") {
+        if (logDecisionFilter === "EXECUTED_TRADE") {
+          if (log.decision !== "EXECUTED_TRADE") return false;
+        } else if (logDecisionFilter === "CASH_PROTECTED_BEARISH") {
+          const isBearish = log.decision === "CASH_PROTECTED_BEARISH" || log.decision === "CASH_SHIELD" || log.regime === "BEARISH" || (log.price < log.sma_200);
+          if (!isBearish) return false;
+        } else if (logDecisionFilter === "CASH_PROTECTED_CONSOLIDATION") {
+          if (log.decision !== "CASH_PROTECTED_CONSOLIDATION" && log.decision !== "CASH_SAFE" && log.decision !== "GATE_BLOCKED") return false;
+        }
+      }
       return true;
     });
   }, [livePredictionLogs, logAssetFilter, logDecisionFilter]);
@@ -651,26 +668,24 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
         )}
       </div>
 
-      {/* Table Data View */}
-      <div className="overflow-x-auto">
+      {/* Table Data View - Optimized to eliminate horizontal scroll */}
+      <div className="w-full overflow-x-auto xl:overflow-x-visible">
         {tableTab === "live" ? (
           <>
-          <table className="w-full min-w-full lg:min-w-0 text-left border-collapse font-mono text-xs">
+          <table className="w-full text-left border-collapse font-mono text-xs table-auto">
             <thead>
-              <tr className="bg-chrome-field/70 border-b border-chrome-line text-chrome-dim uppercase text-[10px] tracking-wider">
-                <th className="py-2 px-2 sm:px-2.5">Time</th>
-                <th className="py-2 px-2 sm:px-2.5">AI Model</th>
-                <th className="py-2 px-2 sm:px-2.5">Pair</th>
-                <th className="py-2 px-2 sm:px-2.5">Type</th>
-                <th className="py-2 px-2 sm:px-2.5">Entry Price</th>
-                <th className="py-2 px-2 sm:px-2.5">Exit Price</th>
-                <th className="py-2 px-2 sm:px-2.5">Position</th>
-                <th className="py-2 px-2 sm:px-2.5">Fee (w/ GST)</th>
-                <th className="py-2 px-2 sm:px-2.5">Gross PnL</th>
-                <th className="py-2 px-2 sm:px-2.5">Net PnL</th>
-                <th className="py-2 px-2 sm:px-2.5">Capital</th>
-                <th className="py-2 px-2 sm:px-2.5">Status</th>
-                <th className="py-2 px-2 sm:px-2.5">Action</th>
+              <tr className="bg-chrome-field/80 border-b border-chrome-line text-chrome-dim uppercase text-[10px] tracking-wider">
+                <th className="py-2 px-1.5 sm:px-2 whitespace-nowrap">Time</th>
+                <th className="py-2 px-1.5 sm:px-2 whitespace-nowrap">Engine</th>
+                <th className="py-2 px-1.5 sm:px-2 whitespace-nowrap">Pair</th>
+                <th className="py-2 px-1.5 sm:px-2 whitespace-nowrap">Side</th>
+                <th className="py-2 px-1.5 sm:px-2 whitespace-nowrap">Entry</th>
+                <th className="py-2 px-1.5 sm:px-2 whitespace-nowrap">Exit</th>
+                <th className="py-2 px-1.5 sm:px-2 whitespace-nowrap">Size</th>
+                <th className="py-2 px-1.5 sm:px-2 whitespace-nowrap">Fee</th>
+                <th className="py-2 px-1.5 sm:px-2 whitespace-nowrap">Net PnL</th>
+                <th className="py-2 px-1.5 sm:px-2 whitespace-nowrap">Capital</th>
+                <th className="py-2 px-1.5 sm:px-2 whitespace-nowrap">Outcome / Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-chrome-edge">
@@ -681,18 +696,20 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
 
                   return (
                     <tr key={trade.id} className="hover:bg-chrome-field/50 transition-colors">
-                      <td className="py-2 px-2 sm:px-2.5 text-chrome-dim text-[11px] whitespace-nowrap">
-                        {new Date(trade.openedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                      <td className="py-2 px-1.5 sm:px-2 text-chrome-dim text-[11px] whitespace-nowrap">
+                        {new Date(trade.openedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </td>
-                      <td className="py-2 px-2 sm:px-2.5 whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded bg-chrome-field border border-chrome-line font-bold text-[10px] text-chrome-ink">
+                      <td className="py-2 px-1.5 sm:px-2 whitespace-nowrap">
+                        <span className="px-1.5 py-0.5 rounded bg-chrome-field border border-chrome-line font-bold text-[10px] text-chrome-ink">
                           {getDisplayModelName(trade)}
                         </span>
                       </td>
-                      <td className="py-2 px-2 sm:px-2.5 font-bold text-chrome-ink">{toDisplaySymbol(trade.symbol)}</td>
-                      <td className="py-2 px-2 sm:px-2.5">
+                      <td className="py-2 px-1.5 sm:px-2 font-bold text-chrome-ink whitespace-nowrap">
+                        {toDisplaySymbol(trade.symbol)}
+                      </td>
+                      <td className="py-2 px-1.5 sm:px-2 whitespace-nowrap">
                         <span
-                          className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                          className={`px-1.5 py-0.5 rounded font-bold text-[10px] ${
                             trade.direction === "LONG"
                               ? "bg-win-tint text-win-dark border border-win/30"
                               : "bg-loss-tint text-loss-dark border border-loss/30"
@@ -701,73 +718,55 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                           {trade.direction}
                         </span>
                       </td>
-                      <td className="py-2 px-2 sm:px-2.5 font-bold text-chrome-ink">
-                        ${trade.entryPrice.toLocaleString(undefined, { minimumFractionDigits: 1 })}
+                      <td className="py-2 px-1.5 sm:px-2 font-bold text-chrome-ink tabular-nums whitespace-nowrap">
+                        ${trade.entryPrice.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
                       </td>
-                      <td className="py-2 px-2 sm:px-2.5 font-bold text-chrome-ink">
+                      <td className="py-2 px-1.5 sm:px-2 font-bold text-chrome-ink tabular-nums whitespace-nowrap">
                         {trade.exitPrice
-                          ? `$${trade.exitPrice.toLocaleString(undefined, { minimumFractionDigits: 1 })}`
+                          ? `$${trade.exitPrice.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}`
                           : "—"}
                       </td>
-                      <td className="py-2 px-2 sm:px-2.5 text-chrome-ink font-semibold">
-                        ₹{(trade.positionSizeINR || 1000).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                      <td className="py-2 px-1.5 sm:px-2 text-chrome-ink font-semibold tabular-nums whitespace-nowrap">
+                        ₹{(trade.positionSizeINR || 1000).toLocaleString("en-IN", { minimumFractionDigits: 0 })}
                       </td>
-                      <td className="py-2 px-2 sm:px-2.5 text-accent font-semibold">
-                        ₹{trade.totalFeeINR?.toFixed(3) || "0.000"}
+                      <td className="py-2 px-1.5 sm:px-2 text-accent font-semibold tabular-nums whitespace-nowrap">
+                        ₹{trade.totalFeeINR?.toFixed(2) || "0.00"}
                       </td>
-                      <td className="py-2 px-2 sm:px-2.5 font-semibold">
+                      <td className="py-2 px-1.5 sm:px-2 font-bold tabular-nums whitespace-nowrap">
                         {isClosed ? (
-                          <span className={trade.grossPnLINR && trade.grossPnLINR >= 0 ? "text-win" : "text-loss"}>
-                            {trade.grossPnLINR && trade.grossPnLINR >= 0 ? "+" : ""}
-                            ₹{trade.grossPnLINR?.toFixed(2)}
-                          </span>
-                        ) : (
-                          <span className="text-chrome-dim">Open</span>
-                        )}
-                      </td>
-                      <td className="py-2 px-2 sm:px-2.5 font-bold">
-                        {isClosed ? (
-                          <span className={isPositive ? "text-win" : "text-loss"}>
-                            {isPositive ? "+" : ""}
-                            ₹{trade.netPnLINR?.toFixed(2)}
-                          </span>
+                          <div>
+                            <span className={isPositive ? "text-win" : "text-loss"}>
+                              {isPositive ? "+" : ""}₹{trade.netPnLINR?.toFixed(2)}
+                            </span>
+                            <span className="text-[9px] text-chrome-dim block font-normal">
+                              Gross: {trade.grossPnLINR && trade.grossPnLINR >= 0 ? "+" : ""}₹{trade.grossPnLINR?.toFixed(2)}
+                            </span>
+                          </div>
                         ) : (
                           <span className="text-accent animate-pulse font-bold">In Flight</span>
                         )}
                       </td>
-                      <td className="py-2 px-2 sm:px-2.5 font-mono font-bold tabular-nums">
+                      <td className="py-2 px-1.5 sm:px-2 font-mono font-bold tabular-nums whitespace-nowrap">
                         <span className={(trade.runningBalanceINR ?? 7000) >= 7000 ? "text-emerald-700" : "text-rose-700"}>
-                          ₹{trade.runningBalanceINR !== undefined ? trade.runningBalanceINR.toLocaleString("en-IN", { minimumFractionDigits: 2 }) : "7,000.00"}
+                          ₹{(trade.runningBalanceINR ?? 7000).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                         </span>
                       </td>
-                      <td className="py-2 px-2 sm:px-2.5">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                            trade.status === "ACTIVE"
-                              ? "bg-blue-50 text-blue-700 border-blue-200"
-                              : trade.status === "CLOSED"
-                              ? "bg-chrome-field text-chrome-dim border-chrome-line"
-                              : "bg-yellow-50 text-yellow-700 border-yellow-200"
-                          }`}
-                        >
-                          {trade.status}
-                        </span>
-                      </td>
-                      <td className="py-2 px-2 sm:px-2.5">
+                      <td className="py-2 px-1.5 sm:px-2 whitespace-nowrap">
                         {trade.status === "ACTIVE" ? (
                           <button
                             onClick={() => handleCloseTrade(trade.id, trade.entryPrice, trade.direction)}
-                            className="px-2 py-1 bg-white hover:bg-loss-tint text-loss border border-loss/30 text-[10px] font-bold rounded cursor-pointer transition-colors shadow-2xs"
+                            className="px-2 py-0.5 bg-white hover:bg-loss-tint text-loss border border-loss/30 text-[10px] font-bold rounded cursor-pointer transition-colors shadow-2xs"
                           >
                             Close
                           </button>
                         ) : (
-                          <span className="text-chrome-dim text-[11px]">
+                          <span className="text-chrome-dim text-[10.5px] font-semibold">
                             {trade.exitReason === "TARGET"
                               ? "🎯 Target"
                               : trade.exitReason === "STOP" || trade.exitReason === "COLLISION_STOP"
                               ? "🛑 Stop"
                               : "⏱️ Time"}
+                            <span className="text-[9px] text-slate-400 block font-normal">Closed</span>
                           </span>
                         )}
                       </td>
@@ -776,7 +775,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                 })
               ) : (
                 <tr>
-                  <td colSpan={13} className="py-12 text-center text-chrome-dim">
+                  <td colSpan={11} className="py-12 text-center text-chrome-dim">
                     No live trades match the selected filter.
                   </td>
                 </tr>
@@ -889,18 +888,18 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
               </div>
             </div>
 
-            {/* Live Feed Table */}
-            <div className="overflow-x-auto border border-chrome-line rounded-lg shadow-2xs">
-              <table className="w-full min-w-full lg:min-w-0 text-left border-collapse font-mono text-xs">
+            {/* Live Feed Table - Optimized for Zero Horizontal Scrolling */}
+            <div className="w-full overflow-x-auto xl:overflow-x-visible border border-chrome-line rounded-lg shadow-2xs">
+              <table className="w-full text-left border-collapse font-mono text-xs table-auto">
                 <thead>
                   <tr className="bg-chrome-field/80 border-b border-chrome-line text-chrome-dim uppercase text-[10px] tracking-wider">
-                    <th className="py-2 px-2 sm:px-2.5">Time (UTC)</th>
-                    <th className="py-2 px-2 sm:px-2.5">Symbol</th>
-                    <th className="py-2 px-2 sm:px-2.5">Price</th>
-                    <th className="py-2 px-2 sm:px-2.5">200 SMA</th>
-                    <th className="py-2 px-2 sm:px-2.5">Donchian Range</th>
-                    <th className="py-2 px-2 sm:px-2.5">AI Conviction (P)</th>
-                    <th className="py-2 px-2 sm:px-2.5">Decision / AI Mind State</th>
+                    <th className="py-2 px-1.5 sm:px-2 whitespace-nowrap">Time (UTC)</th>
+                    <th className="py-2 px-1.5 sm:px-2 whitespace-nowrap">Symbol</th>
+                    <th className="py-2 px-1.5 sm:px-2 whitespace-nowrap">Price</th>
+                    <th className="py-2 px-1.5 sm:px-2 whitespace-nowrap">200 SMA</th>
+                    <th className="py-2 px-1.5 sm:px-2 whitespace-nowrap">{selectedModelId === "4hr-timeframe-router" ? "Donchian Bounds" : "Donchian Range"}</th>
+                    <th className="py-2 px-1.5 sm:px-2 whitespace-nowrap">AI Conviction (P)</th>
+                    <th className="py-2 px-1.5 sm:px-2">Decision / AI Mind State</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-chrome-edge bg-white">
@@ -908,8 +907,11 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                     displayedLogs.map((log: any) => {
                       const isExecuted = log.decision === "EXECUTED_TRADE";
                       const isPositionActive = log.decision === "CASH_PROTECTED_POSITION_ACTIVE";
-                      const isBearish = log.decision === "CASH_PROTECTED_BEARISH";
                       const isAboveSma = log.price >= log.sma_200;
+                      const isRouter = selectedModelId === "4hr-timeframe-router" || !!log.routed_engine;
+                      const isNoTrade = log.symbol === "CLUSDT" || log.symbol === "CL=F" || log.routed_engine === "no_trade_policy";
+                      const isEthClamp = log.symbol === "ETHUSDT" || log.routed_engine === "fixed_4h_clamp_btc_eth";
+                      const isBearish = !isNoTrade && (log.decision === "CASH_PROTECTED_BEARISH" || log.decision === "CASH_SHIELD" || log.regime === "BEARISH" || !isAboveSma);
 
                       return (
                         <tr key={log.id} className="hover:bg-chrome-field/40 transition-colors">
@@ -931,49 +933,103 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                             </span>
                           </td>
                           <td className="py-2 px-2 sm:px-2.5 text-chrome-dim text-[11px] tabular-nums whitespace-nowrap">
-                            ${(log.donchian_low ?? log.donchian_low_20)?.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })} – ${(log.donchian_high ?? log.donchian_high_20)?.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
-                          </td>
-                          <td className="py-2 px-2 sm:px-2.5 whitespace-nowrap">
-                            <div className="flex items-center gap-1.5">
-                              <div className="w-12 bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200">
-                                <div
-                                  className={`h-full ${log.probability >= log.p_cutoff ? "bg-emerald-500" : "bg-slate-400"}`}
-                                  style={{ width: `${Math.min(100, Math.max(0, log.probability * 300))}%` }}
-                                />
-                              </div>
-                              <span className={`font-mono text-[11px] font-bold ${log.probability >= log.p_cutoff ? "text-emerald-700" : "text-slate-500"}`}>
-                                {log.p_cutoff === 0 || selectedModelId?.includes("pure-rules") ? "100.0% (Rules)" : `${(log.probability * 100).toFixed(1)}%`}
+                            {isNoTrade ? (
+                              <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-300 text-[10px] font-bold">
+                                🚫 No-Trade Policy (Fee Drag Guard)
                               </span>
-                            </div>
-                          </td>
-                          <td className="py-2 px-2 sm:px-2.5 whitespace-nowrap">
-                            {isExecuted ? (
-                              <div className="flex items-center gap-1.5">
-                                <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold text-[10px]">
-                                  🟢 {log.side} EXECUTED
+                            ) : isEthClamp ? (
+                              <div>
+                                <span className="text-[9.5px] font-bold text-blue-700 block">4H Structural Clamp [1.0%, 4.0%]</span>
+                                <span>
+                                  ${(log.donchian_low ?? log.donchian_low_20)?.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })} – ${(log.donchian_high ?? log.donchian_high_20)?.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
                                 </span>
-                                <span className="text-slate-600 text-[10.5px]">Breakout + Conviction Pass</span>
                               </div>
-                            ) : isPositionActive ? (
-                              <div className="flex items-center gap-1.5">
-                                <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-300 font-bold text-[10px]">
-                                  ⚡ 1-POS LOCKED
+                            ) : isRouter && log.routed_engine_label ? (
+                              <div>
+                                <span className="text-[9.5px] font-semibold text-slate-500 block">{log.routed_engine_label}</span>
+                                <span>
+                                  ${(log.donchian_low ?? log.donchian_low_20)?.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })} – ${(log.donchian_high ?? log.donchian_high_20)?.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
                                 </span>
-                                <span className="text-slate-600 text-[10.5px]">Position running · 100% Capital Deployed</span>
-                              </div>
-                            ) : isBearish ? (
-                              <div className="flex items-center gap-1.5">
-                                <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-bold text-[10px]">
-                                  🛡️ 100% CASH SHIELD
-                                </span>
-                                <span className="text-slate-600 text-[10.5px]">Price below 200 SMA (Trend Filtered)</span>
                               </div>
                             ) : (
+                              <span>
+                                ${(log.donchian_low ?? log.donchian_low_20)?.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })} – ${(log.donchian_high ?? log.donchian_high_20)?.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-2 px-1.5 sm:px-2 whitespace-nowrap">
+                            {isNoTrade ? (
+                              <span className="font-mono text-[10.5px] font-bold text-amber-700">Excluded</span>
+                            ) : isEthClamp ? (
+                              <span className="font-mono text-[10.5px] font-bold text-blue-700">100% (Rules)</span>
+                            ) : (
                               <div className="flex items-center gap-1.5">
-                                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 font-bold text-[10px]">
+                                <div className="w-10 bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200">
+                                  <div
+                                    className={`h-full ${log.probability >= (log.p_cutoff ?? 0.50) ? "bg-emerald-500" : "bg-slate-400"}`}
+                                    style={{ width: `${Math.min(100, Math.max(0, log.probability * 300))}%` }}
+                                  />
+                                </div>
+                                <span className={`font-mono text-[10.5px] font-bold ${log.probability >= (log.p_cutoff ?? 0.50) ? "text-emerald-700" : "text-slate-500"}`}>
+                                  {log.p_cutoff === 0 || selectedModelId?.includes("pure-rules") ? "100%" : `${(log.probability * 100).toFixed(1)}%`}
+                                </span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-2 px-1.5 sm:px-2">
+                            {isExecuted ? (
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold text-[9.5px] whitespace-nowrap">
+                                  🟢 {log.side || "LONG"} EXECUTED
+                                </span>
+                                <span className="text-slate-600 text-[10px]">
+                                  {log.decision_reason || "Breakout Confirmed"}
+                                </span>
+                              </div>
+                            ) : isPositionActive ? (
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-300 font-bold text-[9.5px] whitespace-nowrap">
+                                  ⚡ 1-POS LOCKED
+                                </span>
+                                <span className="text-slate-600 text-[10px]">
+                                  Position running · 100% Capital Deployed
+                                </span>
+                              </div>
+                            ) : isNoTrade ? (
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-bold text-[9.5px] whitespace-nowrap">
+                                  🛡️ CASH SHIELD
+                                </span>
+                                <span className="text-slate-600 text-[10px]">
+                                  Crude Oil Excluded (Alpha &lt; +0.05R)
+                                </span>
+                              </div>
+                            ) : isBearish ? (
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-bold text-[9.5px] whitespace-nowrap">
+                                  🛡️ CASH SHIELD
+                                </span>
+                                <span className="text-slate-600 text-[10px]">
+                                  Below 200 SMA (Bearish)
+                                </span>
+                              </div>
+                            ) : isEthClamp ? (
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-300 font-bold text-[9.5px] whitespace-nowrap">
+                                  🔒 CLAMP SAFE
+                                </span>
+                                <span className="text-slate-600 text-[10px]">
+                                  Inside Structural Clamp
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 font-bold text-[9.5px] whitespace-nowrap">
                                   🔒 CASH SAFE
                                 </span>
-                                <span className="text-slate-600 text-[10.5px]">Consolidating inside Donchian range</span>
+                                <span className="text-slate-600 text-[10px]">
+                                  Consolidating inside Donchian range
+                                </span>
                               </div>
                             )}
                           </td>

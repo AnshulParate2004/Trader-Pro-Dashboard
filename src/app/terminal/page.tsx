@@ -105,17 +105,106 @@ function getTradingViewSymbol(s: string): string {
 }
 
 
-const ROUTER_4H_MAPPING: Record<string, { engineId: string; engineName: string; avgR: string; pf: string; noTrade?: boolean }> = {
-  "BTCUSDT": { engineId: "om-distributed-4h-engine", engineName: "[OM] 4H Distributed Specialist", avgR: "+0.200R", pf: "1.40" },
-  "ETHUSDT": { engineId: "fixed_4h_clamp_btc_eth", engineName: "4H Trailing Stop Clamp", avgR: "+0.380R", pf: "2.02" },
-  "SOLUSDT": { engineId: "om-distributed-4h-engine", engineName: "[OM] 4H Distributed Specialist", avgR: "+0.269R", pf: "1.56" },
-  "DOTUSDT": { engineId: "om-unified-4h-engine", engineName: "[OM] 4H Unified Swing Brain", avgR: "+0.269R", pf: "1.55" },
-  "XAUUSDT": { engineId: "om-distributed-4h-engine", engineName: "[OM] 4H Distributed Specialist", avgR: "+0.211R", pf: "1.42" },
-  "XAGUSDT": { engineId: "distributed-4h-engine", engineName: "[New] 4H Distributed Specialist", avgR: "+0.097R", pf: "1.17" },
-  "CLUSDT": { engineId: "none", engineName: "NO TRADE ALLOCATION", avgR: "0.000R", pf: "0.00", noTrade: true },
-  "CL=F": { engineId: "none", engineName: "NO TRADE ALLOCATION", avgR: "0.000R", pf: "0.00", noTrade: true },
-  "GC=F": { engineId: "om-distributed-4h-engine", engineName: "[OM] 4H Distributed Specialist", avgR: "+0.211R", pf: "1.42" },
-  "SI=F": { engineId: "distributed-4h-engine", engineName: "[New] 4H Distributed Specialist", avgR: "+0.097R", pf: "1.17" }
+const ROUTER_4H_MAPPING: Record<string, {
+  engineId: string;
+  engineName: string;
+  avgR: string;
+  pf: string;
+  noTrade?: boolean;
+  ruleType: "DONCHIAN" | "CLAMP" | "NONE";
+  cutoffPct?: number;
+  description: string;
+}> = {
+  "BTCUSDT": {
+    engineId: "om-distributed-4h-engine",
+    engineName: "[OM] 4H Distributed Specialist",
+    avgR: "+0.200R",
+    pf: "1.40",
+    ruleType: "DONCHIAN",
+    cutoffPct: 50.0,
+    description: "Monitors 4H candles for 20-bar Donchian breakouts confirmed above/below the 200 SMA. Executes when LightGBM posterior probability clears P >= 50.0% with clamped stop [1.5%, 6.0%] and +2.5R target."
+  },
+  "ETHUSDT": {
+    engineId: "fixed_4h_clamp_btc_eth",
+    engineName: "4H Structural Clamp",
+    avgR: "+0.380R",
+    pf: "2.02",
+    ruleType: "CLAMP",
+    cutoffPct: 0,
+    description: "Monitors 4H candles for structural swing pivots with 200 SMA regime alignment. Executes on confirmed swing breakout with trailing ATR stop clamped tightly between 1.0% and 4.0% (Zero ML latency · Pure structural edge)."
+  },
+  "SOLUSDT": {
+    engineId: "om-distributed-4h-engine",
+    engineName: "[OM] 4H Distributed Specialist",
+    avgR: "+0.269R",
+    pf: "1.56",
+    ruleType: "DONCHIAN",
+    cutoffPct: 50.0,
+    description: "Monitors 4H candles for 20-bar Donchian breakouts confirmed above/below the 200 SMA. Executes when LightGBM posterior probability clears P >= 50.0% with clamped stop [1.5%, 6.0%] and +2.5R target."
+  },
+  "DOTUSDT": {
+    engineId: "om-unified-4h-engine",
+    engineName: "[OM] 4H Unified Swing Brain",
+    avgR: "+0.269R",
+    pf: "1.55",
+    ruleType: "DONCHIAN",
+    cutoffPct: 50.0,
+    description: "Monitors 4H candles for 20-bar Donchian breakouts with 200 SMA trend alignment. Executes when universal 4H swing LightGBM clears P >= 50.0% with clamped stop [1.5%, 6.0%] and +2.5R target."
+  },
+  "XAUUSDT": {
+    engineId: "om-distributed-4h-engine",
+    engineName: "[OM] 4H Distributed Specialist",
+    avgR: "+0.211R",
+    pf: "1.42",
+    ruleType: "DONCHIAN",
+    cutoffPct: 50.0,
+    description: "Monitors 4H Gold candles for 20-bar Donchian breakouts confirmed by 200 SMA trend filter. Executes when LightGBM commodity specialist clears P >= 50.0% with volatility-targeted stop."
+  },
+  "GC=F": {
+    engineId: "om-distributed-4h-engine",
+    engineName: "[OM] 4H Distributed Specialist",
+    avgR: "+0.211R",
+    pf: "1.42",
+    ruleType: "DONCHIAN",
+    cutoffPct: 50.0,
+    description: "Monitors 4H Gold candles for 20-bar Donchian breakouts confirmed by 200 SMA trend filter. Executes when LightGBM commodity specialist clears P >= 50.0% with volatility-targeted stop."
+  },
+  "XAGUSDT": {
+    engineId: "distributed-4h-engine",
+    engineName: "[New] 4H Distributed Specialist",
+    avgR: "+0.097R",
+    pf: "1.17",
+    ruleType: "DONCHIAN",
+    cutoffPct: 50.0,
+    description: "Monitors 4H Silver candles for 20-bar Donchian breakouts confirmed by 200 SMA trend filter. Executes when dedicated Silver specialist clears P >= 50.0% with clamped stop."
+  },
+  "SI=F": {
+    engineId: "distributed-4h-engine",
+    engineName: "[New] 4H Distributed Specialist",
+    avgR: "+0.097R",
+    pf: "1.17",
+    ruleType: "DONCHIAN",
+    cutoffPct: 50.0,
+    description: "Monitors 4H Silver candles for 20-bar Donchian breakouts confirmed by 200 SMA trend filter. Executes when dedicated Silver specialist clears P >= 50.0% with clamped stop."
+  },
+  "CLUSDT": {
+    engineId: "none",
+    engineName: "NO TRADE ALLOCATION",
+    avgR: "0.000R",
+    pf: "0.00",
+    noTrade: true,
+    ruleType: "NONE",
+    description: "Crude Oil is excluded from execution under the 4H Multi-Asset Router No-Trade Policy. Capital is 100% shielded in cash to prevent negative fee-drag (0.1144% taker round-trip + 18% GST exceeds alpha hurdle)."
+  },
+  "CL=F": {
+    engineId: "none",
+    engineName: "NO TRADE ALLOCATION",
+    avgR: "0.000R",
+    pf: "0.00",
+    noTrade: true,
+    ruleType: "NONE",
+    description: "Crude Oil is excluded from execution under the 4H Multi-Asset Router No-Trade Policy. Capital is 100% shielded in cash to prevent negative fee-drag (0.1144% taker round-trip + 18% GST exceeds alpha hurdle)."
+  }
 };
 
 export default function TerminalPage() {
@@ -135,7 +224,7 @@ export default function TerminalPage() {
   const [scenarioLevelTab, setScenarioLevelTab] = useState<"both" | "resistance" | "support">("both");
   const [isLoading, setIsLoading] = useState(true);
   const [autoTradingEnabled, setAutoTradingEnabled] = useState(true);
-  const [autonomousStatus, setAutonomousStatus] = useState<string>("Autonomous AI Engine: Scanning 4H Multi-Asset & 1H Commodities feeds...");
+  const [autonomousStatus, setAutonomousStatus] = useState<string>("Autonomous AI Engine: Scanning 4H Multi-Asset Router feeds...");
   const [lastActionTick, setLastActionTick] = useState<string>("");
   const [lastUpdated, setLastUpdated] = useState<string>("Connecting...");
 
@@ -446,7 +535,7 @@ export default function TerminalPage() {
 
         const routeInfo = ROUTER_4H_MAPPING[symbol] || { engineId: "om-distributed-4h-engine", engineName: "[OM] 4H Distributed Specialist", avgR: "+0.216R", pf: "1.44" };
 
-        if (timeframe !== "4h") {
+                if (timeframe !== "4h") {
           action = "STANDBY: 4H ROUTER ONLY";
           orderType = "STANDBY";
           entryPrice = currentClose;
@@ -455,13 +544,55 @@ export default function TerminalPage() {
           conviction = 99;
           actionGuidance = `[4HR Timeframe Router] Live trade recommendations are authorized ONLY on the 4H timeframe. Intraday candles (${timeframe.toUpperCase()}) are disabled to eliminate fee drag and noise. Switch timeframe to 4H to view live router trade signals.`;
         } else if (routeInfo.noTrade) {
-          action = "STANDBY: ASSET EXCLUDED (NO TRADE)";
+          action = "STANDBY: 100% CASH SHIELD (NO TRADE)";
           orderType = "STANDBY";
           entryPrice = currentClose;
           stopLoss = currentClose - clampedLongStopDist;
           takeProfit = currentClose + 2.5 * clampedLongStopDist;
           conviction = 99;
-          actionGuidance = `[4HR Timeframe Router] Crude Oil (${symbol}) is strictly assigned NO TRADE by the multi-asset router because all candidate engines failed the +0.05R alpha hurdle. 100% capital is preserved in cash.`;
+          actionGuidance = `[4HR Timeframe Router] Crude Oil (${symbol}) is strictly excluded under the router no-trade policy due to negative net expectancy under taker fees and 18% GST. 100% capital is preserved in cash.`;
+        } else if (routeInfo.ruleType === "CLAMP") {
+          if (isBreakoutLong && currentClose > sma200) {
+            action = "BUY (LONG) SWING BREAKOUT";
+            orderType = "MARKET";
+            entryPrice = currentClose;
+            stopLoss = currentClose - clampedLongStopDist;
+            takeProfit = currentClose + 2.5 * clampedLongStopDist;
+            conviction = 94;
+            actionGuidance = `[4HR Timeframe Router -> 4H Structural Clamp] Confirmed swing breakout above structural pivot ($${realResistance.toFixed(1)}) and 200 SMA ($${sma200.toFixed(1)}). Enter Market Long at $${entryPrice.toFixed(2)}. Target TP (+2.50R) with clamped ATR stop [1.0%, 4.0%] at $${stopLoss.toFixed(2)}.`;
+          } else if (isBreakdownShort && currentClose < sma200) {
+            action = "SELL (SHORT) SWING BREAKDOWN";
+            orderType = "MARKET";
+            entryPrice = currentClose;
+            stopLoss = currentClose + clampedShortStopDist;
+            takeProfit = currentClose - 2.5 * clampedShortStopDist;
+            conviction = 94;
+            actionGuidance = `[4HR Timeframe Router -> 4H Structural Clamp] Confirmed swing breakdown below structural pivot ($${realSupport.toFixed(1)}) and 200 SMA ($${sma200.toFixed(1)}). Enter Market Short at $${entryPrice.toFixed(2)}. Target TP (+2.50R) with clamped ATR stop [1.0%, 4.0%] at $${stopLoss.toFixed(2)}.`;
+          } else if (isBreakoutLong && currentClose <= sma200) {
+            action = "STANDBY: COUNTER-TREND FILTERED";
+            orderType = "STANDBY";
+            entryPrice = realResistance;
+            stopLoss = currentClose - clampedLongStopDist;
+            takeProfit = currentClose + 2.5 * clampedLongStopDist;
+            conviction = 95;
+            actionGuidance = `[4HR Timeframe Router -> 4H Structural Clamp] Breakout above swing pivot $${realResistance.toFixed(1)} detected, but price is below 200 SMA ($${sma200.toFixed(1)}). Counter-trend long setups are strictly rejected.`;
+          } else if (isBreakdownShort && currentClose >= sma200) {
+            action = "STANDBY: COUNTER-TREND FILTERED";
+            orderType = "STANDBY";
+            entryPrice = realSupport;
+            stopLoss = currentClose + clampedShortStopDist;
+            takeProfit = currentClose - 2.5 * clampedShortStopDist;
+            conviction = 95;
+            actionGuidance = `[4HR Timeframe Router -> 4H Structural Clamp] Breakdown below swing pivot $${realSupport.toFixed(1)} detected, but price is above 200 SMA ($${sma200.toFixed(1)}). Counter-trend short setups are strictly rejected.`;
+          } else {
+            action = "STANDBY: SCANNING 4H CLAMP REGIME";
+            orderType = "STANDBY";
+            entryPrice = currentClose;
+            stopLoss = currentClose - clampedLongStopDist;
+            takeProfit = currentClose + 2.5 * clampedLongStopDist;
+            conviction = 91;
+            actionGuidance = `[4HR Timeframe Router -> 4H Structural Clamp] Price ($${currentClose.toFixed(1)}) is trading within structural swing bounds [$${realSupport.toFixed(1)}, $${realResistance.toFixed(1)}]. The engine holds 100% CASH with clamped ATR stops [1.0%, 4.0%] until a confirmed break outside structural pivots.`;
+          }
         } else if (isBreakoutLong && currentClose > sma200) {
           action = "BUY (LONG) BREAKOUT";
           orderType = "MARKET";
@@ -501,7 +632,7 @@ export default function TerminalPage() {
           stopLoss = currentClose - clampedLongStopDist;
           takeProfit = currentClose + 2.5 * clampedLongStopDist;
           conviction = 91;
-          actionGuidance = `[4HR Timeframe Router -> ${routeInfo.engineName}] Price ($${currentClose.toFixed(1)}) is trading within the 20-bar Donchian channel [$${realSupport.toFixed(1)}, $${realResistance.toFixed(1)}]. The router holds 100% CASH in capital preservation mode until a high-conviction 4H breakout confirms.`;
+          actionGuidance = `[4HR Timeframe Router -> ${routeInfo.engineName}] Price ($${currentClose.toFixed(1)}) is trading within the 20-bar Donchian channel [$${realSupport.toFixed(1)}, $${realResistance.toFixed(1)}]. The router holds 100% CASH in capital preservation mode until a high-conviction 4H breakout confirms (P >= 50.0%).`;
         }
 
         const slDist = Math.abs(entryPrice - stopLoss);
@@ -1245,9 +1376,12 @@ export default function TerminalPage() {
               const currentCloseVal = livePrice || 0;
               const sma200Val = indicators?.sma200 || currentCloseVal;
               const isAbove = currentCloseVal >= sma200Val;
+              const routeInfo = ROUTER_4H_MAPPING[symbol];
               return (
                 <div className={`clay-white-inset p-2.5 flex items-center justify-between font-mono text-xs ${
-                  isAbove
+                  routeInfo?.noTrade
+                    ? "border-amber-200/80 bg-amber-50/25 text-amber-950"
+                    : isAbove
                     ? "border-emerald-200/80 bg-emerald-50/25 text-emerald-950"
                     : "border-amber-200/80 bg-amber-50/25 text-amber-950"
                 }`}>
@@ -1256,56 +1390,147 @@ export default function TerminalPage() {
                       <Layers className="w-3 h-3 text-slate-400" /> 200 SMA Macro Trend Audit
                     </span>
                     <span className="font-black text-xs mt-0.5">
-                      Price: ${currentCloseVal ? currentCloseVal.toFixed(1) : "—"} vs 200 SMA: ${sma200Val ? sma200Val.toFixed(1) : "—"}
+                      Price: $${currentCloseVal ? currentCloseVal.toFixed(1) : "—"} vs 200 SMA: $${sma200Val ? sma200Val.toFixed(1) : "—"}
                     </span>
                   </div>
                   <div className="text-right">
                     <span className={`text-[9px] font-black px-2 py-0.5 rounded-md border shadow-2xs ${
-                      isAbove
+                      routeInfo?.noTrade
+                        ? "bg-amber-100 text-amber-900 border-amber-300"
+                        : isAbove
                         ? "bg-emerald-100 text-emerald-900 border-emerald-300"
                         : "bg-amber-100 text-amber-900 border-amber-300"
                     }`}>
-                      {isAbove ? "▲ ABOVE (BULLISH)" : "▼ BELOW (BEARISH / CASH SAFE)"}
+                      {routeInfo?.noTrade
+                        ? "🛡️ NO TRADE (FEE GUARD)"
+                        : isAbove
+                        ? "▲ ABOVE (BULLISH)"
+                        : "▼ BELOW (BEARISH / CASH SAFE)"}
                     </span>
                   </div>
                 </div>
               );
             })()}
 
-            {/* 4. Donchian Channel Breakout Audit */}
-            <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-              <div className="clay-white-inset p-2 flex flex-col border-rose-200/60 bg-rose-50/15">
-                <span className="text-[9px] text-rose-700 uppercase font-bold flex items-center gap-1">
-                  <ChevronUp className="w-3 h-3 text-rose-600" /> 20-Bar High Breakout
-                </span>
-                <span className="text-xs font-black text-gray-950 mt-0.5 tabular-nums">
-                  ${(indicators?.nearestResistance || 0).toFixed(1)}
-                </span>
-                <span className="text-[8.5px] text-slate-400">
-                  {livePrice && indicators?.nearestResistance && livePrice >= indicators.nearestResistance
-                    ? "⚡ BREAKOUT TRIGGERED"
-                    : `+${indicators?.distToResistanceATR ? indicators.distToResistanceATR.toFixed(1) : "—"}R to breakout`}
-                </span>
-              </div>
-
-              <div className="clay-white-inset p-2 flex flex-col border-emerald-200/60 bg-emerald-50/15">
-                <span className="text-[9px] text-emerald-700 uppercase font-bold flex items-center gap-1">
-                  <ChevronDown className="w-3 h-3 text-emerald-600" /> 20-Bar Low Breakdown
-                </span>
-                <span className="text-xs font-black text-gray-950 mt-0.5 tabular-nums">
-                  ${(indicators?.nearestSupport || 0).toFixed(1)}
-                </span>
-                <span className="text-[8.5px] text-slate-400">
-                  {livePrice && indicators?.nearestSupport && livePrice <= indicators.nearestSupport
-                    ? "⚡ BREAKDOWN TRIGGERED"
-                    : `-${indicators?.distToSupportATR ? indicators.distToSupportATR.toFixed(1) : "—"}R to breakdown`}
-                </span>
-              </div>
-            </div>
-
-            {/* 5. AI Conviction Score */}
+            {/* 4. Strategy Boundary Audit (Dynamic per routed engine) */}
             {(() => {
-              const cutoffPct = activeModel.id.includes("commodities") ? 6.35 : 55.0;
+              const routeInfo = ROUTER_4H_MAPPING[symbol];
+              if (routeInfo?.noTrade) {
+                return (
+                  <div className="clay-white-inset p-3 flex flex-col border border-amber-200/80 bg-amber-50/40 font-mono text-xs">
+                    <span className="text-[9px] text-amber-900 uppercase font-black flex items-center gap-1.5">
+                      <ShieldAlert className="w-3.5 h-3.5 text-amber-600" /> Router Friction Guard Active
+                    </span>
+                    <span className="text-[10.5px] text-slate-700 mt-1 font-sans leading-normal">
+                      Crude Oil (${symbol}) excluded from live execution. Shark exchange round-trip taker friction (0.1144%) and 18% GST exceed the average trading edge (+0.05R hurdle). Zero orders allowed · 100% Capital Preserved in Cash.
+                    </span>
+                  </div>
+                );
+              }
+
+              if (routeInfo?.ruleType === "CLAMP") {
+                return (
+                  <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                    <div className="clay-white-inset p-2 flex flex-col border-rose-200/60 bg-rose-50/15">
+                      <span className="text-[9px] text-rose-700 uppercase font-bold flex items-center gap-1">
+                        <ChevronUp className="w-3 h-3 text-rose-600" /> Structural Resistance Swing
+                      </span>
+                      <span className="text-xs font-black text-gray-950 mt-0.5 tabular-nums">
+                        $${(indicators?.nearestResistance || 0).toFixed(1)}
+                      </span>
+                      <span className="text-[8.5px] text-blue-700 font-semibold">
+                        4H Structural Clamp [1.0%, 4.0%]
+                      </span>
+                    </div>
+
+                    <div className="clay-white-inset p-2 flex flex-col border-emerald-200/60 bg-emerald-50/15">
+                      <span className="text-[9px] text-emerald-700 uppercase font-bold flex items-center gap-1">
+                        <ChevronDown className="w-3 h-3 text-emerald-600" /> Structural Support Swing
+                      </span>
+                      <span className="text-xs font-black text-gray-950 mt-0.5 tabular-nums">
+                        $${(indicators?.nearestSupport || 0).toFixed(1)}
+                      </span>
+                      <span className="text-[8.5px] text-blue-700 font-semibold">
+                        4H Structural Clamp [1.0%, 4.0%]
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                  <div className="clay-white-inset p-2 flex flex-col border-rose-200/60 bg-rose-50/15">
+                    <span className="text-[9px] text-rose-700 uppercase font-bold flex items-center gap-1">
+                      <ChevronUp className="w-3 h-3 text-rose-600" /> 20-Bar High Breakout
+                    </span>
+                    <span className="text-xs font-black text-gray-950 mt-0.5 tabular-nums">
+                      $${(indicators?.nearestResistance || 0).toFixed(1)}
+                    </span>
+                    <span className="text-[8.5px] text-slate-400">
+                      {livePrice && indicators?.nearestResistance && livePrice >= indicators.nearestResistance
+                        ? "⚡ BREAKOUT TRIGGERED"
+                        : `+${indicators?.distToResistanceATR ? indicators.distToResistanceATR.toFixed(1) : "—"}R to breakout`}
+                    </span>
+                  </div>
+
+                  <div className="clay-white-inset p-2 flex flex-col border-emerald-200/60 bg-emerald-50/15">
+                    <span className="text-[9px] text-emerald-700 uppercase font-bold flex items-center gap-1">
+                      <ChevronDown className="w-3 h-3 text-emerald-600" /> 20-Bar Low Breakdown
+                    </span>
+                    <span className="text-xs font-black text-gray-950 mt-0.5 tabular-nums">
+                      $${(indicators?.nearestSupport || 0).toFixed(1)}
+                    </span>
+                    <span className="text-[8.5px] text-slate-400">
+                      {livePrice && indicators?.nearestSupport && livePrice <= indicators.nearestSupport
+                        ? "⚡ BREAKDOWN TRIGGERED"
+                        : `-${indicators?.distToSupportATR ? indicators.distToSupportATR.toFixed(1) : "—"}R to breakdown`}
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* 5. AI Conviction Score (Dynamic for Router & Delegated Engines) */}
+            {(() => {
+              const routeInfo = ROUTER_4H_MAPPING[symbol];
+              if (routeInfo?.noTrade) {
+                return (
+                  <div className="clay-white-inset p-2.5 flex items-center justify-between font-mono text-xs bg-slate-50">
+                    <div className="flex flex-col">
+                      <span className="text-[9px] text-slate-500 uppercase font-bold flex items-center gap-1">
+                        <Eye className="w-3 h-3 text-slate-400" /> AI Meta Conviction Score
+                      </span>
+                      <span className="text-xs font-black text-gray-950 mt-0.5 tabular-nums">
+                        Excluded from Execution · 0 Models Active
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full border shadow-2xs bg-amber-100 text-amber-900 border-amber-300">
+                      NO-TRADE GUARD
+                    </span>
+                  </div>
+                );
+              }
+
+              if (routeInfo?.ruleType === "CLAMP") {
+                return (
+                  <div className="clay-white-inset p-2.5 flex items-center justify-between font-mono text-xs bg-slate-50">
+                    <div className="flex flex-col">
+                      <span className="text-[9px] text-slate-500 uppercase font-bold flex items-center gap-1">
+                        <Eye className="w-3 h-3 text-slate-400" /> AI Meta Conviction Score
+                      </span>
+                      <span className="text-xs font-black text-gray-950 mt-0.5 tabular-nums">
+                        100% Deterministic Rules · Pure Structural Edge (No ML Hurdle)
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full border shadow-2xs bg-blue-100 text-blue-900 border-blue-300">
+                      RULE ENGINE ACTIVE
+                    </span>
+                  </div>
+                );
+              }
+
+              const cutoffPct = routeInfo?.cutoffPct ?? 50.0;
               const probLong = aiPrediction ? aiPrediction.pLong * 100 : null;
               const isCleared = probLong !== null && probLong >= cutoffPct;
               return (
@@ -1334,6 +1559,23 @@ export default function TerminalPage() {
               const currentCloseVal = livePrice || 0;
               const sma200Val = indicators?.sma200 || currentCloseVal;
               const isAbove = currentCloseVal >= sma200Val;
+              const routeInfo = ROUTER_4H_MAPPING[symbol];
+
+              let protectionText = "";
+              if (currentActiveTrade) {
+                protectionText = `Active position currently managed with tight structural stop and automated breakeven ratchet. Surplus capital is shielded in cash.`;
+              } else if (routeInfo?.noTrade) {
+                protectionText = `Crude Oil (${symbol}) is strictly excluded under the 4H Timeframe Router No-Trade Policy. Shark exchange round-trip taker friction (0.1144%) and 18% GST exceed the average trade edge. 100% of capital (₹1,000) is shielded in cash against fee erosion.`;
+              } else if (routeInfo?.ruleType === "CLAMP") {
+                protectionText = isAbove
+                  ? `Price ($${currentCloseVal ? currentCloseVal.toFixed(1) : "—"}) is above the 200 SMA and governed by the 4H Structural Clamp engine. Capital remains 100% protected in cash until price breaks the structural swing pivots with an ATR-clamped stop [1.0%, 4.0%].`
+                  : `Price ($${currentCloseVal ? currentCloseVal.toFixed(1) : "—"}) is trading below the 200 SMA ($${sma200Val ? sma200Val.toFixed(1) : "—"}). Counter-trend long setups are strictly rejected by the Structural Clamp engine. 100% of capital (₹1,000) is shielded in cash against bear market drawdowns.`;
+              } else {
+                protectionText = isAbove
+                  ? `Price ($${currentCloseVal ? currentCloseVal.toFixed(1) : "—"}) is above the 200 SMA but consolidating inside the 20-bar Donchian channel. The delegated specialist holds 100% CASH until a candle closes outside the channel with P >= 50.0% LightGBM conviction.`
+                  : `Price ($${currentCloseVal ? currentCloseVal.toFixed(1) : "—"}) is trading below the 200 SMA ($${sma200Val ? sma200Val.toFixed(1) : "—"}). Counter-trend long setups are strictly rejected by ${routeInfo?.engineName || "the router"}. 100% of capital (₹1,000) is shielded in cash against bear market drawdowns.`;
+              }
+
               return (
                 <div className="clay-white-inset p-3 text-[11px] text-slate-700 leading-relaxed bg-amber-50/40 border border-amber-200/80 font-sans rounded-xl">
                   <div className="flex items-center gap-1.5 font-mono text-[11px] font-black text-amber-950 mb-1">
@@ -1341,43 +1583,69 @@ export default function TerminalPage() {
                     <span>Cash Protection Protocol Active:</span>
                   </div>
                   <p className="text-[11px] text-slate-600 leading-normal">
-                    {currentActiveTrade
-                      ? `Active position currently managed with tight structural stop and automated breakeven ratchet. Surplus capital is shielded in cash.`
-                      : isAbove
-                      ? `Price ($${currentCloseVal ? currentCloseVal.toFixed(1) : "—"}) is above the 200 SMA but consolidating inside the 20-bar Donchian channel. The AI swing engine holds 100% CASH until a candle closes outside the channel with P >= Cutoff conviction.`
-                      : `Price ($${currentCloseVal ? currentCloseVal.toFixed(1) : "—"}) is trading below the 200 SMA ($${sma200Val ? sma200Val.toFixed(1) : "—"}). Counter-trend long setups are strictly rejected. 100% of capital (₹1,000) is shielded in cash against bear market drawdowns.`}
+                    {protectionText}
                   </p>
                 </div>
               );
             })()}
 
             {/* Reactive Playbook: What AI does when price hits boundaries */}
-            <div className="clay-white-card p-3 border border-slate-200 flex flex-col gap-2 font-mono text-[11px]">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                <span className="font-black text-gray-900 uppercase text-[10px] flex items-center gap-1">
-                  <Compass className="w-3.5 h-3.5 text-blue-600" /> Boundary Level Playbook:
-                </span>
-                <span className="text-[9px] text-slate-400">Strictly Lagged Bar Closes</span>
-              </div>
-              <div className="grid grid-cols-2 gap-1.5 text-[10px]">
-                <div className="clay-white-inset p-2 flex flex-col bg-rose-50/30 border border-rose-200/60">
-                  <span className="text-rose-800 font-bold">At High (${(indicators?.nearestResistance || 0).toFixed(0)}):</span>
-                  <span className="text-slate-600 text-[9px] mt-0.5">
-                    {livePrice && indicators?.sma200 && livePrice >= indicators.sma200
-                      ? "▲ BUY Breakout if bar closes above with high volume."
-                      : "⛔ Filtered (Below 200 SMA). Standby in cash."}
-                  </span>
+            {(() => {
+              const routeInfo = ROUTER_4H_MAPPING[symbol];
+              const currentCloseVal = livePrice || 0;
+              const sma200Val = indicators?.sma200 || currentCloseVal;
+              const isAbove = currentCloseVal >= sma200Val;
+
+              if (routeInfo?.noTrade) {
+                return (
+                  <div className="clay-white-card p-3 border border-slate-200 flex flex-col gap-2 font-mono text-[11px]">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                      <span className="font-black text-gray-900 uppercase text-[10px] flex items-center gap-1">
+                        <Compass className="w-3.5 h-3.5 text-amber-600" /> Router Playbook (No Trade):
+                      </span>
+                      <span className="text-[9px] text-slate-400">Strict Capital Shield</span>
+                    </div>
+                    <div className="clay-white-inset p-2 bg-amber-50/30 border border-amber-200/60 text-slate-700 text-[10px]">
+                      ⛔ <strong>Capital 100% Shielded</strong>: No orders will trigger regardless of price boundaries. Asset is excluded to prevent friction drag.
+                    </div>
+                  </div>
+                );
+              }
+
+              const isClamp = routeInfo?.ruleType === "CLAMP";
+              return (
+                <div className="clay-white-card p-3 border border-slate-200 flex flex-col gap-2 font-mono text-[11px]">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                    <span className="font-black text-gray-900 uppercase text-[10px] flex items-center gap-1">
+                      <Compass className="w-3.5 h-3.5 text-blue-600" /> {isClamp ? "4H Structural Clamp Playbook:" : "Boundary Level Playbook:"}
+                    </span>
+                    <span className="text-[9px] text-slate-400">Strictly Lagged Bar Closes</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                    <div className="clay-white-inset p-2 flex flex-col bg-rose-50/30 border border-rose-200/60">
+                      <span className="text-rose-800 font-bold">At High ($${(indicators?.nearestResistance || 0).toFixed(0)}):</span>
+                      <span className="text-slate-600 text-[9px] mt-0.5">
+                        {isAbove
+                          ? isClamp
+                            ? "▲ BUY Swing Breakout with clamped structural stop [1.0%, 4.0%]."
+                            : "▲ BUY Breakout if bar closes above with P >= 50% conviction."
+                          : "⛔ Filtered (Below 200 SMA). Standby in cash."}
+                      </span>
+                    </div>
+                    <div className="clay-white-inset p-2 flex flex-col bg-emerald-50/30 border border-emerald-200/60">
+                      <span className="text-emerald-800 font-bold">At Low ($${(indicators?.nearestSupport || 0).toFixed(0)}):</span>
+                      <span className="text-slate-600 text-[9px] mt-0.5">
+                        {!isAbove
+                          ? isClamp
+                            ? "▼ SHORT Swing Breakdown with clamped structural stop [1.0%, 4.0%]."
+                            : "▼ SHORT Breakdown if bar closes below with P >= 50% conviction."
+                          : "⛔ Long trend active. Standby in cash."}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="clay-white-inset p-2 flex flex-col bg-emerald-50/30 border border-emerald-200/60">
-                  <span className="text-emerald-800 font-bold">At Low (${(indicators?.nearestSupport || 0).toFixed(0)}):</span>
-                  <span className="text-slate-600 text-[9px] mt-0.5">
-                    {livePrice && indicators?.sma200 && livePrice < indicators.sma200
-                      ? "▼ SHORT Breakdown if bar closes below."
-                      : "⛔ Long trend active. Standby in cash."}
-                  </span>
-                </div>
-              </div>
-            </div>
+              );
+            })()}
 
           </div>
 
@@ -1495,10 +1763,12 @@ export default function TerminalPage() {
                   </div>
                   <div className="flex items-center justify-between text-slate-500">
                     <span>Strategy Model:</span>
-                    <span className="text-emerald-700 font-bold">{activeModel.shortName}</span>
+                    <span className="text-emerald-700 font-bold">
+                      {ROUTER_4H_MAPPING[symbol]?.engineName ? `[Router] ${ROUTER_4H_MAPPING[symbol].engineName}` : activeModel.shortName}
+                    </span>
                   </div>
                   <div className="p-2 rounded-xl clay-white-inset text-[10px] text-slate-600 leading-normal mt-1 bg-[#f9fafc]">
-                    🤖 <strong>Autonomous 4H/1H Swing Execution</strong>: The AI monitors 4H Multi-Asset & 1H Macro Commodities for Donchian breakouts confirmed above/below the 200 SMA. When AI conviction gates clear, the engine automatically opens the position with clamped stop loss and +2.5R target.
+                    🤖 <strong>Autonomous 4H Router Execution ({symbol})</strong>: {ROUTER_4H_MAPPING[symbol]?.description || "The AI monitors 4H candles for regime confirmation. When conviction gates clear, the engine executes with clamped stop loss and +2.5R target."}
                   </div>
                   {lastActionTick && (
                     <div className="text-[9px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-100">
