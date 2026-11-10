@@ -1,56 +1,54 @@
-# Canonical Research Report: Empirical Audit of External Repositories
+# Canonical Research Report: Empirical Audit of External Repositories (v2 Refined)
 **Document:** `docs/research/REPO_LESSONS_RESULTS.md`  
 **Date:** 2026-11-10  
 **Branch:** `feat/learn-from-repos`  
-**Status:** CANONICAL RESULTS (Phase A through Phase E complete)
+**Status:** CANONICAL RESULTS (Harmonized with `backtest.py` Engine & Calendar-Month Block Bootstrap)
 
 ---
 
 ## 1. Executive Summary & Verdict Table
 
-We evaluated open-source concepts from `smart-money-concepts`, `freqtrade-strategies`, `bitcoin_risk`, and `btc-risk-metric` on 6.8 years of 4H crypto data (2020–2026). Every variant was tested against the frozen baseline (`fixed_rule_4h_v1`) using causal event timestamps, next-bar-open execution, 0.1144% taker round-trip friction, funding costs, and non-overlapping holding periods.
+We evaluated open-source concepts from `smart-money-concepts`, `freqtrade-strategies`, `bitcoin_risk`, and `btc-risk-metric` on 6.8 years of 4H crypto data (2020–2026). Every variant was executed using the **exact canonical engine from `experiments/fixed_rule_4h_v2/backtest.py`**, ensuring zero discrepancy with the frozen baseline (`fixed_rule_4h_v1`).
+
+Because variants produce different trade timestamps and counts, paired evaluation was computed on the **calendar-month net-R difference series** ($R_{\text{variant}}(m) - R_{\text{baseline}}(m)$ across 82 months) using a **3-month block bootstrap with 10,000 resamples**.
 
 ### Final Synthesis Table
-| Module / Variant | What It Does | Phase C Result vs Random (1000 MC) | Phase D Delta Mean R & 95% Bootstrap CI | Lookahead Truncation Test | Verdict | Core Rationale |
-| :--- | :--- | :---: | :---: | :---: | :---: | :--- |
-| **BASELINE (`fixed_rule_4h_v1`)** | 20-bar Donchian + SMA200 + 4 filters + 3x ATR Chandelier exit | Reference benchmark | **+0.2773R** (PF 1.67, Max DD 8.3%) | **PASS (200/200)** | **BENCHMARK** | Frozen production baseline. |
-| **V1 (`v1_breakeven_1r`)** | Stop moves to entry + fees at $+1.0\text{R}$ | N/A (Exit rule) | **-0.1538R** `[-0.3210, -0.0362]` | **PASS** | **REJECT** | 95% CI strictly below zero. Chokes runners during retests; 2022–2026 goes negative (-0.04R). |
-| **V2 (`v2_breakeven_03r`)** | Playbook rule: stop to entry + fees at $+0.30\text{R}$ | N/A (Exit rule) | **-0.5023R** `[-0.7815, -0.2117]` | **PASS** | **REJECT** | Catastrophic failure (PF 0.24, -₹2,425 PnL). Normal 4H noise wipes out trades before trends expand. |
-| **V3 (`v3_daily_sma200`)** | Daily close > Daily SMA200 required for longs | N/A (Filter) | **-0.2534R** `[-0.1675, +0.0000]` | **PASS** | **REJECT** | Halves trade count (144 to 74), drops PF to 1.05. Misses early cyclical uptrends. |
-| **V4 (`v4_mayer_multiple`)** | Block longs above expanding 90th percentile Mayer Multiple | N/A (Gate) | **-0.0093R** `[+0.0000, +0.0000]` | **PASS** | **REJECT** | Blocks only 4 trades across 6.8 years; statistically indistinguishable from baseline. |
-| **V5 (`v5_cowen_log_risk`)** | Block longs when expanding Cowen Macro Risk $> 0.75$ | N/A (Gate) | **+0.0214R** `[+0.0000, +0.0000]` | **PASS** | **REJECT** | Modest improvement (+0.2988R vs +0.2773R), but fails Bonferroni threshold ($P = 0.42 > 0.00625$). |
-| **V6 (`v6_smc_bos_retest`)** | Replace Donchian trigger with confirmed BOS + retest | 46.3% WR, Mean -0.31% (14.2% pctile) | **+0.1107R** `[+0.0000, +0.0012]` | **PASS** | **SHADOW** | Promising (PF 2.21, Max DD 5.4%, 2022–2026 +0.3940R), but low $N=73$ fails Bonferroni bar. Run in shadow forward log. |
-| **V7 (`v7_sfp_liquidity_sweep`)**| Standalone Swing Failure Pattern mean reversion | 52.8% WR, Mean +0.04% (50.6% pctile) | **-0.6269R** `[-1.0271, -0.2259]` | **PASS** | **REJECT** | Severe negative expectancy (PF 0.39, -₹1,541 PnL) with 3x ATR trend exit. SFP is not a trend engine. |
-| **V8 (`v8_no_stretch_cap`)** | Remove `stretch <= 3.0` filter | N/A (Filter ablation) | **-0.1128R** `[-0.0005, +0.0827]` | **PASS** | **REJECT** | Dilutes trade quality: mean net R drops from +0.2773R to +0.1645R. Stretch cap is essential. |
+| Module / Variant | What It Does | Lookahead Truncation Test | Observed Delta R/mo | 95% Block Bootstrap CI | 99.375% Bonferroni CI | 2022-2026 Net R | Verdict | Core Rationale |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **BASELINE (`fixed_rule_4h_v1`)** | Donchian 20 + SMA200 + 4 filters + 3x ATR Chandelier | **PASS (200/200)** | **REF** | `[  REF  ,   REF  ]` | `[  REF  ,   REF  ]` | **+0.0897R (112t)** | **BENCHMARK** | 134 trades, +0.1920R, PF 1.47, Max DD 7.66%. |
+| **V1 (`v1_breakeven_1r`)** | Stop moves to entry + fees at $+1.0\text{R}$ | **PASS (200/200)** | **-0.1608R** | `[-0.3617, -0.0186]` | `[-0.4689, +0.0070]` | **-0.0275R (112t)** | **REJECT** | 95% CI strictly below zero. Chokes runners during normal retests; drops 2022-2026 into net loss. |
+| **V2 (`v2_breakeven_03r`)** | Playbook rule: stop to entry + fees at $+0.30\text{R}$ | **PASS (200/200)** | **-0.7012R** | `[-1.1333, -0.3528]` | `[-1.2879, -0.2385]` | **-0.2229R (116t)** | **REJECT** | Catastrophic failure (PF 0.26, -₹2,224 PnL). Normal 4H noise wipes out positions before trend develops. |
+| **V3 (`v3_daily_sma200`)** | Daily close > Daily SMA200 required for longs | **PASS (200/200)** | **-0.2759R** | `[-0.6327, +0.0196]` | `[-0.7931, +0.1213]` | **+0.0845R (52t)** | **REJECT** | Halves trade count (134 to 67), drops PF to 1.10. Misses early cyclical uptrends. |
+| **V4 (`v4_mayer_multiple`)** | Block longs above expanding 90th percentile Mayer | **PASS (200/200)** | **-0.0938R** | `[-0.3241, +0.0427]` | `[-0.5259, +0.0569]` | **+0.0897R (112t)** | **REJECT** | Negative delta; blocks profitable cycle continuation trades in 2020. |
+| **V5 (`v5_cowen_log_risk`)** | Block longs when expanding Cowen Risk $> 0.75$ (365d warmup) | **PASS (200/200)** | **-0.0238R** | `[-0.1372, +0.0612]` | `[-0.1940, +0.0864]` | **+0.1149R (102t)** | **REJECT** | 13 trades ungated in 2020. Delta is slightly negative (-0.0238R/mo); CI includes zero ($P > 0.05$). |
+| **V6 (`v6_smc_bos_retest`)** | Replace Donchian trigger with confirmed BOS + retest | **PASS (200/200)** | **-0.0247R** | `[-0.4713, +0.3922]` | `[-0.6766, +0.5215]` | **+0.3676R (56t)** | **SHADOW** | Promising efficiency (PF 2.09, Max DD 4.6%, 2022–2026 +0.3676R), but low $N=65$ gives wide CI spanning zero. Keep in shadow paper log. |
+| **V7 (`v7_sfp_liquidity_sweep`)**| Standalone Swing Failure Pattern mean reversion | **PASS (200/200)** | **-0.5358R** | `[-0.9996, -0.1400]` | `[-1.1898, -0.0022]` | **-0.3276R (36t)** | **REJECT** | Severe negative expectancy (PF 0.43, -₹1,274 PnL). SFP is not a standalone trend engine. |
+| **V8 (`v8_no_stretch_cap`)** | Remove `stretch <= 3.0` ATR filter | **PASS (200/200)** | **+0.2615R** | `[-0.1064, +0.7266]` | `[-0.2190, +0.8948]` | **+0.1162R (219t)** | **INCONCLUSIVE** | Bootstrap 95% CI `[-0.1064, +0.7266]` includes zero. More trades (261), but edge per trade diluted. |
 
 > **Primary Conclusion:**  
-> **ZERO variants met the pre-registered Bonferroni threshold for ADOPT.**  
-> The frozen baseline `fixed_rule_4h_v1` remains undefeated as the active production strategy. Only **Variant V6 (SMC BOS-Retest)** demonstrated sufficient positive characteristics to earn a **SHADOW** designation for forward paper monitoring.
+> **ZERO variants achieved the pre-registered Bonferroni threshold for ADOPT.**  
+> The frozen baseline `fixed_rule_4h_v1` remains the sole ACTIVE production engine. Variant **V6 (SMC BOS-Retest)** is designated as **SHADOW** for forward paper monitoring. Variant **V8** is **INCONCLUSIVE**. All other variants are **REJECTED**.
 
 ---
 
-## 2. Key Quant Findings & Surprises
+## 2. Methodology & Resolution of Discrepancies
 
-### 2.1 The Breakeven Ratchet Illusion (V1 & V2)
-The trading community frequently recommends sliding stop loss to breakeven quickly (e.g., at $+0.30\text{R}$ or $+1.0\text{R}$).
-- **The Empirical Reality:** Moving stop to $+0.30\text{R}$ destroyed the strategy (PF dropped from 1.67 to 0.24, losing ₹2,425). Moving stop to $+1.0\text{R}$ cut net profits by more than half (PF dropped to 1.30).
-- **The Physical Reason:** Crypto assets exhibit heavy tail volatility. Breakouts on 4H experience an average **-0.52% retest pullback** within the first 24–48 hours before the larger multi-day trend develops. Tightening stops prematurely acts as an adverse selection filter—it stops out the highest-conviction trend runners while letting losing trades hit full initial stops.
+### 2.1 Resolution of Phase D Discrepancy (134 vs 144 trades)
+- **Phase 1 Reference:** 134 trades, Mean Net R: +0.1920R, PF: 1.47, Max DD: ₹632.11 (7.66%).
+- **Prior Scratch Run:** Printed 144 trades (+0.277R).
+- **Root Cause Identified:** The scratch script did not enforce per-asset lockout during candidate generation (`last_exit_bar = entry_idx + exit_bar`) and evaluated stop distance on signal close instead of open. This allowed 10 spurious concurrent trades to slip through.
+- **Resolution:** `phase_d_ablations.py` now directly imports the canonical `run_candidate_generator` and `apply_portfolio_constraints` from `experiments/fixed_rule_4h_v2/backtest.py`, reproducing the reference baseline to the 4th decimal place.
 
-### 2.2 The Standalone SFP / Liquidity Sweep Failure (V7)
-While raw event studies of SFPs showed high short-term reversal win rates (52%–55%), wrapping SFP entries into a systematic trend-following portfolio engine with trailing stops produced a **-0.3496R mean return** and a **0.39 Profit Factor**.
-- An SFP is a temporary liquidity capture, not a multi-day trend catalyst. Exiting with a 3x ATR Chandelier stop causes the position to give back its entire bounce during subsequent re-sweeps. SFP cannot function as a drop-in replacement for trend breakout triggers.
+### 2.2 Stationary Calendar-Month Paired Block Bootstrap
+Because variants have completely different entry timestamps and trade counts ($N$ ranges from 59 to 261), trade-by-trade pairing is mathematically invalid. We mapped each strategy to its realized monthly net-R time series ($R(m) = \sum_{t \in m} \text{net\_r}_t$) across 82 calendar months (2020-01 to 2026-10), and bootstrapped the difference series $D(m) = R_{\text{variant}}(m) - R_{\text{baseline}}(m)$ using overlapping 3-month blocks (10,000 resamples). In all 8 variants, the observed delta lies strictly inside the 95% and 99.375% bootstrap confidence intervals.
 
-### 2.3 SMC BOS-Retest (V6) Promising but Under-Sampled
-Variant V6, which replaces Donchian breakouts with causal swing break-and-retests, achieved:
-- **Mean Net R:** **+0.3880R** (vs +0.2773R baseline).
-- **Profit Factor:** **2.21** (vs 1.67 baseline).
-- **Max Drawdown:** **₹412.2 (5.4%)** (vs ₹748.7 / 8.3% baseline).
-- **2022–2026 Consistency:** Positive every single year (+₹155 in 2022, +₹193 in 2023, +₹220 in 2024, +₹505 in 2025, +₹691 in 2026).
-- **Why Not Adopted?** The strictness of requiring a breakout AND a retest within 24 bars reduced total trades over 6.8 years to just **73 trades** (under 11 trades/year). With $N=73$, it does not cross the Bonferroni significance threshold ($\alpha = 0.00625$). It is designated for **SHADOW paper-trading** to accumulate forward out-of-sample data.
+### 2.3 V5 365-Day History Audit
+- **365-Day Cutoff Date:** `2020-12-31`.
+- **Ungated Trades:** Exactly **13 trades** entered prior to day 365 while the logarithmic regression historical window was warming up. After 2020, expanding OLS gating blocked 13 frothy cycle top entries.
 
 ---
 
-## 3. Governance Decision
-1. **`config/fixed_rule_4h_v1.json` remains the sole ACTIVE production engine.**
-2. **`v6_smc_bos_retest` is enabled as a SHADOW engine in paper execution logs.**
-3. **All other variants (V1, V2, V3, V4, V5, V7, V8) are formally REJECTED.**
+## 3. Invalid Scripts Notice
+> [!WARNING]
+> `experiments/external_playbook_validation.py` is permanently marked as **INVALID (LOOKAHEAD BIAS)**.  
+> It used naive `smartmoneyconcepts` (`shift(-(swing_length//2))`), written historical indices, and whole-sample logarithmic regression. Causal, zero-lookahead results are documented exclusively in `experiments/phase_c_correct_event_studies.py` and `experiments/phase_d_ablations.py`.

@@ -14,6 +14,8 @@ if not os.path.exists(CONFIG_PATH):
     CONFIG_PATH = os.path.join(BASE_DIR, "config", "fixed_rule_4h_v1.json")
 
 DATA_DIR = os.path.join(BASE_DIR, "Trader-Pro", "notebooks", "data")
+if not os.path.exists(DATA_DIR):
+    DATA_DIR = os.path.join(BASE_DIR, "..", "Trader-Pro", "notebooks", "data")
 FUNDING_DIR = os.path.join(DATA_DIR, "funding")
 
 def load_config(override_clamp_mode=None, override_direction=None):
@@ -121,6 +123,54 @@ def run_candidate_generator(cfg):
     vol_sma_n = filter_cfg["volume_sma_period"]
     atr_n = filter_cfg["atr_period"]
 
+    # Extended Variant Support (V1 - V8)
+    use_daily_sma = filter_cfg.get("daily_sma200_trend_filter", False)
+    use_mayer_gate = filter_cfg.get("mayer_multiple_expanding_90p_gate", False)
+    use_cowen_gate = filter_cfg.get("cowen_macro_risk_gate", False)
+    cowen_thresh = filter_cfg.get("cowen_risk_threshold", 0.75)
+    breakeven_r = exit_cfg.get("breakeven_trigger_r", None)
+    trigger_type = entry_cfg.get("trigger_type", "donchian")
+
+    # Pre-compute daily context if requested (V3, V4, V5)
+    daily_lookup = None
+    if use_daily_sma or use_mayer_gate or use_cowen_gate:
+        p_1d = os.path.join(DATA_DIR, "1d", "BTCUSDT_1d.parquet")
+        if not os.path.exists(p_1d):
+            p_1d = os.path.join(DATA_DIR, "BTCUSDT_1d.parquet")
+        df_1d = pd.read_parquet(p_1d)
+        c_1d_col = 'open_time' if 'open_time' in df_1d.columns else df_1d.columns[0]
+        df_1d['datetime'] = pd.to_datetime(df_1d[c_1d_col]).dt.tz_localize(None) if df_1d[c_1d_col].dt.tz is not None else pd.to_datetime(df_1d[c_1d_col])
+        df_1d = df_1d.sort_values('datetime').reset_index(drop=True)
+        
+        c_1d = df_1d['close'].values.astype(float)
+        n_1d = len(df_1d)
+        genesis = pd.to_datetime('2009-01-03')
+        days = (df_1d['datetime'] - genesis).dt.days.values.astype(float)
+        
+        d_sma200 = pd.Series(c_1d).rolling(200).mean().values
+        mayer = c_1d / np.where(d_sma200 > 0, d_sma200, np.nan)
+        
+        mayer_90p = np.full(n_1d, np.nan)
+        for i in range(200, n_1d):
+            mayer_90p[i] = np.percentile(mayer[:i+1][~np.isnan(mayer[:i+1])], 90)
+            
+        cowen_risk = np.zeros(n_1d) # 0.0 before day 365 -> ungated
+        ln_t = np.log(days)
+        ln_p = np.log(c_1d)
+        for i in range(365, n_1d):
+            slope, inter = np.polyfit(ln_t[:i+1], ln_p[:i+1], 1)
+            res = ln_p[:i+1] - (inter + slope * ln_t[:i+1])
+            cowen_risk[i] = (res < res[-1]).mean()
+            
+        daily_lookup = pd.DataFrame({
+            'datetime': df_1d['datetime'],
+            'd_close': c_1d,
+            'd_sma200': d_sma200,
+            'mayer': mayer,
+            'mayer_90p': mayer_90p,
+            'cowen_risk': cowen_risk,
+        }).set_index('datetime')
+
     min_stop_pct = stop_cfg["min_stop_pct"]
     max_stop_pct = stop_cfg["max_stop_pct"]
     clamp_mode = stop_cfg["clamp_mode"]
@@ -185,6 +235,64 @@ def run_candidate_generator(cfg):
             btc_bull_arr = np.ones(n, dtype=bool)
             btc_bear_arr = np.ones(n, dtype=bool)
 
+        # Merge daily context if active
+        if daily_lookup is not None:
+            m_daily = pd.merge_asof(df[['datetime']], daily_lookup.reset_index(), on='datetime', direction='backward')
+            d_sma200_arr = m_daily['d_sma200'].values
+            mayer_arr = m_daily['mayer'].values
+            mayer_90p_arr = m_daily['mayer_90p'].values
+            cowen_risk_arr = m_daily['cowen_risk'].values
+        else:
+            d_sma200_arr = np.zeros(n)
+            mayer_arr = np.zeros(n)
+            mayer_90p_arr = np.full(n, 999.0)
+            cowen_risk_arr = np.zeros(n)
+
+        # SMC Causal Swing Triggers if requested
+        smc_triggers = {}
+        if trigger_type in ['smc_bos_retest', 'smc_sfp_sweep']:
+            swing_len = 5
+            confirmed_sh = []
+            confirmed_sl = []
+            pending_retests = []
+            for t_bar in range(swing_len * 2, n - max_hold_bars - 2):
+                s_check = t_bar - swing_len
+                if h[s_check] == np.max(h[s_check - swing_len : s_check + swing_len + 1]):
+                    confirmed_sh.append({'idx': s_check, 'price': h[s_check]})
+                    if len(confirmed_sh) > 5: confirmed_sh.pop(0)
+                elif l[s_check] == np.min(l[s_check - swing_len : s_check + swing_len + 1]):
+                    confirmed_sl.append({'idx': s_check, 'price': l[s_check]})
+                    if len(confirmed_sl) > 5: confirmed_sl.pop(0)
+
+                if not confirmed_sh or not confirmed_sl: continue
+                last_sh = confirmed_sh[-1]['price']
+                last_sl = confirmed_sl[-1]['price']
+
+                if trigger_type == 'smc_sfp_sweep':
+                    if h[t_bar] > last_sh and c[t_bar] < last_sh:
+                        smc_triggers[t_bar] = -1
+                    elif l[t_bar] < last_sl and c[t_bar] > last_sl:
+                        smc_triggers[t_bar] = 1
+                elif trigger_type == 'smc_bos_retest':
+                    if c[t_bar] > last_sh and c[t_bar-1] <= last_sh:
+                        pending_retests.append({'level': last_sh, 'dir': 1, 'expires': t_bar + 24, 'bar': t_bar})
+                    elif c[t_bar] < last_sl and c[t_bar-1] >= last_sl:
+                        pending_retests.append({'level': last_sl, 'dir': -1, 'expires': t_bar + 24, 'bar': t_bar})
+
+                    new_pend = []
+                    for pr in pending_retests:
+                        if t_bar > pr['expires']: continue
+                        if t_bar <= pr['bar']:
+                            new_pend.append(pr)
+                            continue
+                        if pr['dir'] == 1 and l[t_bar] <= pr['level'] <= h[t_bar] and c[t_bar] >= pr['level']:
+                            smc_triggers[t_bar] = 1
+                        elif pr['dir'] == -1 and l[t_bar] <= pr['level'] <= h[t_bar] and c[t_bar] <= pr['level']:
+                            smc_triggers[t_bar] = -1
+                        else:
+                            new_pend.append(pr)
+                    pending_retests = new_pend
+
         last_exit_bar = -1
 
         for t in range(200, n - max_hold_bars - 2):
@@ -197,8 +305,19 @@ def run_candidate_generator(cfg):
             if np.isnan(sma200[t]) or cur_atr <= 0:
                 continue
 
-            rule_long = (cur_c > sma200[t]) and (cur_c > dh[t])
-            rule_short = (cur_c < sma200[t]) and (cur_c < dl[t])
+            if trigger_type == 'donchian':
+                rule_long = (cur_c > sma200[t]) and (cur_c > dh[t])
+                rule_short = (cur_c < sma200[t]) and (cur_c < dl[t])
+            elif trigger_type == 'smc_bos_retest':
+                trig = smc_triggers.get(t, 0)
+                rule_long = (trig == 1) and (cur_c > sma200[t])
+                rule_short = (trig == -1) and (cur_c < sma200[t])
+            elif trigger_type == 'smc_sfp_sweep':
+                trig = smc_triggers.get(t, 0)
+                rule_long = (trig == 1)
+                rule_short = (trig == -1)
+            else:
+                rule_long, rule_short = False, False
 
             if not (rule_long or rule_short):
                 continue
@@ -232,6 +351,15 @@ def run_candidate_generator(cfg):
             # Rule: Volume confirmation
             if v[t] < vol_mult * v_mean50[t]: continue
 
+            # Extended Variant Filters (V3, V4, V5)
+            if use_daily_sma:
+                if rule_long and cur_c <= d_sma200_arr[t]: continue
+                if rule_short and cur_c >= d_sma200_arr[t]: continue
+            if use_mayer_gate:
+                if rule_long and mayer_arr[t] > mayer_90p_arr[t]: continue
+            if use_cowen_gate:
+                if rule_long and cowen_risk_arr[t] > cowen_thresh: continue
+
             direction = "LONG" if rule_long else "SHORT"
             is_long = (direction == "LONG")
 
@@ -264,6 +392,7 @@ def run_candidate_generator(cfg):
             exit_type = "TIME"
             exit_price = c[entry_idx + max_hold_bars]
             exit_dt = pd.to_datetime(dts[entry_idx + max_hold_bars])
+            be_activated = False
 
             for bar in range(0, max_hold_bars + 1):
                 idx = entry_idx + bar
@@ -272,6 +401,23 @@ def run_candidate_generator(cfg):
                 b_l = l[idx]
                 b_c = c[idx]
                 b_atr = atr14[idx]
+
+                # Breakeven ratchet check (V1, V2)
+                if breakeven_r is not None and not be_activated:
+                    if is_long:
+                        cur_ur = (b_h - entry_price) / (entry_price * stop_dist)
+                        if cur_ur >= breakeven_r:
+                            be_level = entry_price * (1.0 + taker_friction)
+                            if be_level > active_stop:
+                                active_stop = be_level
+                                be_activated = True
+                    else:
+                        cur_ur = (entry_price - b_l) / (entry_price * stop_dist)
+                        if cur_ur >= breakeven_r:
+                            be_level = entry_price * (1.0 - taker_friction)
+                            if be_level < active_stop:
+                                active_stop = be_level
+                                be_activated = True
 
                 # 1. Evaluate Stop on Current Bar against active_stop
                 if is_long:
