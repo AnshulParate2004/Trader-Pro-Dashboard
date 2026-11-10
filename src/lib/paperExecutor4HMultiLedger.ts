@@ -31,7 +31,7 @@ import {
   Fixed4HExecutorResult,
   checkSignalOnBar,
   loadFixedRuleConfig,
-  evaluateActiveTradeOnBar,
+  evaluateActiveTradeOnBar, calculateATR14,
 } from "./paperExecutor4HFixed";
 
 export const FORWARD_TEST_START_DATE = "2026-10-31T00:00:00.000Z";
@@ -175,7 +175,7 @@ function evaluateLedgerSignal(
   cfg: FixedRule4HConfig,
   triggerType?: string
 ): {
-  signal: "LONG" | "SHORT" | null;
+  signal: "LONG" | "SHORT";
   stopPct: number;
   entryPrice: number;
   signalTime: string;
@@ -194,7 +194,7 @@ function evaluateLedgerSignal(
   return {
     signal: sig.signal,
     stopPct: sig.stopPct,
-    entryPrice: sig.entryPrice,
+    entryPrice: sig.entryPriceEstimate,
     signalTime: sig.signalTime,
     signalTimeMs: sig.signalTimeMs,
   };
@@ -305,7 +305,7 @@ export async function runSingleLedger(
         trade.fee_r = res.feeR;
         trade.funding_r = res.fundingR;
         trade.net_r = res.netR;
-        trade.net_pnl_inr = Number((res.netR * trade.risk_inr).toFixed(2));
+        trade.net_pnl_inr = Number(((res.netR ?? 0) * trade.risk_inr).toFixed(2));
         break;
       }
     }

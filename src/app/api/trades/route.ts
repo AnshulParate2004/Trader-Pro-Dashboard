@@ -511,7 +511,10 @@ export async function GET(req: Request) {
     } else if (activeModelId === "new-stacking-meta-engine") {
       targetCollection = "paper_trades_new_stacking_1h";
       fallbackFile = "new_stacking_1h_live_trades.json";
-    } else if (activeModelId === "4hr-timeframe-router" || activeModelId === "om-distributed-4h-engine") {
+    } else if (activeModelId === "4hr-timeframe-router" || activeModelId === "router-c-4h") {
+      targetCollection = "paper_trades_4hr_timeframe_router";
+      fallbackFile = "4hr_timeframe_router_live_trades.json";
+    } else if (activeModelId === "om-distributed-4h-engine") {
       targetCollection = "paper_trades_om_distributed_4h";
       fallbackFile = "om_distributed_4h_live_trades.json";
     } else if (activeModelId === "om-stacking-meta-engine") {

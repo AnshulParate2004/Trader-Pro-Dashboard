@@ -36,6 +36,33 @@ export interface AssetPerformanceData {
 }
 
 export const ASSET_METRICS_MAP: Record<string, AssetPerformanceData> = {
+  ROUTER_4H: {
+    assetKey: "ALL",
+    assetLabel: "[Router] 4HR Timeframe Router [High-Conviction Multi-Asset 🏆]",
+    timeframe: "4H Dynamic Multi-Asset",
+    historicalTradesCount: 622,
+    liveTradesCount: 8,
+    avgNetR: 0.216,
+    realizedReturnR: 397.0,
+    netPnLINR: 27788.75,
+    winRate: 44.9,
+    profitFactor: 1.44,
+    maxDrawdownR: -24.89,
+    tpPercent: 19.6,
+    slPercent: 42.2,
+    allocatedCapitalINR: 7000,
+    totalPortfolioCapitalINR: 7000,
+    description: "[Router C] 4HR TIMEFRAME ROUTER: Dynamically routes each asset to its highest-conviction 4H engine (BTC/SOL/Gold -> OM Specialist, ETH -> 4H Clamp, DOT -> Unified Swing, Silver -> New Specialist, Oil -> No Trade). 6-Yr History: 1,836 trades, +397.0R, 1.44 PF.",
+    liveAvgNetR: 0.149,
+    liveRealizedReturnR: 1.19,
+    liveNetPnLINR: 119.20,
+    liveChargesINR: 20.48,
+    liveCurrentCapitalINR: 7119.20,
+    liveWinRate: 62.5,
+    liveProfitFactor: 1.55,
+    liveTpPercent: 62.5,
+    liveSlPercent: 37.5,
+  },
   OPTION_A_1H: {
     assetKey: "ALL",
     assetLabel: "[Option A] Hand-Written Neural Network [1H High-Conviction 🏆]",
@@ -802,6 +829,7 @@ export function getAssetMetrics(
     );
   }
 
+  if (selectedModelId === "4hr-timeframe-router") return ASSET_METRICS_MAP["ROUTER_4H"];
   if (selectedModelId === "option-a-1h-hand-written") return ASSET_METRICS_MAP["OPTION_A_1H"];
   if (selectedModelId === "v1-distributed-4h-engine") return ASSET_METRICS_MAP["V1_4H_DIST"];
   if (selectedModelId === "v1-stacking-meta-engine") return ASSET_METRICS_MAP["V1_STACKING_1H"];

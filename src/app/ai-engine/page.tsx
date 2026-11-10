@@ -36,7 +36,7 @@ export default function AiEnginePage() {
   const [activeEngineView, setActiveEngineView] = useState<"ai_models" | "fixed_rules_4h">("ai_models");
   const [trades, setTrades] = useState<TradeOrder[]>([]);
   const [metrics, setMetrics] = useState<EnginePerformanceMetrics | null>(null);
-  const [selectedModelId, setSelectedModelId] = useState<string>("om-distributed-4h-engine");
+  const [selectedModelId, setSelectedModelId] = useState<string>("4hr-timeframe-router");
   const [livePredictionLogs, setLivePredictionLogs] = useState<any[]>([]);
 
   // Lifted Asset Selection State for dynamic multi-asset reactive dashboard
@@ -55,7 +55,7 @@ export default function AiEnginePage() {
     riskPerTradePercent: 1.0, // 1% = ₹10
     ratchetEnabled: false,
     maxConcurrentTrades: 3,
-    activeModelId: "om-distributed-4h-engine",
+    activeModelId: "4hr-timeframe-router",
   });
   const [mongoConnected, setMongoConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);

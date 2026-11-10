@@ -35,7 +35,7 @@ import {
   Clock,
   Lock,
 } from "lucide-react";
-import { TOP_MODELS, AIStrategyModel, TradeOrder } from "@/lib/engineTypes";
+import { TOP_MODELS, ARCHIVED_MODELS, AIStrategyModel, TradeOrder } from "@/lib/engineTypes";
 
 interface RealIndicators {
   atr: number;
@@ -627,11 +627,70 @@ export default function TerminalPage() {
               onChange={(e) => handleSelectModel(e.target.value)}
               className="clay-white-btn bg-emerald-50/60 border-emerald-300 text-emerald-950 px-2.5 py-1 text-xs font-mono font-bold hover:border-emerald-400 focus:outline-none focus:border-emerald-600 cursor-pointer transition-all"
             >
-              {TOP_MODELS.map((m) => (
-                <option key={m.id} value={m.id}>
-                  #{m.rank}: {m.shortName}
-                </option>
-              ))}
+              {/* Group 1: Champion Multi-Asset Routers & Hand-Crafted Models */}
+              <optgroup label="🏆 Champion Routers & Hand-Crafted Models">
+                {TOP_MODELS.filter((m) => m.id === "4hr-timeframe-router" || m.id === "option-a-1h-hand-written").map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.id === "4hr-timeframe-router"
+                      ? "🏆 [Router] 4HR Timeframe Router (6-Yr Master Champion)"
+                      : `🏆 ${m.shortName}`}
+                  </option>
+                ))}
+              </optgroup>
+
+              {/* Group 2: [OM] 6-Year Optimal Suite (Ranks #1 to #6) */}
+              <optgroup label="✨ [OM] 6-Year Optimal Suite (Ranks #1 to #6)">
+                {TOP_MODELS.filter((m) => m.id.startsWith("om-")).map((m) => (
+                  <option key={m.id} value={m.id}>
+                    #{m.rank}: {m.shortName}
+                  </option>
+                ))}
+              </optgroup>
+
+              {/* Group 3: [v1] 2020–2023 Canonical Suite (Ranks #7 to #12) */}
+              <optgroup label="📊 [v1] 2020–2023 Canonical Suite (Ranks #7 to #12)">
+                {TOP_MODELS.filter((m) => m.id.startsWith("v1-")).map((m) => (
+                  <option key={m.id} value={m.id}>
+                    #{m.rank}: {m.shortName}
+                  </option>
+                ))}
+              </optgroup>
+
+              {/* Group 4: [New] 2024–2025 Suite (Ranks #13 to #17) */}
+              <optgroup label="⚡ [New] 2024–2025 Suite (Ranks #13 to #17)">
+                {TOP_MODELS.filter((m) =>
+                  [
+                    "unified-4h-engine",
+                    "distributed-4h-engine",
+                    "distributed-1h-engine",
+                    "new-consensus-committee-engine",
+                    "new-stacking-meta-engine",
+                  ].includes(m.id)
+                ).map((m) => (
+                  <option key={m.id} value={m.id}>
+                    #{m.rank}: {m.shortName}
+                  </option>
+                ))}
+              </optgroup>
+
+              {/* Group 5: Baselines & Benchmarks */}
+              <optgroup label="🛡️ Baselines & Benchmarks (Zero AI Filter)">
+                {TOP_MODELS.filter((m) => m.id.startsWith("pure-rules-")).map((m) => (
+                  <option key={m.id} value={m.id}>
+                    #{m.rank}: {m.shortName}
+                  </option>
+                ))}
+              </optgroup>
+
+              {ARCHIVED_MODELS.length > 0 && (
+                <optgroup label="📦 Archived / Retired Models">
+                  {ARCHIVED_MODELS.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      [ARCHIVED] {m.shortName}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </div>
 
@@ -1055,7 +1114,7 @@ export default function TerminalPage() {
           <div className="clay-white-card p-3.5 flex flex-col gap-2 border border-emerald-400/40 shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Selected Model #{activeModel.rank}
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> {activeModel.id === "4hr-timeframe-router" ? "Champion 4H Multi-Asset Router 🏆" : activeModel.id === "option-a-1h-hand-written" ? "Hand-Crafted Neural Net 🏆" : `Selected Model #${activeModel.rank}`}
               </span>
               {activeModel.statusBadge.includes("RETIRED") ? (
                 <span className="text-[9px] font-mono font-black bg-rose-100 text-rose-900 border border-rose-300 px-2 py-0.5 rounded-full shadow-2xs">

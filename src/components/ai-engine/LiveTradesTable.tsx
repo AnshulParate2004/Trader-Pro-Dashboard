@@ -112,6 +112,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   const activeModelMeta = ALL_MODELS.find((m) => m.id === selectedModelId) || TOP_MODELS.find((m) => m.id === selectedModelId);
   const getFallbackCount = (mId: string) => {
     switch (mId) {
+      case "4hr-timeframe-router": return "622";
       case "om-distributed-4h-engine": return "364";
       case "om-stacking-meta-engine": return "1,315";
       case "option-a-1h-hand-written": return "0";
@@ -139,6 +140,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   };
 
   const getDisplayModelName = (t: TradeOrder) => {
+    if (selectedModelId === "4hr-timeframe-router") return "[Router] 4HR Timeframe Router [High-Conviction 🏆]";
     if (selectedModelId === "option-a-1h-hand-written") return "[Option A] Hand-Written Network [1H High-Conviction 🏆]";
     if (selectedModelId === "om-distributed-4h-engine") return "[OM] Distributed 4H Specialists [7 Models]";
     if (selectedModelId === "om-stacking-meta-engine") return "[OM] Stacking Meta-Learner";

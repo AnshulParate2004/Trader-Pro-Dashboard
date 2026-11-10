@@ -83,7 +83,7 @@ export const ModelCard: React.FC<ModelCardProps> = ({
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-start gap-3">
           <div className="w-8 h-8 rounded bg-chrome-field border border-chrome-line flex items-center justify-center text-sm font-bold shrink-0">
-            {currentModel ? (currentModel.rank === 1 ? "🥇" : currentModel.rank === 2 ? "🥈" : currentModel.rank === 3 ? "🥉" : currentModel.rank === 4 ? "🎯" : "📊") : "🌐"}
+            {currentModel ? (currentModel.id === "4hr-timeframe-router" || currentModel.id === "option-a-1h-hand-written" ? "🏆" : currentModel.rank === 1 ? "🥇" : currentModel.rank === 2 ? "🥈" : currentModel.rank === 3 ? "🥉" : currentModel.rank === 4 ? "🎯" : "📊") : "🌐"}
           </div>
           <div className="flex flex-col">
             <div className="flex flex-wrap items-center gap-2">
@@ -94,9 +94,19 @@ export const ModelCard: React.FC<ModelCardProps> = ({
                 <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
                   isArchived
                     ? "bg-rose-50 text-rose-800 border-rose-300"
+                    : currentModel.id === "4hr-timeframe-router"
+                    ? "bg-amber-100 text-amber-900 border-amber-400 font-black shadow-2xs"
+                    : currentModel.id === "option-a-1h-hand-written"
+                    ? "bg-emerald-100 text-emerald-900 border-emerald-400 font-black shadow-2xs"
                     : "bg-chrome-field text-chrome-ink border-chrome-line"
                 }`}>
-                  {isArchived ? "RETIRED" : `RANK #${currentModel.rank}`}
+                  {isArchived
+                    ? "RETIRED"
+                    : currentModel.id === "4hr-timeframe-router"
+                    ? "CHAMPION 4H ROUTER 🏆"
+                    : currentModel.id === "option-a-1h-hand-written"
+                    ? "HAND-CRAFTED NN 🏆"
+                    : `RANK #${currentModel.rank}`}
                 </span>
               )}
               <span className="text-[10px] font-mono font-bold bg-accent-tint text-chrome-green-ink px-2 py-0.5 rounded border border-accent/30">
@@ -130,8 +140,55 @@ export const ModelCard: React.FC<ModelCardProps> = ({
             onChange={(e) => onModelChange(e.target.value)}
             className="font-mono text-xs font-bold bg-chrome-field border border-chrome-line rounded px-3 py-1.5 text-chrome-ink hover:border-chrome-ink focus:outline-none focus:border-accent shadow-inner cursor-pointer"
           >
-            <optgroup label="Active Production Models (Ranked 1 to 19)">
-              {TOP_MODELS.map((m) => (
+            {/* Group 1: Champion Multi-Asset Routers & Hand-Crafted Models */}
+            <optgroup label="🏆 Champion Routers & Hand-Crafted Models">
+              {TOP_MODELS.filter((m) => m.id === "4hr-timeframe-router" || m.id === "option-a-1h-hand-written").map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.id === "4hr-timeframe-router"
+                    ? "🏆 [Router] 4HR Timeframe Router (6-Yr Master Champion)"
+                    : `🏆 ${m.shortName}`}
+                </option>
+              ))}
+            </optgroup>
+
+            {/* Group 2: [OM] 6-Year Optimal Suite (Ranks #1 to #6) */}
+            <optgroup label="✨ [OM] 6-Year Optimal Suite (Ranks #1 to #6)">
+              {TOP_MODELS.filter((m) => m.id.startsWith("om-")).map((m) => (
+                <option key={m.id} value={m.id}>
+                  #{m.rank}: {m.shortName}
+                </option>
+              ))}
+            </optgroup>
+
+            {/* Group 3: [v1] 2020–2023 Canonical Suite (Ranks #7 to #12) */}
+            <optgroup label="📊 [v1] 2020–2023 Canonical Suite (Ranks #7 to #12)">
+              {TOP_MODELS.filter((m) => m.id.startsWith("v1-")).map((m) => (
+                <option key={m.id} value={m.id}>
+                  #{m.rank}: {m.shortName}
+                </option>
+              ))}
+            </optgroup>
+
+            {/* Group 4: [New] 2024–2025 Suite (Ranks #13 to #17) */}
+            <optgroup label="⚡ [New] 2024–2025 Suite (Ranks #13 to #17)">
+              {TOP_MODELS.filter((m) =>
+                [
+                  "unified-4h-engine",
+                  "distributed-4h-engine",
+                  "distributed-1h-engine",
+                  "new-consensus-committee-engine",
+                  "new-stacking-meta-engine",
+                ].includes(m.id)
+              ).map((m) => (
+                <option key={m.id} value={m.id}>
+                  #{m.rank}: {m.shortName}
+                </option>
+              ))}
+            </optgroup>
+
+            {/* Group 5: Baselines & Benchmarks */}
+            <optgroup label="🛡️ Baselines & Benchmarks (Zero AI Filter)">
+              {TOP_MODELS.filter((m) => m.id.startsWith("pure-rules-")).map((m) => (
                 <option key={m.id} value={m.id}>
                   #{m.rank}: {m.shortName}
                 </option>
