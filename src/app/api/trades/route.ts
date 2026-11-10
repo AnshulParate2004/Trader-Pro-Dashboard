@@ -377,6 +377,16 @@ async function getLivePredictionLogs(
   assetClass: "crypto" | "commodities" | "all" = "all",
   limit: number = 500
 ): Promise<any[]> {
+  const isRouter = modelId === "4hr-timeframe-router" || modelId === "router-c-4h";
+  let livePrefix: any[] = [];
+  if (isRouter) {
+    try {
+      livePrefix = await getRouterLiveEvaluations(false);
+    } catch (e) {
+      console.warn("Could not fetch live router evaluations for trades route:", e);
+    }
+  }
+
   try {
     const db = await getDb();
     if (db) {
@@ -392,25 +402,32 @@ async function getLivePredictionLogs(
         .toArray();
 
       if (docs && docs.length > 0) {
-        return docs.map((d: any) => ({
+        const mappedDb = docs.map((d: any) => ({
           ...d,
           id: d.id || d._id.toString(),
           rawSymbol: d.symbol,
           symbol: toDisplaySymbol(d.symbol),
         }));
+
+        if (isRouter && livePrefix.length > 0) {
+          const liveSymbols = new Set(livePrefix.map((l: any) => toDisplaySymbol(l.symbol)));
+          const rest = mappedDb.filter((d: any) => {
+            const sym = toDisplaySymbol(d.symbol);
+            if (!liveSymbols.has(sym)) return true;
+            const diff = (livePrefix[0]?.timestamp_ms || Date.now()) - (d.timestamp_ms || 0);
+            return diff > 300000;
+          });
+          return [...livePrefix, ...rest];
+        }
+
+        return mappedDb;
       }
     }
   } catch (err) {
     console.warn(`DB prediction logs fetch error for ${modelId}, falling back to JSON:`, err);
   }
 
-  if (modelId === "4hr-timeframe-router" || modelId === "router-c-4h") {
-    let livePrefix: any[] = [];
-    try {
-      livePrefix = await getRouterLiveEvaluations(false);
-    } catch (e) {
-      console.warn("Could not fetch live router evaluations for trades route:", e);
-    }
+  if (isRouter) {
     const raw = [...livePrefix, ...routerLivePredictionLogs];
     const filtered = assetClass === "all" ? raw : raw.filter((r: any) => r.asset_class === assetClass || !r.asset_class);
     const slice = limit > 0 ? filtered.slice(0, limit) : filtered;

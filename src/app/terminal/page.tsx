@@ -269,7 +269,18 @@ export default function TerminalPage() {
           setRecentTrades(data.trades);
         }
         if (data.livePredictionLogs) {
-          setLivePredictionLogs(data.livePredictionLogs);
+          setLivePredictionLogs((prev) => {
+            if (!prev || prev.length === 0) return data.livePredictionLogs;
+            const liveMap = new Map();
+            prev.filter((p: any) => p.id?.startsWith("live_eval_") || (p.timestamp_ms && Date.now() - p.timestamp_ms < 600000))
+                .forEach((p: any) => liveMap.set(p.symbol, p));
+            if (liveMap.size > 0) {
+              const liveArray = Array.from(liveMap.values());
+              const rest = (data.livePredictionLogs || []).filter((l: any) => !liveMap.has(l.symbol));
+              return [...liveArray, ...rest];
+            }
+            return data.livePredictionLogs;
+          });
         }
       }
     } catch (e) {

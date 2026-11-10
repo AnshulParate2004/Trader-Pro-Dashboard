@@ -1,4 +1,44 @@
 import { fetchCommodityKlines } from "./commoditiesData";
+import { getDb } from "./mongodb";
+
+export async function persistRouterLogsToDb(logs: EvaluatedAssetLog[]): Promise<void> {
+  if (!logs || logs.length === 0) return;
+  try {
+    const db = await getDb();
+    if (!db) return;
+    const col = db.collection("live_prediction_logs");
+    const docs = logs.map((l) => ({
+      model_id: "4hr-timeframe-router",
+      timestamp: new Date(l.timestamp_ms).toISOString(),
+      timestamp_ms: l.timestamp_ms,
+      time_utc: l.time_utc,
+      timeframe: "4h",
+      symbol: l.symbol,
+      price: l.price,
+      sma_200: l.sma_200,
+      donchian_high: l.donchian_high,
+      donchian_low: l.donchian_low,
+      donchian_high_20: l.donchian_high_20,
+      donchian_low_20: l.donchian_low_20,
+      conviction_p: l.conviction_p,
+      probability: l.probability,
+      p_cutoff: l.p_cutoff,
+      passes_gate: l.passes_gate,
+      regime: l.regime,
+      decision: l.decision,
+      decision_reason: l.reason,
+      reason: l.reason,
+      trade_details: null,
+      routed_engine: l.routed_engine,
+      routed_engine_label: l.routed_engine_label,
+      asset_class: ["XAUUSDT", "XAGUSDT", "CLUSDT"].includes(l.symbol) ? "commodities" : "crypto",
+    }));
+
+    await col.insertMany(docs);
+  } catch (err) {
+    console.warn("Could not persist live evaluation logs to MongoDB:", err);
+  }
+}
 
 export interface EvaluatedAssetLog {
   id: string;
@@ -219,6 +259,7 @@ export async function getRouterLiveEvaluations(forceRefresh: boolean = false): P
       timestamp: now,
       logs: evaluationLogs,
     };
+    persistRouterLogsToDb(evaluationLogs).catch((e) => console.warn("Failed to persist live logs:", e));
   }
 
   return evaluationLogs.length > 0 ? evaluationLogs : (liveCache?.logs || []);
