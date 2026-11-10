@@ -45,22 +45,17 @@ export async function middleware(req: NextRequest) {
   const sessionCookie = req.cookies.get(AUTH_COOKIE_NAME)?.value;
   const isAuthenticated = sessionCookie ? await verifyToken(sessionCookie) : false;
 
-  // 2. Cron endpoints (/api/cron/*): Require CRON_SECRET or valid admin session
-  if (pathname.startsWith("/api/cron/")) {
+  // 2. Cron & Router evaluation endpoints: Require CRON_SECRET or valid admin session
+  if (pathname.startsWith("/api/cron/") || pathname.startsWith("/api/router/live-evaluate")) {
     const authHeader = req.headers.get("authorization");
     const cronSecretHeader = req.headers.get("x-cron-secret");
+    const secretQueryParam = req.nextUrl.searchParams.get("secret") || req.nextUrl.searchParams.get("token");
     const configuredSecret = process.env.CRON_SECRET;
 
-    if (!configuredSecret && process.env.NODE_ENV === "production") {
-      throw new Error(
-        "CRITICAL SECURITY CONFIGURATION ERROR: CRON_SECRET environment variable is missing in production."
-      );
-    }
-
-    // Check if matching secret provided in Authorization or x-cron-secret header
+    // Check if matching secret provided in Authorization, query param, or x-cron-secret header
     const hasValidCronSecret =
       configuredSecret &&
-      (authHeader === `Bearer ${configuredSecret}` || cronSecretHeader === configuredSecret);
+      (authHeader === `Bearer ${configuredSecret}` || cronSecretHeader === configuredSecret || secretQueryParam === configuredSecret);
 
     if (hasValidCronSecret || isAuthenticated) {
       return NextResponse.next();

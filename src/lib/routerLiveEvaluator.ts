@@ -36,7 +36,14 @@ async function fetchCryptoCandles(symbol: string): Promise<any[]> {
       const url = `${base}?symbol=${symbol}&interval=4h&limit=100`;
       const ctrl = new AbortController();
       const tid = setTimeout(() => ctrl.abort(), 4000);
-      const res = await fetch(url, { signal: ctrl.signal, cache: "no-store" });
+      const res = await fetch(url, {
+        signal: ctrl.signal,
+        cache: "no-store",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Trader-Pro/1.0",
+          "Accept": "application/json",
+        },
+      });
       clearTimeout(tid);
       if (res.ok) {
         const data = await res.json();
