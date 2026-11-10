@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { runPaper4HFixedExecutor, FIXED_4H_ASSETS } from "@/lib/paperExecutor4HFixed";
+import { runMultiLedgerExecutor, getMultiLedgerStatus } from "@/lib/paperExecutor4HMultiLedger";
+import { runPaper4HFixedExecutor } from "@/lib/paperExecutor4HFixed";
 
 export const dynamic = "force-dynamic";
 
@@ -15,24 +16,26 @@ export async function GET(req: Request) {
   }
 
   try {
-    const result = await runPaper4HFixedExecutor();
+    // Run the legacy primary runner
+    const legacyResult = await runPaper4HFixedExecutor();
+
+    // Run the 3-Ledger forward test suite (v1 primary, v6 shadow, v8 shadow)
+    const multiResults = await runMultiLedgerExecutor();
+    const status = await getMultiLedgerStatus();
 
     return NextResponse.json({
       success: true,
-      timestamp: result.timestamp,
-      evaluated_symbols: result.evaluated_symbols,
-      opened_trades: result.opened_trades,
-      active_trades: result.active_trades,
-      closed_trades: result.closed_trades,
-      skipped_symbols: result.skipped_symbols,
-      actions: result.actions,
+      timestamp: new Date().toISOString(),
+      legacy_v1_primary: legacyResult,
+      forward_ledgers: multiResults,
+      forward_status: status,
     });
   } catch (error: any) {
     return NextResponse.json(
       {
         success: false,
         timestamp: new Date().toISOString(),
-        error: error.message || "Failed to execute 4H fixed-rule trading loop",
+        error: error.message || "Failed to execute 4H fixed-rule multi-ledger trading loop",
       },
       { status: 500 }
     );
