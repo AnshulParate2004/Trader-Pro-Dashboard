@@ -910,7 +910,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                       const isAboveSma = log.price >= log.sma_200;
                       const isRouter = selectedModelId === "4hr-timeframe-router" || !!log.routed_engine;
                       const isNoTrade = log.symbol === "CLUSDT" || log.symbol === "CL=F" || log.routed_engine === "no_trade_policy";
-                      const isEthClamp = log.symbol === "ETHUSDT" || log.routed_engine === "fixed_4h_clamp_btc_eth";
+                      const isEthClamp = log.routed_engine === "fixed_4h_clamp_btc_eth";
                       const isBearish = !isNoTrade && (log.decision === "CASH_PROTECTED_BEARISH" || log.decision === "CASH_SHIELD" || log.regime === "BEARISH" || !isAboveSma);
 
                       return (
@@ -937,13 +937,6 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                               <span className="px-1.5 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-300 text-[10px] font-bold">
                                 🚫 No-Trade Policy (Fee Drag Guard)
                               </span>
-                            ) : isEthClamp ? (
-                              <div>
-                                <span className="text-[9.5px] font-bold text-blue-700 block">4H Structural Clamp [1.0%, 4.0%]</span>
-                                <span>
-                                  ${(log.donchian_low ?? log.donchian_low_20)?.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })} – ${(log.donchian_high ?? log.donchian_high_20)?.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}
-                                </span>
-                              </div>
                             ) : isRouter && log.routed_engine_label ? (
                               <div>
                                 <span className="text-[9.5px] font-semibold text-slate-500 block">{log.routed_engine_label}</span>
@@ -960,18 +953,16 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                           <td className="py-2 px-1.5 sm:px-2 whitespace-nowrap">
                             {isNoTrade ? (
                               <span className="font-mono text-[10.5px] font-bold text-amber-700">Excluded</span>
-                            ) : isEthClamp ? (
-                              <span className="font-mono text-[10.5px] font-bold text-blue-700">100% (Rules)</span>
                             ) : (
                               <div className="flex items-center gap-1.5">
                                 <div className="w-10 bg-slate-100 rounded-full h-1.5 overflow-hidden border border-slate-200">
                                   <div
-                                    className={`h-full ${log.probability >= (log.p_cutoff ?? 0.50) ? "bg-emerald-500" : "bg-slate-400"}`}
-                                    style={{ width: `${Math.min(100, Math.max(0, log.probability * 300))}%` }}
+                                    className={`h-full ${(log.probability ?? log.conviction_p ?? 0) >= (log.p_cutoff ?? 0.50) ? "bg-emerald-500" : "bg-slate-400"}`}
+                                    style={{ width: `${Math.min(100, Math.max(0, (log.probability ?? log.conviction_p ?? 0) * 100))}%` }}
                                   />
                                 </div>
-                                <span className={`font-mono text-[10.5px] font-bold ${log.probability >= (log.p_cutoff ?? 0.50) ? "text-emerald-700" : "text-slate-500"}`}>
-                                  {log.p_cutoff === 0 || selectedModelId?.includes("pure-rules") ? "100%" : `${(log.probability * 100).toFixed(1)}%`}
+                                <span className={`font-mono text-[10.5px] font-bold ${(log.probability ?? log.conviction_p ?? 0) >= (log.p_cutoff ?? 0.50) ? "text-emerald-700" : "text-slate-500"}`}>
+                                  {`${((log.probability ?? log.conviction_p ?? 0) * 100).toFixed(1)}%`}
                                 </span>
                               </div>
                             )}
