@@ -43,10 +43,11 @@ To prevent cross-contamination of capital, trading hours, and friction models, t
 
 ---
 
-## 3. The Survivorship & Hindsight Bias Spread (The Mag-7 Illusion)
+## 3. Survivorship Bias Audit, Missing Constituents & Delisting Sensitivity Analysis
 
-A critical discovery of this audit is the quantification of **Survivorship and Hindsight Bias**:
+A critical discovery of this quantitative audit is the exact quantification of **Survivorship and Hindsight Bias**:
 
+### 3.1 Hindsight Watchlist vs Point-in-Time Baseline
 | Strategy / Portfolio | Point-in-Time CAGR (Realistic) | Hindsight Watchlist CAGR (BIASED) | Survivorship & Selection Gap |
 | :--- | :---: | :---: | :---: |
 | **Equal-Weight Buy & Hold** | **18.32%** | **26.79%** | **+8.48% / year** |
@@ -54,9 +55,83 @@ A critical discovery of this audit is the quantification of **Survivorship and H
 | **S2 Momentum (12-1m)** | **12.65%** | **14.67%** | **+2.02% / year** |
 | **S3 Pullback in Uptrend** | **3.45%** | **2.26%** | **-1.18% / year** |
 
-### Key Insight:
-Backtesting on a hindsight watchlist (`NVDA`, `GOOGL`, `MSFT`, `AMZN`, `AAPL`, `META`, `SONY`) inflates buy-and-hold returns by **+8.48% per year** because it selectively includes the greatest corporate winners in human history while omitting constituents that stagnated or fell out of the Top 30 (e.g., General Electric, Intel, HP, AT&T, Citigroup).  
-Under rigorous **Point-in-Time** reconstruction (selecting only the top 30 stocks known at each monthly rebalance), the realistic equity growth drops from 26.79% to 18.32%. Any quant research that tests on fixed modern lists is fundamentally compromised by hindsight bias.
+*Insight:* Backtesting on a fixed modern watchlist (`NVDA`, `GOOGL`, `MSFT`, `AMZN`, `AAPL`, `META`, `SONY`) inflates returns by **+8.48% per year** because it selectively samples winners while omitting historical constituents that stagnated.
+
+---
+
+### 3.2 Constituent-Months Missing Share by Year (Task B Audit)
+To evaluate survivorship bias in the Point-in-Time Top 30 universe, we mapped all monthly rebalances (203 months, 6,090 total constituent slots) against historical S&P 500 components. Overall, **384 constituent-months (6.31%)** are missing from our local 49-ticker dataset:
+
+| Year | Total Slots | Missing Slots | Missing Share (%) | Missing Tickers (Known at Date) |
+| :---: | :---: | :---: | :---: | :--- |
+| **2010** | 360 | 60 | **16.7%** | `C`, `COP`, `SLB`, `UTX`, `WFC` |
+| **2011** | 360 | 48 | **13.3%** | `COP`, `SLB`, `UTX`, `WFC` |
+| **2012** | 360 | 36 | **10.0%** | `SLB`, `UTX`, `WFC` |
+| **2013** | 360 | 48 | **13.3%** | `C`, `GILD`, `SLB`, `WFC` |
+| **2014** | 360 | 48 | **13.3%** | `C`, `GILD`, `UTX`, `WFC` |
+| **2015** | 360 | 36 | **10.0%** | `C`, `GILD`, `WFC` |
+| **2016** | 360 | 24 | **6.7%** | `C`, `WFC` |
+| **2017** | 360 | 36 | **10.0%** | `BA`, `C`, `WFC` |
+| **2018** | 360 | 24 | **6.7%** | `BA`, `WFC` |
+| **2019** | 360 | 0 | **0.0%** | *(Full coverage)* |
+| **2020** | 360 | 12 | **3.3%** | `PYPL` |
+| **2021** | 360 | 0 | **0.0%** | *(Full coverage)* |
+| **2022** | 360 | 12 | **3.3%** | `MCD` |
+| **2023–2026**| 1,410 | 0 | **0.0%** | *(Full coverage)* |
+| **TOTAL** | **6,090** | **384** | **6.31%** | **9 Unique Missing Tickers** |
+
+### 3.3 Classification of Missing Tickers
+1. **Delisted / Acquired / Merged Securities:**
+   - **`UTX` (United Technologies, 48 constituent-months):** Merged with Raytheon in 2020 to form RTX. Purged by standard Yahoo Finance queries.
+2. **Surviving Mega-Caps Omitted from Initial 46-Pool:**
+   - **`WFC` (Wells Fargo, 108 constituent-months):** $150B–$300B market cap financial giant throughout 2010–2018.
+   - **`C` (Citigroup, 72 constituent-months):** $90B–$150B market cap.
+   - **`SLB` (Schlumberger, 48 constituent-months):** $75B–$115B market cap oil services leader.
+   - **`GILD` (Gilead Sciences, 36 constituent-months):** $150B–$180B market cap biotech giant in 2014–2015.
+   - **`COP` (ConocoPhillips, 24 constituent-months):** $75B–$110B market cap.
+   - **`BA` (Boeing, 24 constituent-months):** $200B–$240B market cap in 2017–2018.
+   - **`PYPL` (PayPal, 12 constituent-months):** $250B–$300B market cap in 2020–2021.
+   - **`MCD` (McDonald's, 12 constituent-months):** $150B–$200B market cap in 2022.
+
+---
+
+### 3.4 Delisting Sensitivity Analysis & Bias-Adjusted Range
+Until paid survivorship-bias-free data is acquired, we rerun the Equal-Weight Top 30 Benchmark (B2) and S2 Momentum under three explicit delisting penalty scenarios:
+
+| Scenario / Simulation Model | Assumption for Unobserved Constituent-Months | EW CAGR | EW Sharpe | EW Max DD | Final Equity ($100k) |
+| :--- | :--- | :---: | :---: | :---: | :---: |
+| **Survivor Baseline** | Reallocated across available survivors only | 17.63% – 18.32% | 1.04 – 1.14 | -28.06% to -32.87% | $1,537,204 |
+| **Scenario A: -30% Delisting Penalty** | Unobserved names suffer -30% haircut on exit | **15.39%** | **1.01** | **-28.16%** | **$1,112,193** |
+| **Scenario B: Neutral 0% (Cash Return)** | Unobserved names earn 0.0% cash yield | **17.63%** | **1.14** | **-28.06%** | **$1,537,204** |
+| **Scenario C: -100% Bankruptcies Only** | Zero recovery on bankruptcies; M&A neutral | **17.63%** | **1.14** | **-28.06%** | **$1,537,204** |
+
+#### **The Bias-Adjusted Benchmark Range:**
+- **Equal-Weight Top 30 Realistic CAGR:** **`15.39% to 18.32%`** (Sharpe `1.01 to 1.14`, Max DD `-28.16% to -32.87%`).
+- **SPY S&P 500 ETF Buy-and-Hold:** **`13.92% CAGR`** (Sharpe `0.85`, Max DD `-33.72%`). *Note: SPY is an investable ETF that mechanically executed all historical rebalances in real time, making its 13.92% return 100% survivorship-free.*
+- **S2 Momentum (12-1m):** **`10.82% to 12.65% CAGR`** (Sharpe `0.61 to 0.71`, Max DD `-35.72% to -38.45%`). Even under the most favorable survivor assumption, S2 fails to beat SPY or Equal-Weight.
+
+---
+
+### 3.5 Recommended Commercial Data Sources for Delisted Securities
+To resolve survivorship bias permanently, we recommend the following institutional providers:
+
+1. **Sharadar (Nasdaq Data Link)** — *Top Recommendation*
+   - **Cost:** ~$50 – $150 / month (or academic discount).
+   - **Coverage:** Survivorship-bias-free daily US equity prices and point-in-time fundamentals dating back to 1999 (16,000+ active and delisted tickers). Includes exact delisting dates, reason codes (merger, liquidation, bankruptcy), and split/dividend adjustments.
+   - **Format & Limits:** Direct REST API / bulk Parquet/CSV downloads; no restrictive local client software.
+2. **Norgate Data** — *Top Recommendation for Index Tracking*
+   - **Cost:** ~$30 – $40 / month (Platinum Package).
+   - **Coverage:** Complete point-in-time constituent membership for S&P 500, S&P 1500, Russell 3000, and Nasdaq 100 dating back to 1950. All delisted/bankrupt symbols preserved with cash-equivalent spin-off adjustments.
+   - **Format & Limits:** Requires Windows background client updater; Python package `norgatedata` reads local database.
+3. **EODHD (EOD Historical Data)**
+   - **Cost:** ~$20 – $80 / month.
+   - **Coverage:** 10,000+ delisted US stocks via `/api/eod-bulk-last-day/US?delisted=1`.
+   - **Limits:** 100,000 daily API requests; occasional adjustments inaccuracies around complex multi-tier spin-offs.
+
+> [!IMPORTANT]
+> **Action Paused:** In accordance with quantitative rules, we will NOT purchase or subscribe to any paid data source without your explicit authorization.
+
+---
 
 ---
 

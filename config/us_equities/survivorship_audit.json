@@ -1,0 +1,315 @@
+{
+  "equal_weight_benchmark": {
+    "survivor_inflated_cagr": 17.63,
+    "survivor_inflated_sharpe": 1.14,
+    "survivor_inflated_max_dd": -28.06,
+    "bias_adjusted_cagr_range": [
+      15.39,
+      17.63
+    ],
+    "bias_adjusted_sharpe_range": [
+      1.01,
+      1.14
+    ],
+    "bias_adjusted_max_dd_range": [
+      -28.16,
+      -28.06
+    ],
+    "scenario_a_delisting_penalty_30pct": {
+      "final_equity": 1112192.67,
+      "cagr": 15.39,
+      "sharpe": 1.01,
+      "max_dd": -28.16
+    },
+    "scenario_b_neutral_zero": {
+      "final_equity": 1537204.41,
+      "cagr": 17.63,
+      "sharpe": 1.14,
+      "max_dd": -28.06
+    },
+    "scenario_c_bankruptcy_100pct": {
+      "final_equity": 1537204.41,
+      "cagr": 17.63,
+      "sharpe": 1.14,
+      "max_dd": -28.06
+    }
+  },
+  "spy_benchmark": {
+    "cagr": 13.92,
+    "sharpe": 0.85,
+    "max_dd": -33.72,
+    "survivorship_free": true,
+    "note": "SPY is an investable ETF with zero constituent survivorship bias (mechanically tracks S&P 500 rebalancing and cash distributions in real time)."
+  },
+  "s2_momentum_sensitivity": {
+    "nominal_cagr": 12.65,
+    "sensitivity_cagr_range": [
+      10.82,
+      12.65
+    ],
+    "sharpe_range": [
+      0.61,
+      0.71
+    ],
+    "max_dd_range": [
+      -38.45,
+      -35.72
+    ]
+  },
+  "missing_share_by_year": [
+    {
+      "year": 2010,
+      "total_slots": 360,
+      "missing_slots": 60,
+      "missing_pct": 16.67,
+      "missing_tickers": [
+        "C",
+        "COP",
+        "SLB",
+        "UTX",
+        "WFC"
+      ]
+    },
+    {
+      "year": 2011,
+      "total_slots": 360,
+      "missing_slots": 48,
+      "missing_pct": 13.33,
+      "missing_tickers": [
+        "COP",
+        "SLB",
+        "UTX",
+        "WFC"
+      ]
+    },
+    {
+      "year": 2012,
+      "total_slots": 360,
+      "missing_slots": 36,
+      "missing_pct": 10.0,
+      "missing_tickers": [
+        "SLB",
+        "UTX",
+        "WFC"
+      ]
+    },
+    {
+      "year": 2013,
+      "total_slots": 360,
+      "missing_slots": 48,
+      "missing_pct": 13.33,
+      "missing_tickers": [
+        "C",
+        "GILD",
+        "SLB",
+        "WFC"
+      ]
+    },
+    {
+      "year": 2014,
+      "total_slots": 360,
+      "missing_slots": 48,
+      "missing_pct": 13.33,
+      "missing_tickers": [
+        "C",
+        "GILD",
+        "UTX",
+        "WFC"
+      ]
+    },
+    {
+      "year": 2015,
+      "total_slots": 360,
+      "missing_slots": 36,
+      "missing_pct": 10.0,
+      "missing_tickers": [
+        "C",
+        "GILD",
+        "WFC"
+      ]
+    },
+    {
+      "year": 2016,
+      "total_slots": 360,
+      "missing_slots": 24,
+      "missing_pct": 6.67,
+      "missing_tickers": [
+        "C",
+        "WFC"
+      ]
+    },
+    {
+      "year": 2017,
+      "total_slots": 360,
+      "missing_slots": 36,
+      "missing_pct": 10.0,
+      "missing_tickers": [
+        "BA",
+        "C",
+        "WFC"
+      ]
+    },
+    {
+      "year": 2018,
+      "total_slots": 360,
+      "missing_slots": 24,
+      "missing_pct": 6.67,
+      "missing_tickers": [
+        "BA",
+        "WFC"
+      ]
+    },
+    {
+      "year": 2019,
+      "total_slots": 360,
+      "missing_slots": 0,
+      "missing_pct": 0.0,
+      "missing_tickers": []
+    },
+    {
+      "year": 2020,
+      "total_slots": 360,
+      "missing_slots": 12,
+      "missing_pct": 3.33,
+      "missing_tickers": [
+        "PYPL"
+      ]
+    },
+    {
+      "year": 2021,
+      "total_slots": 360,
+      "missing_slots": 0,
+      "missing_pct": 0.0,
+      "missing_tickers": []
+    },
+    {
+      "year": 2022,
+      "total_slots": 360,
+      "missing_slots": 12,
+      "missing_pct": 3.33,
+      "missing_tickers": [
+        "MCD"
+      ]
+    },
+    {
+      "year": 2023,
+      "total_slots": 360,
+      "missing_slots": 0,
+      "missing_pct": 0.0,
+      "missing_tickers": []
+    },
+    {
+      "year": 2024,
+      "total_slots": 360,
+      "missing_slots": 0,
+      "missing_pct": 0.0,
+      "missing_tickers": []
+    },
+    {
+      "year": 2025,
+      "total_slots": 360,
+      "missing_slots": 0,
+      "missing_pct": 0.0,
+      "missing_tickers": []
+    },
+    {
+      "year": 2026,
+      "total_slots": 330,
+      "missing_slots": 0,
+      "missing_pct": 0.0,
+      "missing_tickers": []
+    }
+  ],
+  "missing_tickers_classified": [
+    {
+      "symbol": "BA",
+      "months_in_top30": 24,
+      "status": "ACTIVE_SURVIVOR_OMITTED",
+      "details": "Boeing ($200B-$240B cap in 2018) omitted from 46-pool",
+      "is_bankruptcy": false
+    },
+    {
+      "symbol": "C",
+      "months_in_top30": 72,
+      "status": "ACTIVE_SURVIVOR_OMITTED",
+      "details": "Citigroup ($90B-$150B cap) omitted from 46-pool",
+      "is_bankruptcy": false
+    },
+    {
+      "symbol": "COP",
+      "months_in_top30": 24,
+      "status": "ACTIVE_SURVIVOR_OMITTED",
+      "details": "ConocoPhillips ($75B-$110B cap) omitted from 46-pool",
+      "is_bankruptcy": false
+    },
+    {
+      "symbol": "GILD",
+      "months_in_top30": 36,
+      "status": "ACTIVE_SURVIVOR_OMITTED",
+      "details": "Gilead Sciences ($150B-$180B cap in 2014-15) omitted from 46-pool",
+      "is_bankruptcy": false
+    },
+    {
+      "symbol": "MCD",
+      "months_in_top30": 12,
+      "status": "ACTIVE_SURVIVOR_OMITTED",
+      "details": "McDonald's ($150B-$200B cap) omitted from 46-pool",
+      "is_bankruptcy": false
+    },
+    {
+      "symbol": "PYPL",
+      "months_in_top30": 12,
+      "status": "ACTIVE_SURVIVOR_OMITTED",
+      "details": "PayPal ($250B-$300B cap in 2020-21) omitted from 46-pool",
+      "is_bankruptcy": false
+    },
+    {
+      "symbol": "SLB",
+      "months_in_top30": 48,
+      "status": "ACTIVE_SURVIVOR_OMITTED",
+      "details": "Schlumberger ($75B-$115B cap) omitted from 46-pool",
+      "is_bankruptcy": false
+    },
+    {
+      "symbol": "UTX",
+      "months_in_top30": 48,
+      "status": "DELISTED_MERGED",
+      "details": "Merged with Raytheon in 2020 to form RTX",
+      "is_bankruptcy": false
+    },
+    {
+      "symbol": "WFC",
+      "months_in_top30": 108,
+      "status": "ACTIVE_SURVIVOR_OMITTED",
+      "details": "Wells Fargo ($150B-$300B cap) omitted from 46-pool",
+      "is_bankruptcy": false
+    }
+  ],
+  "overall_missing_pct": 6.31,
+  "recommended_delisted_data_sources": [
+    {
+      "provider": "Sharadar (Nasdaq Data Link)",
+      "datasets": "SEP (Sharadar Equity Prices) & SF1 (Core US Fundamentals)",
+      "coverage": "16,000+ active and delisted US companies from 1999 to present (Daily OHLCV, market cap, full point-in-time fundamentals, exact delisting event codes).",
+      "pricing": "$50 - $150 / month (or academic pricing)",
+      "license_and_limits": "Personal / Professional API access; full bulk CSV/Parquet download; robust survivor-bias-free institutional standard.",
+      "recommended": true
+    },
+    {
+      "provider": "Norgate Data",
+      "datasets": "US Equities Platinum Package",
+      "coverage": "Point-in-time index constituent histories for S&P 500, S&P 1500, Russell 3000, Nasdaq 100 dating back to 1950. Preserves all delisted/bankrupt tickers with automatic corporate action adjustments.",
+      "pricing": "$30 - $40 / month",
+      "license_and_limits": "Windows desktop data client required (Python package `norgatedata` interfaces directly with local updater). Individual trader license.",
+      "recommended": true
+    },
+    {
+      "provider": "EODHD (EOD Historical Data)",
+      "datasets": "EOD Historical Data API",
+      "coverage": "10,000+ delisted US securities back to 1985 via `/api/eod-bulk-last-day/US?delisted=1` and `.US` ticker endpoints.",
+      "pricing": "$19.99 - $79.99 / month",
+      "license_and_limits": "REST API with 100,000 daily calls. Occasional adjustment errors around complex spin-off mergers; good general coverage.",
+      "recommended": false
+    }
+  ]
+}

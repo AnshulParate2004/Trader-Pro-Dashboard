@@ -201,15 +201,15 @@ export default function USEquitiesPage() {
                 <tr className="bg-emerald-50/50 font-bold">
                   <td className="py-2.5 px-3 text-emerald-950 flex flex-col">
                     <span>🏆 Benchmark 2: Equal-Weight Top 30</span>
-                    <span className="text-[10px] text-amber-700 font-normal">likely survivorship-inflated until Task B is done</span>
+                    <span className="text-[10px] text-amber-700 font-normal">Bias-Adjusted Sensitivity Range: 15.39% – 18.32%</span>
                   </td>
                   <td className="py-2.5 px-3 text-slate-600">Point-in-Time Monthly</td>
-                  <td className="py-2.5 px-3 text-right text-emerald-700">18.32%</td>
-                  <td className="py-2.5 px-3 text-right text-emerald-700">$1,693,295</td>
-                  <td className="py-2.5 px-3 text-right text-slate-700">-32.87%</td>
-                  <td className="py-2.5 px-3 text-right text-slate-700">1.04</td>
+                  <td className="py-2.5 px-3 text-right text-emerald-700">15.39% – 18.32%</td>
+                  <td className="py-2.5 px-3 text-right text-emerald-700">$1,112k – $1,693k</td>
+                  <td className="py-2.5 px-3 text-right text-slate-700">-28.16% to -32.87%</td>
+                  <td className="py-2.5 px-3 text-right text-slate-700">1.01 – 1.04</td>
                   <td className="py-2.5 px-3 text-right text-slate-500">Benchmark</td>
-                  <td className="py-2.5 px-3 text-center text-emerald-700">OUTPERFORM</td>
+                  <td className="py-2.5 px-3 text-center text-emerald-700">CORE BENCHMARK</td>
                 </tr>
                 <tr className="bg-blue-50/40 font-bold">
                   <td className="py-2.5 px-3 text-blue-950">
@@ -259,16 +259,36 @@ export default function USEquitiesPage() {
         </div>
 
         {/* Survivorship & Hindsight Bias Exposure */}
-        <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-xs space-y-3">
+        <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-xs space-y-4">
           <div className="flex items-center gap-2 font-mono text-xs font-bold text-slate-800 uppercase">
             <AlertTriangle className="w-4 h-4 text-amber-600" />
-            <span>Survivorship &amp; Hindsight Bias Spread (The Mag-7 Illusion)</span>
+            <span>Survivorship Bias Audit &amp; Delisting Sensitivity Analysis (Task B)</span>
           </div>
-          <p className="text-xs text-slate-600 font-sans leading-relaxed">
-            When the exact same Equal-Weight buy-and-hold strategy was run on the <strong>Hindsight Watchlist</strong> (NVDA, GOOGL, MSFT, AMZN, AAPL, META, SONY),
-            its CAGR surged from <strong>18.32% to 26.79%</strong>. This reveals an immense <strong>+8.48% annualized survivorship &amp; selection bias gap</strong>.
-            Backtesting only on today&apos;s mega-cap winners creates a massive illusion of strategy outperformance that disappears under rigorous point-in-time constituent reconstruction.
-          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+            <div className="bg-slate-50 p-3 rounded border border-slate-200 space-y-2">
+              <div className="font-bold text-slate-800">Constituent-Months Audit (2010–2026)</div>
+              <p className="text-slate-600 font-sans leading-relaxed">
+                Across 203 monthly rebalances (6,090 total constituent slots), <strong>384 constituent-months (6.31%)</strong> are missing from standard unadjusted Yahoo data.
+                Early eras (2010–2014) carried <strong>10.0% to 16.7% missing share</strong> due to historical mega-caps (WFC, Citigroup, Schlumberger, Gilead, UTX).
+                <strong> UTX</strong> was merged into RTX in 2020.
+              </p>
+              <div className="text-[11px] text-slate-500">
+                Recommended delisted sources: Sharadar (Nasdaq Data Link), Norgate Data, EODHD.
+              </div>
+            </div>
+            <div className="bg-slate-50 p-3 rounded border border-slate-200 space-y-2">
+              <div className="font-bold text-slate-800">Delisting Sensitivity Scenarios (B2 Equal-Weight)</div>
+              <div className="space-y-1 text-slate-700">
+                <div>• Survivor Baseline (unadjusted): <strong>18.32% CAGR</strong> (Sharpe 1.04)</div>
+                <div>• Scenario A (-30% delisting haircut): <strong>15.39% CAGR</strong> (Sharpe 1.01)</div>
+                <div>• Scenario B (0% cash equivalent): <strong>17.63% CAGR</strong> (Sharpe 1.14)</div>
+                <div>• Scenario C (-100% bankruptcies only): <strong>17.63% CAGR</strong> (Sharpe 1.14)</div>
+              </div>
+              <div className="text-[11px] text-emerald-800 font-sans font-medium pt-1">
+                Bias-Adjusted Range: <strong>15.39% to 18.32% CAGR</strong> vs SPY 13.92% CAGR.
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Cost & Tax Sensitivity Disclosure */}
