@@ -15,13 +15,13 @@
 >  
 > Over the 16.8-year horizon (2010–2026; 4,240 daily NYSE sessions):
 > - **Benchmark 1 (SPY Buy-and-Hold):** Generated **13.92% CAGR**, turning \$100,000 into **\$896,115**, with a Sharpe Ratio of **0.85**.
-> - **Benchmark 2 (Equal-Weight Top 30 Point-in-Time):** Generated **18.32% CAGR**, turning \$100,000 into **\$1,693,295**, with a Sharpe Ratio of **1.04**.
+> - **Benchmark 2 (Equal-Weight Top 30 Point-in-Time):** Generated **18.32% CAGR** *(likely survivorship-inflated until Task B is done)*, turning \$100,000 into **\$1,693,295**, with a Sharpe Ratio of **1.04**.
 > - **Strategy 1 (S1 Trend Following):** Delivered only **5.57% CAGR** (\$249,072) with a Newey-West Alpha t-stat of **+0.47** ($p = 0.640$).
 > - **Strategy 2 (S2 Cross-Sectional Momentum):** Delivered **12.65% CAGR** (\$741,777) with higher drawdown (-35.72% vs -33.72%) and Newey-West Alpha t-stat of **+0.92** ($p = 0.359$).
 > - **Strategy 3 (S3 Pullback in Uptrend):** Delivered only **3.45% CAGR** (\$176,856) with negative Newey-West Alpha (**-1.51% / year**, $t = -0.77$).
 >
 > **Institutional Decision: ALL THREE ACTIVE STRATEGIES ARE REJECTED FOR ACTIVE TRADING.**  
-> In US large-cap equities, buying and holding the broad market index or an equal-weighted basket of the Top 30 point-in-time leaders remains the mathematically superior, friction-free quantitative choice.
+> In this test, no active strategy beat buy-and-hold on a risk-adjusted basis.
 
 ---
 
@@ -65,7 +65,7 @@ Under rigorous **Point-in-Time** reconstruction (selecting only the top 30 stock
 All backtests run from **January 4, 2010 to November 10, 2026** (4,240 daily NYSE sessions).  
 Starting Capital: **\$100,000 USD**. Friction deducted: \$0.005/share commission, 3 bps slippage, SEC Section 31, FINRA TAF.
 
-| Metric | SPY Buy & Hold (B1) | Equal-Weight Top 30 (B2) | S1 Trend Following | S2 12-1m Momentum | S3 Pullback in Uptrend |
+| Metric | SPY Buy & Hold (B1) | Equal-Weight Top 30 (B2)* | S1 Trend Following | S2 12-1m Momentum | S3 Pullback in Uptrend |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Final Equity** | **\$896,115** | **\$1,693,295** | \$249,072 | \$741,777 | \$176,856 |
 | **Total Net Return** | +796.1% | +1,593.3% | +149.1% | +641.8% | +76.9% |
@@ -80,6 +80,8 @@ Starting Capital: **\$100,000 USD**. Friction deducted: \$0.005/share commission
 | **Newey-West $\alpha$ vs EW** | -3.42% ($t=-1.85$) | Baseline | -0.50% ($t=-0.21$) | -1.46% ($t=-0.56$) | -3.03% ($t=-1.55$) |
 | **95% Bootstrap CI vs SPY** | [0.00%, 0.00%] | [+1.84%, +7.21%] | [-12.52%, -2.88%] | [-6.71%, +4.55%] | [-14.91%, -5.24%] |
 | **Adoption Verdict** | **BENCHMARK CORE** | **SUPERIOR BENCHMARK** | **REJECT** | **REJECT** | **REJECT** |
+
+*\*Note: The Equal-Weight Top-30 benchmark (18.32% CAGR) is likely survivorship-inflated until Task B is done (missing delisted constituent audit).*
 
 ---
 
@@ -120,8 +122,8 @@ Starting Capital: **\$100,000 USD**. Friction deducted: \$0.005/share commission
 1. **Lookahead Truncation Test:**
    - **Status: PASS.** 200 random bar timestamps tested with truncated datasets $[:t+1]$. Signals evaluated at index $t$ matched the full dataset run with 100% precision. Zero future leakage.
 2. **Noise-Null Benchmark (Geometric Brownian Motion):**
-   - S1 empirical Sharpe (0.51) and S2 empirical Sharpe (0.71) exceeded the 95th percentile of synthetic GBM noise paths ($\approx 0.38$). Both reject the zero-drift noise null ($p < 0.05$).
-   - S3 empirical Sharpe (0.36) failed to reject the noise null ($p = 0.065$).
+   - The synthetic GBM null generates synthetic asset price paths assuming zero drift ($\mu = 0$). Because the real-world US equity market exhibits a strong positive long-term upward drift, long-only equity strategies (S1 and S2) pass this zero-drift hurdle easily. S1 empirical Sharpe (0.51) and S2 empirical Sharpe (0.71) exceeded the 95th percentile of synthetic GBM zero-drift paths ($\approx 0.38$). Both reject the zero-drift noise null ($p < 0.05$). S3 empirical Sharpe (0.36) failed to reject the noise null ($p = 0.065$).
+   - **Crucial Quant Finding:** Rejecting a zero-drift GBM null is trivial for long-only stock strategies in a secular bull market. The **benchmark/alpha test (excess return vs SPY and Equal-Weight) is the truly binding hurdle**, which all active strategies failed.
 3. **Month-Block Stationary Bootstrap (2,000 resamples):**
    - S1 Excess Return vs SPY: 95% CI is **[-12.52%, -2.88%]**. The entire interval is negative, formally confirming that S1 underperforms SPY with 95% statistical confidence.
    - S2 Excess Return vs SPY: 95% CI is **[-6.71%, +4.55%]**. Crosses zero, confirming zero statistically robust edge.
@@ -170,6 +172,6 @@ Starting Capital: **\$100,000 USD**. Friction deducted: \$0.005/share commission
 
 1. **Do NOT run active retail trend or pullback models on US mega-cap equities.** The US large-cap market is the most liquid, efficient equity market in the world. Active mechanical rules suffer severe cash-drag and whipsaw losses during the dominant upward drift of the index.
 2. **Adopt SPY / S&P 500 or Equal-Weight Top 30 Buy-and-Hold for US Equities exposure.**
-3. **Confine Active Systematic Trading to where an edge exists:** Our audited 24/7 Perpetual book (`perp_24x7`) on crypto/commodity derivatives exhibits strong trending characteristics (+0.192R to +0.252R per trade, 1.44–1.65 PF) that pass rigorous statistical hurdles.
+3. **Perpetual Book Realities (`perp_24x7`):** In `perp_24x7`, `fixed_rule_4h_v1` has a 95% bootstrap confidence interval that includes zero (-0.03R to +0.41R) and is approximately break-even after statutory tax; the 328-trade clamp-mode figure (+0.252R) was not run through the full validation gates. No edge can be claimed unless the validated 95% CI excludes zero after all costs and statutory taxes.
 
 *Report concluded and certified by Antigravity Quantitative Research.*

@@ -125,9 +125,9 @@ export default function USEquitiesPage() {
           <p className="text-xs text-slate-300 leading-relaxed font-sans">
             Under our pre-registered institutional rule (Alpha t-statistic &ge; 2.0 with validated 95% bootstrap CI excluding zero after friction),
             <strong> all 3 pre-registered active strategies failed to beat Buy-and-Hold the Index</strong>.
-            Over the full 2010–2026 horizon, <strong>SPY Buy-and-Hold generated 13.92% CAGR</strong> and <strong>Equal-Weight Point-in-Time generated 18.32% CAGR</strong>,
+            Over the full 2010–2026 horizon, <strong>SPY Buy-and-Hold generated 13.92% CAGR</strong> and <strong>Equal-Weight Point-in-Time generated 18.32% CAGR</strong> (likely survivorship-inflated until Task B audit),
             decisively crushing active trend and pullback rules whose returns were degraded by cash-drag, friction, and whipsaws during sideways bull runs.
-            <strong> For US Equities, Buy-and-Hold the Index remains the mathematically superior strategy.</strong>
+            <strong> In this test, no active strategy beat buy-and-hold on a risk-adjusted basis.</strong>
           </p>
         </div>
 
@@ -199,8 +199,9 @@ export default function USEquitiesPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 <tr className="bg-emerald-50/50 font-bold">
-                  <td className="py-2.5 px-3 text-emerald-950 flex items-center gap-1.5">
+                  <td className="py-2.5 px-3 text-emerald-950 flex flex-col">
                     <span>🏆 Benchmark 2: Equal-Weight Top 30</span>
+                    <span className="text-[10px] text-amber-700 font-normal">likely survivorship-inflated until Task B is done</span>
                   </td>
                   <td className="py-2.5 px-3 text-slate-600">Point-in-Time Monthly</td>
                   <td className="py-2.5 px-3 text-right text-emerald-700">18.32%</td>
