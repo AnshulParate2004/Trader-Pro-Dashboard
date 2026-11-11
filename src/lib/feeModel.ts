@@ -1,13 +1,13 @@
 /**
- * Unified Fee & Exchange Friction Architecture for Shark Exchange (BTCUSDT Perpetuals)
+ * Unified Fee & Exchange Friction Architecture for CoinSwitch Pro (Crypto Perpetuals & Futures)
  * Single source of truth for base fees, GST tax, and bid-ask slippage.
  */
 
-// Base Exchange Fees
-export const TAKER_BASE_FEE_PERCENT = 0.040; // 0.040% per side (Standard Realistic Taker)
-export const MAKER_BASE_FEE_PERCENT = 0.016; // 0.016% per side (Optimistic Benchmark)
-export const MID_TAKER_BASE_FEE_PERCENT = 0.030; // 0.030% per side
-export const VIP_MAKER_BASE_FEE_PERCENT = 0.018; // 0.018% per side
+// Base Exchange Fees - CoinSwitch Pro Futures Baseline
+export const TAKER_BASE_FEE_PERCENT = 0.065; // 0.065% per side (CoinSwitch Pro Standard Taker)
+export const MAKER_BASE_FEE_PERCENT = 0.024; // 0.024% per side (CoinSwitch Pro Standard Maker)
+export const MID_TAKER_BASE_FEE_PERCENT = 0.050; // 0.050% per side (Volume Discount Tier)
+export const VIP_MAKER_BASE_FEE_PERCENT = 0.020; // 0.020% per side (VIP Tier)
 
 // Government Statutory Tax
 export const GST_RATE_PERCENT = 18.0; // 18% GST on exchange fees

@@ -15,7 +15,7 @@ export const BOOK_CONFIGS: Record<TradingBook, BookConfig> = {
   perp_24x7: {
     id: "perp_24x7",
     name: "24x7 Perpetual Derivatives Book",
-    description: "Crypto and Commodity 4H/1H systematic strategies running on Shark Exchange friction model",
+    description: "Crypto and Commodity 4H/1H systematic strategies running on CoinSwitch Pro friction model",
     timeframe: "4H / 1H",
     tradingHours: "24/7/365 Continuous",
     baseCurrency: "INR",
@@ -29,7 +29,7 @@ export const BOOK_CONFIGS: Record<TradingBook, BookConfig> = {
     timeframe: "1D",
     tradingHours: "09:30 - 16:00 ET (NYSE Session)",
     baseCurrency: "USD",
-    startingCapital: 100000.0,
+    startingCapital: 100.0,
     assets: [],
   },
 };

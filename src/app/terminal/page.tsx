@@ -1123,7 +1123,7 @@ export default function TerminalPage() {
                       <th className="py-2 px-2.5">Entry Price</th>
                       <th className="py-2 px-2.5">Exit Price</th>
                       <th className="py-2 px-2.5">Position (INR)</th>
-                      <th className="py-2 px-2.5">Shark Fee (w/ GST)</th>
+                      <th className="py-2 px-2.5">CoinSwitch Fee (w/ GST)</th>
                       <th className="py-2 px-2.5">Net PnL (Post-Tax)</th>
                       <th className="py-2 px-2.5">Status</th>
                       <th className="py-2 px-2.5">Action</th>

@@ -4,10 +4,10 @@
   "description": "Continuous 24/7 crypto and commodity systematic swing & trend engines",
   "base_currency": "INR",
   "starting_capital": 7000.0,
-  "exchange": "Shark Exchange",
+  "exchange": "CoinSwitch Pro Futures",
   "fee_model": {
-    "taker_fee_percent": 0.040,
-    "maker_fee_percent": 0.016,
+    "taker_fee_percent": 0.065,
+    "maker_fee_percent": 0.024,
     "gst_percent": 18.0,
     "slippage_percent_per_side": 0.010
   },

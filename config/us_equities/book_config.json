@@ -3,7 +3,7 @@
   "name": "US Equities Daily Systematic Book",
   "description": "Daily bar systematic trend, momentum, and pullback strategies on point-in-time Top 30 US equities",
   "base_currency": "USD",
-  "starting_capital": 100000.0,
+  "starting_capital": 100.0,
   "exchange": "NYSE/NASDAQ",
   "session": {
     "open_time_et": "09:30",

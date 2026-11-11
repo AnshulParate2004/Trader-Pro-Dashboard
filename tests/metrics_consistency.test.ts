@@ -44,13 +44,14 @@ function createMockTrade(partial: Partial<TradeOrder>): TradeOrder {
 }
 
 describe("Live Production Metric & Fee Model Consistency Tests", () => {
-  test("Exchange friction identity: standard Taker round-trip friction must equal 0.1144%", () => {
-    // 0.040% base + 18% GST = 0.0472% per side
-    // 0.010% slippage per side
-    // One side total = 0.0572%
-    // Round trip = 2 * 0.0572% = 0.1144%
-    const friction = computeRoundTripFrictionPercent(TAKER_BASE_FEE_PERCENT, GST_RATE_PERCENT);
-    assert.strictEqual(friction, 0.1144, "Taker round-trip friction must strictly equal 0.1144%");
+  test("Exchange friction identity: standard Taker round-trip friction calculation", () => {
+    // Shark Baseline: 0.040% base + 18% GST = 0.0472% per side + 0.010% slip = 0.0572% * 2 = 0.1144%
+    const sharkFriction = computeRoundTripFrictionPercent(0.040, 18.0);
+    assert.strictEqual(sharkFriction, 0.1144, "Shark taker round-trip friction must equal 0.1144%");
+
+    // CoinSwitch Pro: 0.065% base + 18% GST = 0.0767% per side + 0.010% slip = 0.0867% * 2 = 0.1734%
+    const coinSwitchFriction = computeRoundTripFrictionPercent(TAKER_BASE_FEE_PERCENT, GST_RATE_PERCENT);
+    assert.strictEqual(coinSwitchFriction, 0.1734, "CoinSwitch Pro taker round-trip friction must equal 0.1734%");
   });
 
   test("computeTradeCost calculates exact fees, taxes, and slippage for trade entry and exit", () => {

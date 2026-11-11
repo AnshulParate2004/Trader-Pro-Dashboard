@@ -784,7 +784,7 @@ export default function AiEnginePage() {
                     </h3>
                   </div>
                   <p className="text-xs text-chrome-dim font-body max-w-xl">
-                    Applies Shark Exchange futures {isTaker ? "taker" : "maker"} fee of{" "}
+                    Applies CoinSwitch Pro futures {isTaker ? "taker" : "maker"} fee of{" "}
                     <strong className="text-chrome-ink font-mono">{currentFeePercent.toFixed(3)}% + 18% GST</strong>. Automatically manages trades with artificial capital of <strong className="text-chrome-ink font-mono">₹1,000 INR</strong>.
                   </p>
                 </div>
@@ -913,7 +913,7 @@ export default function AiEnginePage() {
           Research and paper trading only. Not financial advice.
         </p>
         <p className="text-[11px] text-chrome-dim">
-          Trader-Pro Dashboard · Out-of-sample BTC strategy research &amp; paper-trading · Shark Exchange realistic taker friction model (0.040% + 18% GST + 0.010% slippage/side).
+          Trader-Pro Dashboard · Out-of-sample BTC strategy research &amp; paper-trading · CoinSwitch Pro realistic taker friction model (0.065% + 18% GST + 0.010% slippage/side = 0.1734% round-trip).
         </p>
       </footer>
 
