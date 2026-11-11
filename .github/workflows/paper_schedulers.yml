@@ -1,0 +1,54 @@
+name: Forward Paper Ledgers Cloud Scheduler
+
+on:
+  schedule:
+    # 1. 4H Fixed Multi-Ledger: Every 4 hours at minute 5 past the 4H close (00:05, 04:05, 08:05, 12:05, 16:05, 20:05 UTC)
+    - cron: '5 0,4,8,12,16,20 * * *'
+    # 2. US Equities Post-Close Step: 16:15 ET (21:15 UTC in winter) Monday through Friday
+    - cron: '15 21 * * 1-5'
+    # 3. US Equities Next-Open Step: 09:45 ET (14:45 UTC in winter) Monday through Friday
+    - cron: '45 14 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      target_job:
+        description: 'Target job to execute manually'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - paper-4h-fixed
+          - equities-close
+          - equities-open
+
+jobs:
+  run-schedulers:
+    name: Execute Forward Paper Ledgers
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger 4H Fixed Multi-Ledger (v1, V6, V8)
+        if: github.event_name == 'schedule' || inputs.target_job == 'all' || inputs.target_job == 'paper-4h-fixed'
+        run: |
+          echo "Triggering /api/cron/paper-4h-fixed..."
+          curl -s -X GET \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://trader-pro-dashboard.vercel.app/api/cron/paper-4h-fixed" || true
+
+      - name: Trigger US Equities Post-Close Signals
+        if: github.event_name == 'schedule' || inputs.target_job == 'all' || inputs.target_job == 'equities-close'
+        run: |
+          echo "Triggering /api/equities/evaluate (step: close)..."
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "x-step: close" \
+            "https://trader-pro-dashboard.vercel.app/api/equities/evaluate" || true
+
+      - name: Trigger US Equities Next-Open Paper Fills
+        if: github.event_name == 'schedule' || inputs.target_job == 'all' || inputs.target_job == 'equities-open'
+        run: |
+          echo "Triggering /api/equities/evaluate (step: open)..."
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "x-step: open" \
+            "https://trader-pro-dashboard.vercel.app/api/equities/evaluate" || true
