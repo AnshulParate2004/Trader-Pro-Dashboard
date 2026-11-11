@@ -51,15 +51,37 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/api/router/live-evaluate") ||
     pathname.startsWith("/api/equities/evaluate")
   ) {
+    // Strict security rule for US equities: secrets via headers only, never query strings
+    if (pathname.startsWith("/api/equities/evaluate")) {
+      const hasQuerySecret = req.nextUrl.searchParams.has("secret") || req.nextUrl.searchParams.has("token");
+      if (hasQuerySecret) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "SECURITY VIOLATION: Query string secrets are strictly forbidden. Pass secret via Authorization: Bearer <secret> or x-cron-secret header.",
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     const authHeader = req.headers.get("authorization");
     const cronSecretHeader = req.headers.get("x-cron-secret");
     const secretQueryParam = req.nextUrl.searchParams.get("secret") || req.nextUrl.searchParams.get("token");
     const configuredSecret = process.env.CRON_SECRET;
 
-    // Check if matching secret provided in Authorization, query param, or x-cron-secret header
-    const hasValidCronSecret =
+    // Check if matching secret provided in Authorization or x-cron-secret header
+    // (Query param secret allowed only for legacy perp routes if configured, strictly disabled for equities)
+    const hasValidHeaderSecret =
       configuredSecret &&
-      (authHeader === `Bearer ${configuredSecret}` || cronSecretHeader === configuredSecret || secretQueryParam === configuredSecret);
+      (authHeader === `Bearer ${configuredSecret}` || cronSecretHeader === configuredSecret);
+
+    const hasValidLegacyQuerySecret =
+      !pathname.startsWith("/api/equities/evaluate") &&
+      configuredSecret &&
+      secretQueryParam === configuredSecret;
+
+    const hasValidCronSecret = hasValidHeaderSecret || hasValidLegacyQuerySecret;
 
     if (hasValidCronSecret || isAuthenticated) {
       return NextResponse.next();

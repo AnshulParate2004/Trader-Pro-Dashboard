@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, TrendingUp, ShieldAlert, DollarSign, Calendar, RefreshCw, BarChart2, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
+import { ArrowLeft, TrendingUp, ShieldAlert, DollarSign, Calendar, RefreshCw, BarChart2, AlertTriangle, CheckCircle2, XCircle, Clock, Eye } from "lucide-react";
 import { BOOK_CONFIGS } from "@/lib/engineTypes";
 import { DEFAULT_EQUITY_FEE_CONFIG } from "@/lib/equityFeeModel";
 
@@ -129,6 +129,57 @@ export default function USEquitiesPage() {
             decisively crushing active trend and pullback rules whose returns were degraded by cash-drag, friction, and whipsaws during sideways bull runs.
             <strong> In this test, no active strategy beat buy-and-hold on a risk-adjusted basis.</strong>
           </p>
+        </div>
+
+        {/* Forward Paper Performance & Reference Comparison Panel */}
+        <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-xs space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div className="flex items-center gap-2 font-mono text-xs font-bold text-slate-800 uppercase">
+              <Eye className="w-4 h-4 text-blue-600" />
+              <span>Forward Paper Ledger vs Reference Benchmarks (Sealed: Nov 11, 2026)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="bg-amber-100 text-amber-900 border border-amber-300 font-mono text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                <Clock className="w-3 h-3 text-amber-700" />
+                <span>Too early to judge (0 of 365 minimum days elapsed)</span>
+              </span>
+              <span className="text-[11px] font-mono text-slate-500">
+                Sealed Start: 2026-11-11
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+              <div className="text-[11px] font-mono text-slate-500 uppercase">S2 Momentum (Shadow Portfolio)</div>
+              <div className="text-xl font-black font-mono text-slate-900 mt-1">0.00%</div>
+              <div className="text-[10px] font-mono text-slate-500 mt-0.5">Top 10 monthly rank · Hold cash when SPY &lt; SMA200</div>
+              <div className="text-[10px] font-mono text-amber-700 mt-1">Shadow tracking only (0 real money committed)</div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+              <div className="text-[11px] font-mono text-slate-500 uppercase">SPY Reference Series</div>
+              <div className="text-xl font-black font-mono text-blue-800 mt-1">0.00%</div>
+              <div className="text-[10px] font-mono text-slate-500 mt-0.5">S&amp;P 500 Buy &amp; Hold Benchmark Core</div>
+              <div className="text-[10px] font-mono text-slate-400 mt-1">Baseline: $100,000 USD on 2026-11-11</div>
+            </div>
+
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+              <div className="text-[11px] font-mono text-slate-500 uppercase">Equal-Weight Top 30 Reference</div>
+              <div className="text-xl font-black font-mono text-emerald-800 mt-1">0.00%</div>
+              <div className="text-[10px] font-mono text-slate-500 mt-0.5">Point-in-Time Monthly Rebalanced</div>
+              <div className="text-[10px] font-mono text-slate-400 mt-1">Baseline: $100,000 USD on 2026-11-11</div>
+            </div>
+          </div>
+
+          <div className="bg-slate-100/60 rounded p-3 text-[11px] font-mono text-slate-600 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span className="font-bold text-slate-700">Governance Status: </span>
+              <span>S1 Trend &amp; S3 Pullback are <strong>RETIRED</strong> (zero forward tracking). </span>
+              <span>SpaceX (<code>SPCX</code>) monitored as <strong>WATCHLIST SIGNALS ONLY</strong> (zero trades).</span>
+            </div>
+            <div className="text-slate-400">Idempotent 2-Step Daily Lifecycle (Post-Close &amp; Next-Open)</div>
+          </div>
         </div>
 
         {/* Portfolio Stats Grid */}
