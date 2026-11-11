@@ -46,7 +46,11 @@ export async function middleware(req: NextRequest) {
   const isAuthenticated = sessionCookie ? await verifyToken(sessionCookie) : false;
 
   // 2. Cron & Router evaluation endpoints: Require CRON_SECRET or valid admin session
-  if (pathname.startsWith("/api/cron/") || pathname.startsWith("/api/router/live-evaluate")) {
+  if (
+    pathname.startsWith("/api/cron/") ||
+    pathname.startsWith("/api/router/live-evaluate") ||
+    pathname.startsWith("/api/equities/evaluate")
+  ) {
     const authHeader = req.headers.get("authorization");
     const cronSecretHeader = req.headers.get("x-cron-secret");
     const secretQueryParam = req.nextUrl.searchParams.get("secret") || req.nextUrl.searchParams.get("token");

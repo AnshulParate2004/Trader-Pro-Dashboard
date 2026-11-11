@@ -1,0 +1,29 @@
+{
+  "book": "perp_24x7",
+  "name": "24x7 Perpetual Derivatives Book",
+  "description": "Continuous 24/7 crypto and commodity systematic swing & trend engines",
+  "base_currency": "INR",
+  "starting_capital": 7000.0,
+  "exchange": "Shark Exchange",
+  "fee_model": {
+    "taker_fee_percent": 0.040,
+    "maker_fee_percent": 0.016,
+    "gst_percent": 18.0,
+    "slippage_percent_per_side": 0.010
+  },
+  "assets": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "DOTUSDT",
+    "XAUUSDT",
+    "XAGUSDT",
+    "CLUSDT"
+  ],
+  "timeframes": ["4h", "1h"],
+  "mongo_collections": {
+    "trades": "paper_trades_4hr_timeframe_router",
+    "prediction_logs": "live_prediction_logs",
+    "ledger": "audit_ledger_perp_24x7"
+  }
+}

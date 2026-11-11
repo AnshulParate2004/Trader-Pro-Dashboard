@@ -1,0 +1,40 @@
+{
+  "book": "us_equities",
+  "name": "US Equities Daily Systematic Book",
+  "description": "Daily bar systematic trend, momentum, and pullback strategies on point-in-time Top 30 US equities",
+  "base_currency": "USD",
+  "starting_capital": 100000.0,
+  "exchange": "NYSE/NASDAQ",
+  "session": {
+    "open_time_et": "09:30",
+    "close_time_et": "16:00",
+    "timezone": "America/New_York",
+    "frequency": "1D"
+  },
+  "risk_parameters": {
+    "max_risk_pct_per_trade": 1.0,
+    "max_open_positions": 8,
+    "max_position_size_pct": 20.0,
+    "allow_fractional_shares": true
+  },
+  "fee_model": {
+    "per_share_commission_usd": 0.005,
+    "min_commission_usd": 1.0,
+    "max_commission_pct": 0.5,
+    "fx_markup_bps": 50,
+    "slippage_mega_cap_bps": 3.0,
+    "slippage_large_cap_bps": 6.0,
+    "sec_fee_pct": 0.00278,
+    "finra_taf_per_share": 0.000166,
+    "tax_tcs_lrs_pct": 0.0,
+    "tax_tcs_status": "UNCONFIRMED_DEFAULT_OFF",
+    "tax_capital_gains_pct": 0.0,
+    "tax_gains_status": "UNCONFIRMED_DEFAULT_OFF"
+  },
+  "mongo_collections": {
+    "trades": "paper_trades_us_equities",
+    "prediction_logs": "live_prediction_logs_us_equities",
+    "ledger": "audit_ledger_us_equities",
+    "daily_bars": "us_equities_daily_bars"
+  }
+}

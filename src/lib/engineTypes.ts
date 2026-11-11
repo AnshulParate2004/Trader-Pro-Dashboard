@@ -1,8 +1,45 @@
+export type TradingBook = "perp_24x7" | "us_equities";
+
+export interface BookConfig {
+  id: TradingBook;
+  name: string;
+  description: string;
+  timeframe: string;
+  tradingHours: string;
+  baseCurrency: "INR" | "USD";
+  startingCapital: number;
+  assets: string[];
+}
+
+export const BOOK_CONFIGS: Record<TradingBook, BookConfig> = {
+  perp_24x7: {
+    id: "perp_24x7",
+    name: "24x7 Perpetual Derivatives Book",
+    description: "Crypto and Commodity 4H/1H systematic strategies running on Shark Exchange friction model",
+    timeframe: "4H / 1H",
+    tradingHours: "24/7/365 Continuous",
+    baseCurrency: "INR",
+    startingCapital: 7000.0,
+    assets: ["BTCUSDT", "ETHUSDT", "SOLUSDT", "DOTUSDT", "XAUUSDT", "XAGUSDT", "CLUSDT"],
+  },
+  us_equities: {
+    id: "us_equities",
+    name: "US Equities Daily Systematic Book",
+    description: "Point-in-time Top 30 US equities systematic trend, momentum & pullback strategies on NYSE session",
+    timeframe: "1D",
+    tradingHours: "09:30 - 16:00 ET (NYSE Session)",
+    baseCurrency: "USD",
+    startingCapital: 100000.0,
+    assets: [],
+  },
+};
+
 export interface AIStrategyModel {
   id: string;
   name: string;
   shortName: string;
   rank: number;
+  book?: TradingBook;
   timeframe: string;
   trueWinRate: number; // TP / (TP + SL) * 100
   netWinRate: number;  // % of trades with net PnL > 0 after fees
@@ -633,6 +670,7 @@ export const ALL_MODELS: AIStrategyModel[] = [...TOP_MODELS, ...ARCHIVED_MODELS]
 
 export interface TradeOrder {
   id: string;
+  book?: TradingBook;
   symbol: string;
   rawSymbol?: string;
   gross_r?: number;

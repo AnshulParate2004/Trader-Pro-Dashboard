@@ -568,6 +568,14 @@ export default function AiEnginePage() {
             <ArrowUpRight className="w-3.5 h-3.5" />
           </Link>
 
+          <Link
+            href="/equities"
+            className="flex items-center gap-1 font-mono text-xs text-blue-700 hover:text-blue-900 bg-blue-50 border border-blue-200 px-2.5 py-1.5 rounded transition-all shadow-xs hover:border-blue-400 font-bold"
+          >
+            <span>US Equities</span>
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </Link>
+
           <button
             onClick={() => fetchData()}
             className="flex items-center gap-1.5 text-xs font-mono text-chrome-dim hover:text-chrome-ink px-2 py-1 rounded transition-colors cursor-pointer"

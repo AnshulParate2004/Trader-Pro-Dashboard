@@ -934,6 +934,16 @@ export default function TerminalPage() {
             <span className="hidden md:inline">AI Engine</span>
           </Link>
 
+          {/* US Equities Book Link */}
+          <Link
+            href="/equities"
+            className="flex items-center gap-1 px-2 py-1 text-xs font-mono font-bold text-slate-700 clay-white-btn hover:text-gray-900 transition-all cursor-pointer shrink-0"
+            title="US Equities Daily Book"
+          >
+            <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
+            <span className="hidden md:inline">US Equities</span>
+          </Link>
+
           {/* LIVE status badge */}
           <div className="flex items-center gap-1 font-mono text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full shadow-2xs shrink-0">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_#10b981]"></span>
