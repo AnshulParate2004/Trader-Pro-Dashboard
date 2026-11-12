@@ -910,6 +910,18 @@ export default function TerminalPage() {
               </>
             )}
           </button>
+
+          {/* Open in TradingView Cloud Link (Permanent Drawing & Cloud Layout Sync) */}
+          <a
+            href={`https://www.tradingview.com/chart/?symbol=${encodeURIComponent(getTradingViewSymbol(symbol))}&interval=${timeframe === "4h" ? "240" : timeframe === "1h" ? "60" : timeframe === "15m" ? "15" : "5"}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 px-2 py-1 text-xs font-mono font-bold rounded-lg clay-white-btn text-slate-700 hover:text-blue-600 border border-slate-200 transition-all cursor-pointer shrink-0"
+            title="Open in TradingView with your account (saves drawings, trendlines & cloud layouts permanently)"
+          >
+            <ArrowUpRight className="w-3.5 h-3.5 text-blue-600" />
+            <span className="hidden 2xl:inline">TV Cloud</span>
+          </a>
         </div>
 
         {/* Right Section: Capital Badge + AI Engine Link + Live Status + User Profile */}
