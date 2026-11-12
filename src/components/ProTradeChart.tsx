@@ -24,6 +24,7 @@ import {
   ShieldAlert,
   Clock,
   Sparkles,
+  ArrowRight,
 } from "lucide-react";
 
 export interface ChartTrade {
@@ -63,6 +64,7 @@ export interface ChartTrade {
   modelId?: string;
   routed_engine?: string;
   routedEngine?: string;
+  isLiveTrade?: boolean;
 }
 
 interface ProTradeChartProps {
@@ -78,6 +80,10 @@ interface ProTradeChartProps {
   onSwitchToTradingView: () => void;
   isMaximized: boolean;
   onToggleMaximize: () => void;
+  totalLiveCount?: number;
+  totalHistoricalCount?: number;
+  onSelectSymbol?: (symbol: string) => void;
+  availableLiveSymbols?: { symbol: string; count: number }[];
 }
 
 interface RawCandle {
@@ -115,6 +121,10 @@ export default function ProTradeChart({
   onSwitchToTradingView,
   isMaximized,
   onToggleMaximize,
+  totalLiveCount,
+  totalHistoricalCount,
+  onSelectSymbol,
+  availableLiveSymbols,
 }: ProTradeChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<IChartApi | null>(null);
@@ -148,96 +158,46 @@ export default function ProTradeChart({
 
   // 1. Fetch Candle Data (up to 1,000 candles)
   useEffect(() => {
-    let isMounted = true;
+    let isCancelled = false;
     setIsLoadingCandles(true);
 
     const fetchCandles = async () => {
       try {
-        let fetchedCandles: RawCandle[] = [];
+        const url = `https://api.binance.com/api/v3/klines?symbol=${cleanSymbol}&interval=${binanceInterval}&limit=1000`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`Binance klines failed: ${res.statusText}`);
+        const data = await res.json();
 
-        // Try Binance Futures first
-        try {
-          const res = await fetch(
-            `https://fapi.binance.com/fapi/v1/klines?symbol=${cleanSymbol}&interval=${binanceInterval}&limit=1000`
-          );
-          if (res.ok) {
-            const data = await res.json();
-            if (Array.isArray(data) && data.length > 0) {
-              fetchedCandles = data.map((d: any) => ({
-                openTime: Number(d[0]),
-                open: parseFloat(d[1]),
-                high: parseFloat(d[2]),
-                low: parseFloat(d[3]),
-                close: parseFloat(d[4]),
-                volume: parseFloat(d[5]),
-              }));
-            }
-          }
-        } catch (e) {
-          console.warn("Binance futures klines error:", e);
-        }
+        if (Array.isArray(data) && !isCancelled) {
+          const parsedCandles: RawCandle[] = data.map((d: any) => ({
+            openTime: Number(d[0]),
+            open: parseFloat(d[1]),
+            high: parseFloat(d[2]),
+            low: parseFloat(d[3]),
+            close: parseFloat(d[4]),
+            volume: parseFloat(d[5]),
+          }));
 
-        // Spot fallback
-        if (fetchedCandles.length === 0) {
-          try {
-            const res = await fetch(
-              `https://api.binance.com/api/v3/klines?symbol=${cleanSymbol}&interval=${binanceInterval}&limit=1000`
-            );
-            if (res.ok) {
-              const data = await res.json();
-              if (Array.isArray(data) && data.length > 0) {
-                fetchedCandles = data.map((d: any) => ({
-                  openTime: Number(d[0]),
-                  open: parseFloat(d[1]),
-                  high: parseFloat(d[2]),
-                  low: parseFloat(d[3]),
-                  close: parseFloat(d[4]),
-                  volume: parseFloat(d[5]),
-                }));
-              }
-            }
-          } catch (e) {
-            console.warn("Binance spot fallback error:", e);
+          setCandles(parsedCandles);
+          if (parsedCandles.length > 0) {
+            setCurrentLivePrice(parsedCandles[parsedCandles.length - 1].close);
           }
-        }
-
-        // Commodities fallback
-        if (
-          fetchedCandles.length === 0 &&
-          ["GC=F", "SI=F", "CL=F", "XAUUSDT", "XAGUSDT", "CLUSDT"].includes(cleanSymbol)
-        ) {
-          try {
-            const res = await fetch(`/api/market/klines?symbol=${encodeURIComponent(cleanSymbol)}&range=1y`);
-            if (res.ok) {
-              const json = await res.json();
-              if (json.success && Array.isArray(json.candles)) {
-                fetchedCandles = json.candles;
-              }
-            }
-          } catch (e) {
-            console.warn("Commodity klines fallback error:", e);
-          }
-        }
-
-        if (isMounted) {
-          if (fetchedCandles.length > 0) {
-            setCandles(fetchedCandles);
-            setCurrentLivePrice(fetchedCandles[fetchedCandles.length - 1].close);
-          }
-          setIsLoadingCandles(false);
         }
       } catch (err) {
-        console.error("Failed to fetch chart candles:", err);
-        if (isMounted) setIsLoadingCandles(false);
+        console.warn("Could not load Binance candles:", err);
+      } finally {
+        if (!isCancelled) setIsLoadingCandles(false);
       }
     };
 
     fetchCandles();
 
-    const refreshTimer = setInterval(fetchCandles, 15000);
+    // Refresh last candle every 15s
+    const pollInterval = setInterval(fetchCandles, 15000);
+
     return () => {
-      isMounted = false;
-      clearInterval(refreshTimer);
+      isCancelled = true;
+      clearInterval(pollInterval);
     };
   }, [cleanSymbol, binanceInterval]);
 
@@ -246,27 +206,18 @@ export default function ProTradeChart({
     const container = chartContainerRef.current;
     if (!container) return;
 
-    if (chartInstanceRef.current) {
-      chartInstanceRef.current.remove();
-      chartInstanceRef.current = null;
-      candleSeriesRef.current = null;
-      volumeSeriesRef.current = null;
-      markersPluginRef.current = null;
-      priceLinesRef.current = [];
-    }
+    container.innerHTML = "";
 
     const chart = createChart(container, {
-      width: container.clientWidth,
-      height: container.clientHeight,
       layout: {
         background: { type: ColorType.Solid, color: "#ffffff" },
-        textColor: "#475569",
-        fontFamily: "'GT Standard Mono', 'GeistMono', monospace",
+        textColor: "#64748b",
+        fontFamily: "monospace",
         fontSize: 11,
       },
       grid: {
-        vertLines: { color: "#f8fafc" },
-        horzLines: { color: "#f8fafc" },
+        vertLines: { color: "#f1f5f9" },
+        horzLines: { color: "#f1f5f9" },
       },
       crosshair: {
         mode: CrosshairMode.Normal,
@@ -274,21 +225,18 @@ export default function ProTradeChart({
           color: "#94a3b8",
           width: 1,
           style: LineStyle.Dashed,
-          labelBackgroundColor: "#0f172a",
+          labelBackgroundColor: "#1e293b",
         },
         horzLine: {
           color: "#94a3b8",
           width: 1,
           style: LineStyle.Dashed,
-          labelBackgroundColor: "#0f172a",
+          labelBackgroundColor: "#1e293b",
         },
       },
       rightPriceScale: {
         borderColor: "#e2e8f0",
-        scaleMargins: {
-          top: 0.12,
-          bottom: 0.15,
-        },
+        scaleMargins: { top: 0.1, bottom: 0.2 },
       },
       timeScale: {
         borderColor: "#e2e8f0",
@@ -297,6 +245,9 @@ export default function ProTradeChart({
       },
     });
 
+    chartInstanceRef.current = chart;
+
+    // Add Candlestick Series (TradingView colors)
     const candleSeries = chart.addSeries(CandlestickSeries, {
       upColor: "#10b981",
       downColor: "#ef4444",
@@ -304,85 +255,116 @@ export default function ProTradeChart({
       wickUpColor: "#10b981",
       wickDownColor: "#ef4444",
     });
+    candleSeriesRef.current = candleSeries;
 
+    // Add Volume Series at bottom
     const volumeSeries = chart.addSeries(HistogramSeries, {
-      priceFormat: {
-        type: "volume",
-      },
+      color: "#94a3b8",
+      priceFormat: { type: "volume" },
       priceScaleId: "",
     });
-
     volumeSeries.priceScale().applyOptions({
-      scaleMargins: {
-        top: 0.88,
-        bottom: 0,
-      },
+      scaleMargins: { top: 0.82, bottom: 0 },
     });
-
-    chartInstanceRef.current = chart;
-    candleSeriesRef.current = candleSeries;
     volumeSeriesRef.current = volumeSeries;
 
-    const resizeObserver = new ResizeObserver((entries) => {
-      if (!entries || entries.length === 0 || !chartInstanceRef.current) return;
-      const { width, height } = entries[0].contentRect;
-      chartInstanceRef.current.applyOptions({ width, height });
-    });
+    // Resize Handler
+    const handleResize = () => {
+      if (container && chart) {
+        chart.applyOptions({
+          width: container.clientWidth,
+          height: container.clientHeight,
+        });
+      }
+    };
 
-    resizeObserver.observe(container);
+    window.addEventListener("resize", handleResize);
 
     return () => {
-      resizeObserver.disconnect();
-      if (chartInstanceRef.current) {
-        chartInstanceRef.current.remove();
-        chartInstanceRef.current = null;
+      window.removeEventListener("resize", handleResize);
+      markersPluginRef.current = null;
+      try {
+        chart.remove();
+      } catch (e) {
+        // cleanup
       }
     };
   }, []);
 
-  // 3. Set Candle Data
+  // 3. Load Candlestick Data into Chart
   useEffect(() => {
     const candleSeries = candleSeriesRef.current;
     const volumeSeries = volumeSeriesRef.current;
     if (!candleSeries || !volumeSeries || candles.length === 0) return;
 
-    const sorted = [...candles].sort((a, b) => a.openTime - b.openTime);
-    const seenTimes = new Set<number>();
-    const candleData: any[] = [];
-    const volumeData: any[] = [];
+    const candleData = [];
+    const volumeData = [];
 
-    for (const c of sorted) {
+    for (let i = 0; i < candles.length; i++) {
+      const c = candles[i];
       const t = Math.floor(c.openTime / 1000) as UTCTimestamp;
-      if (!seenTimes.has(t)) {
-        seenTimes.add(t);
-        candleData.push({
-          time: t,
-          open: c.open,
-          high: c.high,
-          low: c.low,
-          close: c.close,
-        });
-        volumeData.push({
-          time: t,
-          value: c.volume,
-          color: c.close >= c.open ? "rgba(16, 185, 129, 0.2)" : "rgba(239, 68, 68, 0.2)",
-        });
-      }
+
+      candleData.push({
+        time: t,
+        open: c.open,
+        high: c.high,
+        low: c.low,
+        close: c.close,
+      });
+
+      volumeData.push({
+        time: t,
+        value: c.volume,
+        color: c.close >= c.open ? "rgba(16, 185, 129, 0.2)" : "rgba(239, 68, 68, 0.2)",
+      });
     }
 
     candleSeries.setData(candleData);
     volumeSeries.setData(volumeData);
   }, [candles]);
 
+  // Helper to determine if a trade is live
+  const isTradeLive = useCallback((t: ChartTrade): boolean => {
+    if (t.isLiveTrade !== undefined) return t.isLiveTrade;
+    if (t.status === "ACTIVE") return true;
+    const id = t.id || t.trade_id || "";
+    return id.startsWith("router_") || id.startsWith("om_") || id.startsWith("pure-r_") || id.startsWith("distri_");
+  }, []);
+
   // Filter Trades for this graph
   const filteredTrades = useMemo(() => {
     return trades.filter((t) => {
-      const isLive = t.status === "ACTIVE" || (t.id && t.id.startsWith("router_"));
-      if (filterType === "LIVE") return isLive;
-      if (filterType === "HISTORICAL") return !isLive;
+      const live = isTradeLive(t);
+      if (filterType === "LIVE") return live;
+      if (filterType === "HISTORICAL") return !live;
       return true;
     });
-  }, [trades, filterType]);
+  }, [trades, filterType, isTradeLive]);
+
+  // Count for active symbol
+  const symbolLiveCount = useMemo(() => {
+    return trades.filter((t) => isTradeLive(t)).length;
+  }, [trades, isTradeLive]);
+
+  const symbolHistCount = useMemo(() => {
+    return trades.length - symbolLiveCount;
+  }, [trades, symbolLiveCount]);
+
+  // Handle switching filter tabs
+  const handleFilterChange = (type: "ALL" | "LIVE" | "HISTORICAL") => {
+    onChangeFilterType(type);
+    const nextFiltered = trades.filter((t) => {
+      const live = isTradeLive(t);
+      if (type === "LIVE") return live;
+      if (type === "HISTORICAL") return !live;
+      return true;
+    });
+    if (nextFiltered.length > 0) {
+      onSelectTrade(nextFiltered[0]);
+    } else {
+      onSelectTrade(null);
+    }
+  };
 
   // Map timestamp to nearest candle time
   const findNearestCandleTime = useCallback(
@@ -430,9 +412,7 @@ export default function ProTradeChart({
         position: isLong ? "belowBar" : "aboveBar",
         shape: isLong ? "arrowUp" : "arrowDown",
         color: isLong ? "#10b981" : "#ef4444",
-        text: `${isLong ? "LONG" : "SHORT"} @ $${Number(
-          trade.entryPrice || trade.entry_price
-        ).toLocaleString()}`,
+        text: isLong ? "▲ Long" : "▼ Short",
         size: isSelected ? 2 : 1,
       });
 
@@ -457,11 +437,7 @@ export default function ProTradeChart({
             position: isLong ? "aboveBar" : "belowBar",
             shape: "circle",
             color: isTP ? "#10b981" : isTrailingSL ? "#ef4444" : "#f59e0b",
-            text: isTP
-              ? "🎯 TP (+2.5R)"
-              : isTrailingSL
-              ? "🛑 TRAILING SL (-1.0R)"
-              : "⏱ EXPIRED",
+            text: isTP ? "● TP" : isTrailingSL ? "● Trailing SL" : "● Exit",
             size: 1,
           });
         }
@@ -477,7 +453,7 @@ export default function ProTradeChart({
     }
   }, [candles, filteredTrades, selectedTrade, findNearestCandleTime]);
 
-  // 5. Draw Clean Entry, SL, and TP Price Lines for Selected Trade (NO messy Fib lines!)
+  // 5. Clean up any existing price lines (Zero infinite lines cutting across the whole screen!)
   useEffect(() => {
     const candleSeries = candleSeriesRef.current;
     if (!candleSeries) return;
@@ -491,54 +467,12 @@ export default function ProTradeChart({
     });
     priceLinesRef.current = [];
 
-    if (!selectedTrade) return;
-
-    const entry = Number(selectedTrade.entryPrice || selectedTrade.entry_price || 0);
-    const sl = Number(selectedTrade.stopLoss || selectedTrade.stop_loss || 0);
-    const tp = Number(selectedTrade.takeProfit || selectedTrade.take_profit || 0);
-
-    if (!entry || !sl || !tp) return;
-
-    const isExitTrailingSL =
-      selectedTrade.exitReason === "STOP_LOSS" ||
-      selectedTrade.exitReason === "STOP" ||
-      selectedTrade.exitReason === "TRAILING_SL";
-
-    // Clean Entry line
-    const entryLine = candleSeries.createPriceLine({
-      price: entry,
-      color: "#2563eb",
-      lineWidth: 1,
-      lineStyle: LineStyle.Solid,
-      axisLabelVisible: true,
-      title: `ENTRY $${entry.toLocaleString()}`,
-    });
-    priceLinesRef.current.push(entryLine);
-
-    // Clean Stop Loss / Trailing SL line
-    const slLine = candleSeries.createPriceLine({
-      price: sl,
-      color: "#ef4444",
-      lineWidth: 1,
-      lineStyle: LineStyle.Dashed,
-      axisLabelVisible: true,
-      title: `${isExitTrailingSL ? "TRAILING SL" : "SL"} $${sl.toLocaleString()}`,
-    });
-    priceLinesRef.current.push(slLine);
-
-    // Clean Take Profit line
-    const tpLine = candleSeries.createPriceLine({
-      price: tp,
-      color: "#10b981",
-      lineWidth: 1,
-      lineStyle: LineStyle.Dashed,
-      axisLabelVisible: true,
-      title: `TP $${tp.toLocaleString()}`,
-    });
-    priceLinesRef.current.push(tpLine);
+    // The user explicitly requested: "i just wnat sl an dtp there and the exit"
+    // NO infinite horizontal lines running across the entire screen!
+    // SL, TP, Entry, and Exit are localized strictly to the trade box.
   }, [selectedTrade]);
 
-  // 6. Compute Pixel Coordinates for TradingView-style Risk/Reward Position Box
+  // 6. Compute Pixel Coordinates for Localized Risk/Reward Position Box
   const updatePositionBox = useCallback(() => {
     if (
       !selectedTrade ||
@@ -618,11 +552,9 @@ export default function ProTradeChart({
       tpPrice: tp,
       exitPrice: selectedTrade.exitPrice || selectedTrade.exit_price,
       exitReason: selectedTrade.exitReason || selectedTrade.exit_type,
-      isLive:
-        selectedTrade.status === "ACTIVE" ||
-        Boolean(selectedTrade.id && selectedTrade.id.startsWith("router_")),
+      isLive: isTradeLive(selectedTrade),
     });
-  }, [selectedTrade, candles, findNearestCandleTime]);
+  }, [selectedTrade, candles, findNearestCandleTime, isTradeLive]);
 
   // Synchronize Box Coordinates on Chart Scroll / Zoom
   useEffect(() => {
@@ -648,12 +580,13 @@ export default function ProTradeChart({
     };
   }, [updatePositionBox]);
 
-  // Trade Navigation (Prev / Next)
+  // Trade Navigation (Prev / Next) - Never show Trade #0!
   const currentTradeIndex = useMemo(() => {
-    if (!selectedTrade) return -1;
-    return filteredTrades.findIndex(
+    if (!selectedTrade || filteredTrades.length === 0) return 0;
+    const idx = filteredTrades.findIndex(
       (t) => t.id === selectedTrade.id || (t.trade_id && t.trade_id === selectedTrade.trade_id)
     );
+    return idx >= 0 ? idx : 0;
   }, [selectedTrade, filteredTrades]);
 
   const handlePrevTrade = () => {
@@ -670,7 +603,7 @@ export default function ProTradeChart({
 
   return (
     <div className="relative w-full h-full flex flex-col bg-white overflow-hidden select-none font-mono">
-      {/* 1. Ultra-Clean Minimal Top Bar */}
+      {/* 1. Clean Minimal Top Bar */}
       <div className="bg-white border-b border-slate-200 px-3 py-1 flex items-center justify-between gap-2 z-20 shrink-0 text-xs shadow-2xs">
         {/* Left: Clean Asset & Live Price */}
         <div className="flex items-center gap-2">
@@ -687,7 +620,6 @@ export default function ProTradeChart({
             </div>
           )}
 
-          {/* Switch to TradingView Cloud Widget */}
           <button
             onClick={onSwitchToTradingView}
             className="flex items-center gap-1 text-[11px] font-bold text-slate-600 hover:text-slate-950 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2 py-0.5 rounded transition-all cursor-pointer"
@@ -698,20 +630,20 @@ export default function ProTradeChart({
           </button>
         </div>
 
-        {/* Center: Clean Filter Tabs */}
+        {/* Center: Clean Filter Tabs (Actual Live & Historical counts) */}
         <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded text-[11px]">
           <button
-            onClick={() => onChangeFilterType("ALL")}
+            onClick={() => handleFilterChange("ALL")}
             className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${
               filterType === "ALL"
                 ? "bg-white text-slate-900 shadow-2xs border border-slate-200"
                 : "text-slate-500 hover:text-slate-900"
             }`}
           >
-            All Trades ({trades.length})
+            All ({trades.length})
           </button>
           <button
-            onClick={() => onChangeFilterType("LIVE")}
+            onClick={() => handleFilterChange("LIVE")}
             className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer flex items-center gap-1 ${
               filterType === "LIVE"
                 ? "bg-emerald-600 text-white shadow-2xs"
@@ -719,26 +651,26 @@ export default function ProTradeChart({
             }`}
           >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-ping" />
-            Live
+            Live ({totalLiveCount !== undefined ? totalLiveCount : symbolLiveCount})
           </button>
           <button
-            onClick={() => onChangeFilterType("HISTORICAL")}
+            onClick={() => handleFilterChange("HISTORICAL")}
             className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${
               filterType === "HISTORICAL"
                 ? "bg-white text-slate-900 shadow-2xs border border-slate-200"
                 : "text-slate-500 hover:text-slate-900"
             }`}
           >
-            Historical
+            Historical ({totalHistoricalCount !== undefined ? totalHistoricalCount.toLocaleString() : symbolHistCount.toLocaleString()})
           </button>
         </div>
 
-        {/* Right: Trade Stepper & Maximize */}
+        {/* Right: Trade Stepper & Maximize (NEVER Trade #0!) */}
         <div className="flex items-center gap-2">
-          {selectedTrade && (
+          {filteredTrades.length > 0 ? (
             <div className="flex items-center gap-1 text-[11px] text-slate-600 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded">
               <span className="font-bold text-slate-900">
-                Trade #{currentTradeIndex + 1}
+                Trade {Math.min(filteredTrades.length, currentTradeIndex + 1)} of {filteredTrades.length}
               </span>
               <div className="flex items-center gap-0.5 ml-1">
                 <button
@@ -757,6 +689,10 @@ export default function ProTradeChart({
                 </button>
               </div>
             </div>
+          ) : (
+            <div className="text-[11px] text-slate-400 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded">
+              0 trades on {symbol}
+            </div>
           )}
 
           <button
@@ -768,6 +704,31 @@ export default function ProTradeChart({
           </button>
         </div>
       </div>
+
+      {/* Floating Helper when viewing Live filter on a symbol without live trades */}
+      {filterType === "LIVE" && filteredTrades.length === 0 && (
+        <div className="bg-slate-900 text-white text-[11px] px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 z-20 shrink-0 border-b border-slate-800">
+          <div className="flex items-center gap-1.5 text-slate-300">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+            <span>No active live trade on <strong>{symbol}</strong>.</span>
+            <span>{totalLiveCount || 8} live trades active on:</span>
+          </div>
+          {availableLiveSymbols && availableLiveSymbols.length > 0 && (
+            <div className="flex items-center gap-1">
+              {availableLiveSymbols.map((item) => (
+                <button
+                  key={item.symbol}
+                  onClick={() => onSelectSymbol && onSelectSymbol(item.symbol)}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2 py-0.5 rounded text-[10px] cursor-pointer transition-colors flex items-center gap-1 shadow-xs"
+                >
+                  <span>{item.symbol}</span>
+                  <span className="bg-emerald-800/80 px-1 rounded text-[9px]">{item.count}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 2. Main Canvas Container */}
       <div className="flex-1 w-full h-full relative overflow-hidden bg-white">
@@ -783,7 +744,7 @@ export default function ProTradeChart({
           </div>
         )}
 
-        {/* 3. CLASSIC TRADINGVIEW POSITION BOX (Green Profit Box + Red Risk Box) */}
+        {/* 3. LOCALIZED TRADINGVIEW POSITION BOX (SL, TP, and Exit right on the trade!) */}
         {boxCoords && (
           <svg
             className="absolute inset-0 w-full h-full pointer-events-none z-10 overflow-hidden"
@@ -791,7 +752,7 @@ export default function ProTradeChart({
           >
             {(() => {
               const left = Math.min(boxCoords.x1, boxCoords.x2);
-              const width = Math.abs(boxCoords.x2 - boxCoords.x1);
+              const width = Math.max(30, Math.abs(boxCoords.x2 - boxCoords.x1));
               const right = left + width;
 
               // Profit Zone (Green) and Risk Zone (Red)
@@ -822,138 +783,116 @@ export default function ProTradeChart({
 
               return (
                 <g>
-                  {/* 1. Green Profit Target Box (Exactly like TradingView) */}
+                  {/* 1. Green Target Box (Take Profit Zone) */}
                   <rect
                     x={left}
                     y={greenTop}
                     width={width}
                     height={greenHeight}
-                    fill="rgba(16, 185, 129, 0.22)"
-                    stroke="rgba(16, 185, 129, 0.85)"
-                    strokeWidth="1.5"
-                    rx="1"
+                    fill="rgba(38, 166, 154, 0.18)"
+                    stroke="rgba(38, 166, 154, 0.75)"
+                    strokeWidth="1.2"
                   />
 
-                  {/* 2. Red Risk / Stop Loss Box (Exactly like TradingView) */}
+                  {/* 2. Red Risk Box (Stop Loss Zone) */}
                   <rect
                     x={left}
                     y={redTop}
                     width={width}
                     height={redHeight}
-                    fill="rgba(239, 68, 68, 0.22)"
-                    stroke="rgba(239, 68, 68, 0.85)"
-                    strokeWidth="1.5"
-                    rx="1"
+                    fill="rgba(239, 83, 80, 0.18)"
+                    stroke="rgba(239, 83, 80, 0.75)"
+                    strokeWidth="1.2"
                   />
 
-                  {/* 3. Center Entry Line */}
+                  {/* 3. Center Dividing Entry Line (Only within the trade range) */}
                   <line
                     x1={left}
                     y1={boxCoords.yEntry}
                     x2={right}
                     y2={boxCoords.yEntry}
-                    stroke="#2563eb"
-                    strokeWidth="2"
+                    stroke="rgba(100, 116, 139, 0.85)"
+                    strokeWidth="1.2"
                     strokeDasharray="4 2"
                   />
 
-                  {/* Entry Price Tag inside box */}
-                  <rect
-                    x={left + 6}
-                    y={boxCoords.yEntry - 9}
-                    width={130}
-                    height={18}
-                    fill="#1e293b"
-                    rx="3"
-                  />
-                  <text
-                    x={left + 10}
-                    y={boxCoords.yEntry + 3}
-                    fill="#93c5fd"
-                    fontSize="9.5"
-                    fontWeight="bold"
-                    fontFamily="monospace"
-                  >
-                    ENTRY ${boxCoords.entryPrice.toLocaleString()}
-                  </text>
-
-                  {/* Take Profit (TP) Tag */}
-                  <rect
-                    x={left + 6}
-                    y={boxCoords.yTP - 9}
-                    width={155}
-                    height={18}
-                    fill="#065f46"
-                    rx="3"
-                  />
-                  <text
-                    x={left + 10}
-                    y={boxCoords.yTP + 3}
-                    fill="#a7f3d0"
-                    fontSize="9.5"
-                    fontWeight="bold"
-                    fontFamily="monospace"
-                  >
-                    TP ${boxCoords.tpPrice.toLocaleString()} (+{entryDiffPct.toFixed(1)}% | +2.5R)
-                  </text>
-
-                  {/* Stop Loss (SL) or Trailing SL Tag */}
-                  <rect
-                    x={left + 6}
-                    y={boxCoords.ySL - 9}
-                    width={isExitTrailingSL ? 180 : 160}
-                    height={18}
-                    fill="#881337"
-                    rx="3"
-                  />
-                  <text
-                    x={left + 10}
-                    y={boxCoords.ySL + 3}
-                    fill="#fecdd3"
-                    fontSize="9.5"
-                    fontWeight="bold"
-                    fontFamily="monospace"
-                  >
-                    {isExitTrailingSL ? "EXIT: TRAILING SL" : "STOP LOSS"} ${boxCoords.slPrice.toLocaleString()} (-{slDiffPct.toFixed(1)}% | -1.0R)
-                  </text>
-
-                  {/* 4. Exit Point Indicator at Right Edge */}
+                  {/* 4. Exit Bar Vertical Boundary Line */}
                   <line
                     x1={right}
                     y1={Math.min(boxCoords.yTP, boxCoords.ySL)}
                     x2={right}
                     y2={Math.max(boxCoords.yTP, boxCoords.ySL)}
-                    stroke={isExitTP ? "#10b981" : isExitTrailingSL ? "#ef4444" : "#3b82f6"}
-                    strokeWidth="2"
+                    stroke={isExitTP ? "#10b981" : isExitTrailingSL ? "#ef4444" : "#64748b"}
+                    strokeWidth="1.5"
                     strokeDasharray="3 3"
                   />
 
-                  {/* Exit Outcome Badge */}
-                  <g transform={`translate(${right - 8}, ${boxCoords.yEntry - 24})`}>
+                  {/* Clean Localized Labels at Right Edge of Box */}
+                  {/* TP Label */}
+                  <text
+                    x={right - 6}
+                    y={boxCoords.yTP + (boxCoords.isLong ? 11 : -4)}
+                    textAnchor="end"
+                    fill="#059669"
+                    fontSize="10"
+                    fontWeight="bold"
+                    fontFamily="monospace"
+                  >
+                    TP ${boxCoords.tpPrice.toLocaleString()} (+{entryDiffPct.toFixed(1)}%)
+                  </text>
+
+                  {/* Entry Label */}
+                  <text
+                    x={right - 6}
+                    y={boxCoords.yEntry - 3}
+                    textAnchor="end"
+                    fill="#475569"
+                    fontSize="9.5"
+                    fontWeight="bold"
+                    fontFamily="monospace"
+                  >
+                    Entry ${boxCoords.entryPrice.toLocaleString()}
+                  </text>
+
+                  {/* Stop Loss / Trailing SL Label */}
+                  <text
+                    x={right - 6}
+                    y={boxCoords.ySL + (boxCoords.isLong ? -3 : 11)}
+                    textAnchor="end"
+                    fill="#dc2626"
+                    fontSize="10"
+                    fontWeight="bold"
+                    fontFamily="monospace"
+                  >
+                    {isExitTrailingSL ? "Trailing SL" : "SL"} ${boxCoords.slPrice.toLocaleString()} (-{slDiffPct.toFixed(1)}%)
+                  </text>
+
+                  {/* Exit Indicator Badge right at the exit bar */}
+                  <g transform={`translate(${right}, ${Math.min(boxCoords.yTP, boxCoords.ySL) - 16})`}>
                     <rect
-                      x="-125"
+                      x="-85"
                       y="0"
-                      width="130"
-                      height="20"
-                      fill={isExitTP ? "#047857" : isExitTrailingSL ? "#b91c1c" : "#1e40af"}
+                      width="85"
+                      height="15"
+                      fill={isExitTP ? "#059669" : isExitTrailingSL ? "#dc2626" : "#475569"}
                       rx="3"
                     />
                     <text
-                      x="-60"
-                      y="14"
+                      x="-42"
+                      y="11"
                       textAnchor="middle"
                       fill="#ffffff"
-                      fontSize="9.5"
+                      fontSize="8.5"
                       fontWeight="bold"
                       fontFamily="monospace"
                     >
                       {boxCoords.isLive
-                        ? "⚡ ACTIVE POSITION"
+                        ? "Active"
                         : isExitTP
-                        ? "🎯 EXIT: TP (+2.5R)"
+                        ? "Exit: TP"
                         : isExitTrailingSL
-                        ? "🛑 EXIT: TRAILING SL"
-                        : "⏱ EXIT: 48H EXPIRY"}
+                        ? "Exit: Trailing SL"
+                        : "Exit: Expired"}
                     </text>
                   </g>
                 </g>

@@ -276,7 +276,7 @@ export default function TerminalPage() {
       setIsChartTradesLoading(true);
       try {
         const res = await fetch(
-          `/api/all-history?modelId=${activeModelId}&symbol=${encodeURIComponent(symbol)}&limit=100`
+          `/api/all-history?modelId=${activeModelId}&symbol=${encodeURIComponent(symbol)}&limit=1000`
         );
         if (res.ok && !isCancelled) {
           const data = await res.json();
@@ -295,20 +295,37 @@ export default function TerminalPage() {
     };
   }, [symbol, activeModelId]);
 
-  // Filter live trades matching active chart symbol
+  // Filter live trades matching active chart symbol (tagged explicitly as isLiveTrade: true)
   const chartSymbolLiveTrades = useMemo(() => {
-    return recentTrades.filter(
-      (t: any) =>
-        symbolsMatch(t.symbol, symbol) ||
-        symbolsMatch(t.rawSymbol || "", symbol) ||
-        symbolsMatch(t.displaySymbol || "", symbol)
-    );
+    return recentTrades
+      .filter(
+        (t: any) =>
+          symbolsMatch(t.symbol, symbol) ||
+          symbolsMatch(t.rawSymbol || "", symbol) ||
+          symbolsMatch(t.displaySymbol || "", symbol)
+      )
+      .map((t: any) => ({ ...t, isLiveTrade: true }));
   }, [recentTrades, symbol]);
+
+  // Tag historical trades explicitly as isLiveTrade: false
+  const chartSymbolHistTradesTagged = useMemo(() => {
+    return chartSymbolHistTrades.map((t: any) => ({ ...t, isLiveTrade: false }));
+  }, [chartSymbolHistTrades]);
+
+  // Summary of symbols that have live trades
+  const availableLiveSymbols = useMemo(() => {
+    const counts: Record<string, number> = {};
+    recentTrades.forEach((t: any) => {
+      const sym = toDisplaySymbol(t.symbol || t.rawSymbol || "");
+      if (sym) counts[sym] = (counts[sym] || 0) + 1;
+    });
+    return Object.entries(counts).map(([sym, count]) => ({ symbol: sym, count }));
+  }, [recentTrades]);
 
   // Combined trades for this symbol's graph
   const allSymbolGraphTrades = useMemo(() => {
-    return [...chartSymbolLiveTrades, ...chartSymbolHistTrades];
-  }, [chartSymbolLiveTrades, chartSymbolHistTrades]);
+    return [...chartSymbolLiveTrades, ...chartSymbolHistTradesTagged];
+  }, [chartSymbolLiveTrades, chartSymbolHistTradesTagged]);
 
   // Synchronize selected trade when symbol or trades change
   useEffect(() => {
@@ -1144,6 +1161,10 @@ export default function TerminalPage() {
                 onSwitchToTradingView={() => setChartEngineMode("tradingview")}
                 isMaximized={isChartMaximized}
                 onToggleMaximize={() => setIsChartMaximized(!isChartMaximized)}
+                totalLiveCount={recentTrades.length}
+                totalHistoricalCount={terminalHistTotal || 1836}
+                availableLiveSymbols={availableLiveSymbols}
+                onSelectSymbol={(sym) => setSymbol(sym)}
               />
             ) : (
               <div className="relative w-full h-full">
