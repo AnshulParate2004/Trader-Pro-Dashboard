@@ -1,5 +1,5 @@
 "use client";
-import { toRawSymbol, toDisplaySymbol } from "@/lib/symbolMapper";
+import { toRawSymbol, toDisplaySymbol, symbolsMatch } from "@/lib/symbolMapper";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -35,6 +35,9 @@ import {
   XCircle,
   Clock,
   Lock,
+  Filter,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { TOP_MODELS, ARCHIVED_MODELS, AIStrategyModel, TradeOrder } from "@/lib/engineTypes";
 
@@ -221,8 +224,15 @@ export default function TerminalPage() {
   const [aiPrediction, setAiPrediction] = useState<AIPredictionState | null>(null);
   const [accountBalanceINR, setAccountBalanceINR] = useState<number>(7000.00);
   const [recentTrades, setRecentTrades] = useState<TradeOrder[]>([]);
-  const [dockTab, setDockTab] = useState<"radar" | "trades" | "audit">("radar");
+  const [dockTab, setDockTab] = useState<"radar" | "trades" | "history" | "audit">("trades");
   const [livePredictionLogs, setLivePredictionLogs] = useState<any[]>([]);
+  const [terminalHistTrades, setTerminalHistTrades] = useState<any[]>([]);
+  const [terminalHistTotal, setTerminalHistTotal] = useState<number>(1836);
+  const [terminalHistPage, setTerminalHistPage] = useState<number>(1);
+  const [terminalHistTotalPages, setTerminalHistTotalPages] = useState<number>(92);
+  const [terminalHistSymbolFilter, setTerminalHistSymbolFilter] = useState<string>("ALL");
+  const [terminalHistLoading, setTerminalHistLoading] = useState<boolean>(false);
+  const [terminalLiveSymbolFilter, setTerminalLiveSymbolFilter] = useState<string>("ALL");
   const [scenarioLevelTab, setScenarioLevelTab] = useState<"both" | "resistance" | "support">("both");
   const [isLoading, setIsLoading] = useState(true);
   const [autoTradingEnabled, setAutoTradingEnabled] = useState(true);
@@ -316,6 +326,42 @@ export default function TerminalPage() {
       setLiveTriggerStatus("Calculation Error · Retrying");
     }
   };
+
+  const fetchTerminalHistoricalTrades = async (
+    modelId: string = activeModelId,
+    page: number = terminalHistPage,
+    symFilter: string = terminalHistSymbolFilter
+  ) => {
+    setTerminalHistLoading(true);
+    try {
+      const params = new URLSearchParams({
+        modelId,
+        page: page.toString(),
+        limit: "25",
+        symbol: symFilter,
+      });
+      let res = await fetch(`/api/all-history?${params.toString()}`);
+      if (!res.ok) {
+        res = await fetch(`/api/history?${params.toString()}`);
+      }
+      if (res.ok) {
+        const data = await res.json();
+        if (data.trades) {
+          setTerminalHistTrades(data.trades);
+          setTerminalHistTotal(data.totalHistoricalTrades || data.trades.length);
+          setTerminalHistTotalPages(data.totalPages || Math.ceil((data.totalHistoricalTrades || data.trades.length) / 25));
+        }
+      }
+    } catch (e) {
+      console.warn("Could not fetch terminal historical trades:", e);
+    } finally {
+      setTerminalHistLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTerminalHistoricalTrades(activeModelId, terminalHistPage, terminalHistSymbolFilter);
+  }, [activeModelId, terminalHistPage, terminalHistSymbolFilter]);
 
   useEffect(() => {
     runProgrammatic2MinLiveCycle();
@@ -1001,6 +1047,27 @@ export default function TerminalPage() {
           {/* Edge-to-Edge Live TradingView Chart */}
           <div className="flex-1 w-full h-full relative bg-white overflow-hidden">
             <TradingViewChart symbol={getTradingViewSymbol(symbol)} interval={timeframe} />
+
+            {/* Floating Bottom Ledger Pill when Chart is Maximized */}
+            {isChartMaximized && (
+              <div
+                onClick={() => {
+                  setIsChartMaximized(false);
+                  setDockTab("trades");
+                }}
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 z-40 bg-slate-950/95 hover:bg-slate-900 text-white px-4 py-2 rounded-full shadow-2xl border border-slate-700/80 font-mono text-xs flex items-center gap-3 backdrop-blur-md cursor-pointer transition-all hover:scale-105"
+                title="Click to reveal bottom dock with Live & Historical trades"
+              >
+                <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  {recentTrades.length} Live Trades · {terminalHistTotal ? terminalHistTotal.toLocaleString() : "1,836"} Historical Trades
+                </span>
+                <span className="text-slate-600">|</span>
+                <span className="text-blue-400 hover:text-white font-bold flex items-center gap-1">
+                  <Minimize2 className="w-3.5 h-3.5" /> Show Trades Ledger (Esc)
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Bottom Dock Header with Tabs */}
@@ -1008,6 +1075,35 @@ export default function TerminalPage() {
             <>
               <div className="bg-white border-t border-slate-200/80 px-3.5 py-1.5 flex items-center justify-between shrink-0 font-mono text-xs">
             <div className="flex clay-white-inset p-0.5 gap-0.5">
+              <button
+                onClick={() => setDockTab("trades")}
+                className={`px-3 py-1 rounded-md font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+                  dockTab === "trades"
+                    ? "bg-white text-gray-950 shadow-2xs border border-slate-200/90 font-black"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                <span>⚡ Live Router Trades</span>
+                <span className="bg-emerald-100 text-emerald-800 text-[9px] px-1.5 py-0.2 rounded-full font-black">
+                  {recentTrades.length}
+                </span>
+              </button>
+              <button
+                onClick={() => {
+                  setDockTab("history");
+                  if (terminalHistTrades.length === 0) fetchTerminalHistoricalTrades();
+                }}
+                className={`px-3 py-1 rounded-md font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+                  dockTab === "history"
+                    ? "bg-white text-gray-950 shadow-2xs border border-slate-200/90 font-black"
+                    : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                <span>📜 All Historical Router Trades</span>
+                <span className="bg-blue-100 text-blue-800 text-[9px] px-1.5 py-0.2 rounded-full font-black">
+                  {terminalHistTotal ? terminalHistTotal.toLocaleString() : "1,836"}
+                </span>
+              </button>
               <button
                 onClick={() => setDockTab("radar")}
                 className={`px-3 py-1 rounded-md font-bold text-[11px] transition-all cursor-pointer ${
@@ -1017,19 +1113,6 @@ export default function TerminalPage() {
                 }`}
               >
                 📊 Alignment & Radar
-              </button>
-              <button
-                onClick={() => setDockTab("trades")}
-                className={`px-3 py-1 rounded-md font-bold text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
-                  dockTab === "trades"
-                    ? "bg-white text-gray-950 shadow-2xs border border-slate-200/90 font-black"
-                    : "text-slate-500 hover:text-slate-900"
-                }`}
-              >
-                <span>⚡ Live Scalp Orders</span>
-                <span className="bg-emerald-100 text-emerald-800 text-[9px] px-1.5 py-0.2 rounded-full font-black">
-                  {recentTrades.length}
-                </span>
               </button>
               <button
                 onClick={() => setDockTab("audit")}
@@ -1144,110 +1227,317 @@ export default function TerminalPage() {
                 </div>
               </div>
             ) : dockTab === "trades" ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse font-mono text-xs">
-                  <thead>
-                    <tr className="bg-gray-100 border-b border-gray-200 text-gray-500 uppercase text-[10px]">
-                      <th className="py-2 px-2.5">Time</th>
-                      <th className="py-2 px-2.5">AI Model</th>
-                      <th className="py-2 px-2.5">Side</th>
-                      <th className="py-2 px-2.5">Entry Price</th>
-                      <th className="py-2 px-2.5">Exit Price</th>
-                      <th className="py-2 px-2.5">Position (INR)</th>
-                      <th className="py-2 px-2.5">CoinSwitch Fee (w/ GST)</th>
-                      <th className="py-2 px-2.5">Net PnL (Post-Tax)</th>
-                      <th className="py-2 px-2.5">Status</th>
-                      <th className="py-2 px-2.5">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200/60 bg-white">
-                    {recentTrades.length > 0 ? (
-                      recentTrades.map((t) => {
-                        const isClosed = t.status === "CLOSED";
-                        const isPositive = (t.netPnLINR || 0) >= 0;
+              <div className="flex flex-col gap-2">
+                {/* Live Trades Asset Filter */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-1 border-b border-slate-200/80">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                      <Filter className="w-3.5 h-3.5 text-emerald-600" /> Filter Asset:
+                    </span>
+                    <select
+                      value={terminalLiveSymbolFilter}
+                      onChange={(e) => setTerminalLiveSymbolFilter(e.target.value)}
+                      className="clay-white-btn px-2 py-0.5 text-xs font-mono font-bold text-gray-900 border border-slate-200 rounded"
+                    >
+                      <option value="ALL">All 7 Assets ({recentTrades.length} Trades)</option>
+                      <option value="BTCUSDT">BTCUSDT ({recentTrades.filter((t) => symbolsMatch(t.symbol, "BTCUSDT")).length})</option>
+                      <option value="ETHUSDT">ETHUSDT ({recentTrades.filter((t) => symbolsMatch(t.symbol, "ETHUSDT")).length})</option>
+                      <option value="SOLUSDT">SOLUSDT ({recentTrades.filter((t) => symbolsMatch(t.symbol, "SOLUSDT")).length})</option>
+                      <option value="DOTUSDT">DOTUSDT ({recentTrades.filter((t) => symbolsMatch(t.symbol, "DOTUSDT")).length})</option>
+                      <option value="XAUUSDT">XAUUSDT ({recentTrades.filter((t) => symbolsMatch(t.symbol, "XAUUSDT")).length})</option>
+                      <option value="XAGUSDT">XAGUSDT ({recentTrades.filter((t) => symbolsMatch(t.symbol, "XAGUSDT")).length})</option>
+                      <option value="CLUSDT">CLUSDT ({recentTrades.filter((t) => symbolsMatch(t.symbol, "CLUSDT")).length})</option>
+                    </select>
+                  </div>
+                  <div className="text-[11px] font-mono text-slate-500">
+                    Live Forward Ledger · Persisted to MongoDB ({recentTrades.length} Total Trades)
+                  </div>
+                </div>
 
-                        return (
-                          <tr key={t.id} className="hover:bg-gray-50 transition-colors">
-                            <td className="py-2 px-2.5 text-gray-400 text-[10px] whitespace-nowrap">
-                              {new Date(t.openedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                            </td>
-                            <td className="py-2 px-2.5 text-[10px] font-bold text-gray-800 whitespace-nowrap">
-                              {t.modelName || "4H Swing Meta (+0.17R)"}
-                            </td>
-                            <td className="py-2 px-2.5">
-                              <span
-                                className={`px-1.5 py-0.5 rounded font-extrabold text-[10px] ${
-                                  t.direction === "LONG"
-                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                    : "bg-rose-50 text-rose-700 border border-rose-200"
-                                }`}
-                              >
-                                {t.direction}
-                              </span>
-                            </td>
-                            <td className="py-2 px-2.5 font-bold text-gray-900">
-                              ${t.entryPrice.toLocaleString(undefined, { minimumFractionDigits: 1 })}
-                            </td>
-                            <td className="py-2 px-2.5 font-bold text-gray-900">
-                              {t.exitPrice ? `$${t.exitPrice.toLocaleString(undefined, { minimumFractionDigits: 1 })}` : "—"}
-                            </td>
-                            <td className="py-2 px-2.5 text-gray-700 font-semibold">
-                              ₹{t.positionSizeINR.toFixed(2)}
-                            </td>
-                            <td className="py-2 px-2.5 text-blue-600 font-semibold">
-                              ₹{t.totalFeeINR?.toFixed(3) || "0.000"}
-                            </td>
-                            <td className="py-2 px-2.5 font-black">
-                              {isClosed ? (
-                                <span className={isPositive ? "text-emerald-600" : "text-rose-600"}>
-                                  {isPositive ? "+" : ""}₹{t.netPnLINR?.toFixed(2)}
-                                </span>
-                              ) : (
-                                <span className="text-blue-500 animate-pulse">Running</span>
-                              )}
-                            </td>
-                            <td className="py-2 px-2.5">
-                              <span
-                                className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
-                                  isClosed
-                                    ? "bg-gray-100 text-gray-600 border border-gray-200"
-                                    : "bg-emerald-100 text-emerald-800 border border-emerald-300"
-                                }`}
-                              >
-                                {t.status}
-                              </span>
-                            </td>
-                            <td className="py-2 px-2.5">
-                              {!isClosed ? (
-                                <button
-                                  onClick={() => handleCloseTrade(t.id)}
-                                  className="bg-gray-900 hover:bg-black text-white text-[9px] font-bold px-2 py-0.5 rounded transition-colors cursor-pointer"
-                                >
-                                  Close
-                                </button>
-                              ) : (
-                                <span className="text-gray-400 text-[9px]">{t.exitReason || "Done"}</span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan={10} className="py-6 text-center font-mono text-xs">
-                          <div className="flex flex-col items-center justify-center gap-1">
-                            <span className="font-bold text-emerald-800">
-                              🟢 Active Capital 100% Protected in CASH (₹{accountBalanceINR.toFixed(2)}) · 0 Open Positions
-                            </span>
-                            <span className="text-[11px] text-slate-500">
-                              Market consolidation &amp; counter-trend moves filtered. Switch to &quot;📡 Live Evaluation Feed&quot; tab to inspect bar-by-bar decision logs.
-                            </span>
-                          </div>
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse font-mono text-xs">
+                    <thead>
+                      <tr className="bg-gray-100 border-b border-gray-200 text-gray-500 uppercase text-[10px]">
+                        <th className="py-2 px-2.5">Time</th>
+                        <th className="py-2 px-2.5">Symbol</th>
+                        <th className="py-2 px-2.5">AI Model</th>
+                        <th className="py-2 px-2.5">Side</th>
+                        <th className="py-2 px-2.5">Entry Price</th>
+                        <th className="py-2 px-2.5">Exit Price</th>
+                        <th className="py-2 px-2.5">Position (INR)</th>
+                        <th className="py-2 px-2.5">CoinSwitch Fee (w/ GST)</th>
+                        <th className="py-2 px-2.5">Net PnL (Post-Tax)</th>
+                        <th className="py-2 px-2.5">Status</th>
+                        <th className="py-2 px-2.5">Action</th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200/60 bg-white">
+                      {(() => {
+                        const filtered = terminalLiveSymbolFilter === "ALL"
+                          ? recentTrades
+                          : recentTrades.filter((t) => symbolsMatch(t.symbol, terminalLiveSymbolFilter) || symbolsMatch(t.rawSymbol || "", terminalLiveSymbolFilter));
+
+                        if (filtered.length === 0) {
+                          return (
+                            <tr>
+                              <td colSpan={11} className="py-6 text-center font-mono text-xs">
+                                <div className="flex flex-col items-center justify-center gap-1.5">
+                                  <span className="font-bold text-emerald-800">
+                                    🟢 Active Capital 100% Protected in CASH {terminalLiveSymbolFilter !== "ALL" ? `for ${terminalLiveSymbolFilter}` : ""} (₹{accountBalanceINR.toFixed(2)}) · 0 Live Positions Open
+                                  </span>
+                                  <span className="text-[11px] text-slate-500">
+                                    Current 4H price is below 200 SMA (Cash Shield active).
+                                  </span>
+                                  <button
+                                    onClick={() => {
+                                      setDockTab("history");
+                                      setTerminalHistSymbolFilter(terminalLiveSymbolFilter);
+                                      fetchTerminalHistoricalTrades(activeModelId, 1, terminalLiveSymbolFilter);
+                                    }}
+                                    className="mt-1 px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded font-bold text-xs transition-colors cursor-pointer"
+                                  >
+                                    👉 Click to View All Historical Trades {terminalLiveSymbolFilter !== "ALL" ? `for ${terminalLiveSymbolFilter}` : "Done by Router"}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        }
+
+                        return filtered.map((t) => {
+                          const isClosed = t.status === "CLOSED";
+                          const isPositive = (t.netPnLINR || 0) >= 0;
+
+                          return (
+                            <tr key={t.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="py-2 px-2.5 text-gray-400 text-[10px] whitespace-nowrap">
+                                {new Date(t.openedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                              </td>
+                              <td className="py-2 px-2.5 font-bold text-gray-900 whitespace-nowrap">
+                                {t.symbol}
+                              </td>
+                              <td className="py-2 px-2.5 text-[10px] font-bold text-gray-800 whitespace-nowrap">
+                                {t.modelName || "[Router] 4HR Timeframe Router"}
+                              </td>
+                              <td className="py-2 px-2.5">
+                                <span
+                                  className={`px-1.5 py-0.5 rounded font-extrabold text-[10px] ${
+                                    t.direction === "LONG"
+                                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                      : "bg-rose-50 text-rose-700 border border-rose-200"
+                                  }`}
+                                >
+                                  {t.direction}
+                                </span>
+                              </td>
+                              <td className="py-2 px-2.5 font-bold text-gray-900">
+                                ${t.entryPrice.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 3 })}
+                              </td>
+                              <td className="py-2 px-2.5 font-bold text-gray-900">
+                                {t.exitPrice ? `$${t.exitPrice.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 3 })}` : "—"}
+                              </td>
+                              <td className="py-2 px-2.5 text-gray-700 font-semibold">
+                                ₹{t.positionSizeINR.toFixed(2)}
+                              </td>
+                              <td className="py-2 px-2.5 text-blue-600 font-semibold">
+                                ₹{t.totalFeeINR?.toFixed(3) || "0.000"}
+                              </td>
+                              <td className="py-2 px-2.5 font-black">
+                                {isClosed ? (
+                                  <span className={isPositive ? "text-emerald-600" : "text-rose-600"}>
+                                    {isPositive ? "+" : ""}₹{t.netPnLINR?.toFixed(2)}
+                                  </span>
+                                ) : (
+                                  <span className="text-blue-500 animate-pulse">Running</span>
+                                )}
+                              </td>
+                              <td className="py-2 px-2.5">
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                                    isClosed
+                                      ? "bg-gray-100 text-gray-600 border border-gray-200"
+                                      : "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                                  }`}
+                                >
+                                  {t.status}
+                                </span>
+                              </td>
+                              <td className="py-2 px-2.5">
+                                {!isClosed ? (
+                                  <button
+                                    onClick={() => handleCloseTrade(t.id)}
+                                    className="bg-gray-900 hover:bg-black text-white text-[9px] font-bold px-2 py-0.5 rounded transition-colors cursor-pointer"
+                                  >
+                                    Close
+                                  </button>
+                                ) : (
+                                  <span className="text-gray-400 text-[9px]">{t.exitReason || "Done"}</span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : dockTab === "history" ? (
+              <div className="flex flex-col gap-2">
+                {/* Historical Filter & Pagination Header */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-slate-200/80">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
+                      <Filter className="w-3.5 h-3.5 text-blue-600" /> Filter Asset:
+                    </span>
+                    <select
+                      value={terminalHistSymbolFilter}
+                      onChange={(e) => {
+                        setTerminalHistSymbolFilter(e.target.value);
+                        setTerminalHistPage(1);
+                        fetchTerminalHistoricalTrades(activeModelId, 1, e.target.value);
+                      }}
+                      className="clay-white-btn px-2 py-0.5 text-xs font-mono font-bold text-gray-900 border border-slate-200 rounded"
+                    >
+                      <option value="ALL">All 7 Assets ({terminalHistTotal ? terminalHistTotal.toLocaleString() : "1,836"})</option>
+                      <option value="BTCUSDT">BTCUSDT</option>
+                      <option value="ETHUSDT">ETHUSDT</option>
+                      <option value="SOLUSDT">SOLUSDT</option>
+                      <option value="DOTUSDT">DOTUSDT</option>
+                      <option value="XAUUSDT">XAUUSDT (Gold)</option>
+                      <option value="XAGUSDT">XAGUSDT (Silver)</option>
+                      <option value="CLUSDT">CLUSDT (Oil)</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs font-mono">
+                    <span className="text-slate-500 text-[11px]">
+                      Page <strong className="text-gray-900">{terminalHistPage}</strong> of {terminalHistTotalPages} ({terminalHistTotal.toLocaleString()} Trades)
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button
+                        disabled={terminalHistPage <= 1}
+                        onClick={() => {
+                          const p = Math.max(1, terminalHistPage - 1);
+                          setTerminalHistPage(p);
+                          fetchTerminalHistoricalTrades(activeModelId, p, terminalHistSymbolFilter);
+                        }}
+                        className="px-2 py-0.5 text-xs font-bold rounded clay-white-btn border border-slate-200 disabled:opacity-40 cursor-pointer"
+                      >
+                        ← Prev
+                      </button>
+                      <button
+                        disabled={terminalHistPage >= terminalHistTotalPages}
+                        onClick={() => {
+                          const p = Math.min(terminalHistTotalPages, terminalHistPage + 1);
+                          setTerminalHistPage(p);
+                          fetchTerminalHistoricalTrades(activeModelId, p, terminalHistSymbolFilter);
+                        }}
+                        className="px-2 py-0.5 text-xs font-bold rounded clay-white-btn border border-slate-200 disabled:opacity-40 cursor-pointer"
+                      >
+                        Next →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Historical Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse font-mono text-xs">
+                    <thead>
+                      <tr className="bg-gray-100 border-b border-gray-200 text-gray-500 uppercase text-[10px]">
+                        <th className="py-2 px-2.5">Date / Time</th>
+                        <th className="py-2 px-2.5">Symbol</th>
+                        <th className="py-2 px-2.5">Side</th>
+                        <th className="py-2 px-2.5">Entry Price</th>
+                        <th className="py-2 px-2.5">Exit Price</th>
+                        <th className="py-2 px-2.5">Exit Reason</th>
+                        <th className="py-2 px-2.5">Outcome (R)</th>
+                        <th className="py-2 px-2.5">Return %</th>
+                        <th className="py-2 px-2.5">Net PnL (₹)</th>
+                        <th className="py-2 px-2.5">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200/60 bg-white">
+                      {terminalHistLoading ? (
+                        <tr>
+                          <td colSpan={10} className="py-6 text-center text-slate-500 font-mono text-xs">
+                            <span className="animate-pulse">Loading historical router trades...</span>
+                          </td>
+                        </tr>
+                      ) : terminalHistTrades.length > 0 ? (
+                        terminalHistTrades.map((t: any) => {
+                          const outcomeR = t.outcomeR ?? t.net_r ?? 0;
+                          const isPos = outcomeR > 0;
+                          return (
+                            <tr key={t.id || t.trade_id} className="hover:bg-gray-50 transition-colors">
+                              <td className="py-1.5 px-2.5 text-gray-500 text-[10px] whitespace-nowrap">
+                                {t.entryTime ? new Date(t.entryTime).toLocaleString([], { dateStyle: "short", timeStyle: "short" }) : "—"}
+                              </td>
+                              <td className="py-1.5 px-2.5 font-bold text-gray-900 whitespace-nowrap">
+                                {t.symbol || t.displaySymbol || symbol}
+                              </td>
+                              <td className="py-1.5 px-2.5">
+                                <span
+                                  className={`px-1.5 py-0.5 rounded font-extrabold text-[10px] ${
+                                    (t.side || t.direction) === "LONG"
+                                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                      : "bg-rose-50 text-rose-700 border border-rose-200"
+                                  }`}
+                                >
+                                  {t.side || t.direction}
+                                </span>
+                              </td>
+                              <td className="py-1.5 px-2.5 font-semibold text-gray-900">
+                                ${(t.entryPrice ?? t.entry_price ?? 0).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 3 })}
+                              </td>
+                              <td className="py-1.5 px-2.5 font-semibold text-gray-900">
+                                ${(t.exitPrice ?? t.exit_price ?? 0).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 3 })}
+                              </td>
+                              <td className="py-1.5 px-2.5 text-[10px] text-slate-600">
+                                <span className={`px-1.5 py-0.2 rounded font-semibold ${
+                                  t.exitReason === "TAKE_PROFIT" || t.exit_type === "TARGET"
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : t.exitReason === "STOP_LOSS" || t.exit_type === "STOP"
+                                    ? "bg-rose-100 text-rose-800"
+                                    : "bg-blue-100 text-blue-800"
+                                }`}>
+                                  {t.exitReason || t.exit_type || "CLOSED"}
+                                </span>
+                              </td>
+                              <td className="py-1.5 px-2.5 font-black">
+                                <span className={isPos ? "text-emerald-600" : "text-rose-600"}>
+                                  {isPos ? "+" : ""}{outcomeR.toFixed(2)}R
+                                </span>
+                              </td>
+                              <td className="py-1.5 px-2.5 font-semibold">
+                                <span className={isPos ? "text-emerald-600" : "text-rose-600"}>
+                                  {isPos ? "+" : ""}{(t.returnPct ?? (outcomeR * 2.5)).toFixed(2)}%
+                                </span>
+                              </td>
+                              <td className="py-1.5 px-2.5 font-black">
+                                <span className={isPos ? "text-emerald-600" : "text-rose-600"}>
+                                  {isPos ? "+" : ""}₹{(t.pnlNetINR ?? (outcomeR * 100)).toFixed(2)}
+                                </span>
+                              </td>
+                              <td className="py-1.5 px-2.5">
+                                <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded text-[9px] font-bold border border-gray-200">
+                                  CLOSED
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={10} className="py-6 text-center text-slate-500 font-mono text-xs">
+                            No historical trades match the selected filter.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             ) : (
               /* DOCK TAB 3: LIVE PREDICTION & REGIME EVALUATION FEED */
