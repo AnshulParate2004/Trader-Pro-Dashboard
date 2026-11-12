@@ -5,16 +5,46 @@ import React, { useEffect, useRef, memo } from "react";
 interface TradingViewChartProps {
   symbol: string;
   interval: string;
+  market?: "crypto" | "us";
 }
 
-function TradingViewChart({ symbol, interval }: TradingViewChartProps) {
+const US_EQUITY_PREFIX_MAP: Record<string, string> = {
+  SPY: "AMEX:SPY",
+  AAPL: "NASDAQ:AAPL",
+  NVDA: "NASDAQ:NVDA",
+  MSFT: "NASDAQ:MSFT",
+  AMZN: "NASDAQ:AMZN",
+  GOOGL: "NASDAQ:GOOGL",
+  META: "NASDAQ:META",
+  TSLA: "NASDAQ:TSLA",
+  "BRK-B": "NYSE:BRK.B",
+  BRK_B: "NYSE:BRK.B",
+  JPM: "NYSE:JPM",
+  QQQ: "NASDAQ:QQQ",
+  DIA: "AMEX:DIA",
+  IWM: "AMEX:IWM",
+  V: "NYSE:V",
+  UNH: "NYSE:UNH",
+  XOM: "NYSE:XOM",
+  LLY: "NYSE:LLY",
+  WMT: "NYSE:WMT",
+  JNJ: "NYSE:JNJ",
+  PG: "NYSE:PG",
+  AVGO: "NASDAQ:AVGO",
+  MA: "NYSE:MA",
+  HD: "NYSE:HD",
+  COST: "NASDAQ:COST",
+  ORCL: "NYSE:ORCL",
+};
+
+function TradingViewChart({ symbol, interval, market }: TradingViewChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    // Clean up previous instance
+    // Clean up previous instance on symbol or interval change
     container.innerHTML = "";
 
     const widgetDiv = document.createElement("div");
@@ -29,6 +59,7 @@ function TradingViewChart({ symbol, interval }: TradingViewChartProps) {
     script.async = true;
 
     // Convert timeframe to TradingView format
+    // 1D -> D, 4H -> 240, 1H -> 60, 15m -> 15, 5m -> 5
     const intervalMap: Record<string, string> = {
       "1m": "1",
       "5m": "5",
@@ -37,31 +68,32 @@ function TradingViewChart({ symbol, interval }: TradingViewChartProps) {
       "4h": "240",
       "1d": "D",
     };
-    const tvInterval = intervalMap[interval.toLowerCase()] || "15";
+    const tvInterval = intervalMap[interval.toLowerCase()] || "D";
 
     // Format symbol for TradingView
-    const US_EQUITY_PREFIX_MAP: Record<string, string> = {
-      SPY: "AMEX:SPY",
-      AAPL: "NASDAQ:AAPL",
-      NVDA: "NASDAQ:NVDA",
-      MSFT: "NASDAQ:MSFT",
-      AMZN: "NASDAQ:AMZN",
-      GOOGL: "NASDAQ:GOOGL",
-      META: "NASDAQ:META",
-      TSLA: "NASDAQ:TSLA",
-      "BRK-B": "NYSE:BRK.B",
-      BRK_B: "NYSE:BRK.B",
-      JPM: "NYSE:JPM",
-      QQQ: "NASDAQ:QQQ",
-      DIA: "AMEX:DIA",
-      IWM: "AMEX:IWM",
-    };
-
+    const cleanSym = symbol.trim().toUpperCase();
     let tvSymbol = symbol;
-    if (US_EQUITY_PREFIX_MAP[symbol.toUpperCase()]) {
-      tvSymbol = US_EQUITY_PREFIX_MAP[symbol.toUpperCase()];
-    } else if (!tvSymbol.includes(":")) {
-      tvSymbol = `BINANCE:${symbol}`;
+
+    if (US_EQUITY_PREFIX_MAP[cleanSym]) {
+      tvSymbol = US_EQUITY_PREFIX_MAP[cleanSym];
+    } else if (cleanSym.includes(":")) {
+      // Already has exchange prefix (e.g. NASDAQ:AAPL, AMEX:SPY, BINANCE:BTCUSDT)
+      tvSymbol = cleanSym;
+    } else if (market === "us") {
+      // US equity without explicit prefix - do NOT prefix with BINANCE
+      tvSymbol = cleanSym;
+    } else if (
+      cleanSym.endsWith("USDT") ||
+      cleanSym.endsWith("PERP") ||
+      cleanSym.endsWith("BTC") ||
+      cleanSym === "BTC" ||
+      cleanSym === "ETH"
+    ) {
+      // Explicit crypto symbol
+      tvSymbol = `BINANCE:${cleanSym}`;
+    } else {
+      // Generic symbol without prefix
+      tvSymbol = cleanSym;
     }
 
     script.innerHTML = JSON.stringify({
@@ -91,7 +123,7 @@ function TradingViewChart({ symbol, interval }: TradingViewChartProps) {
         container.innerHTML = "";
       }
     };
-  }, [symbol, interval]);
+  }, [symbol, interval, market]);
 
   return (
     <div

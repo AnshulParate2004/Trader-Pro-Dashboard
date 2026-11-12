@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -28,159 +28,138 @@ import {
 import TradingViewChart from "@/components/TradingViewChart";
 import UserAuthPill from "@/components/UserAuthPill";
 import { BOOK_CONFIGS } from "@/lib/engineTypes";
-import { DEFAULT_EQUITY_FEE_CONFIG } from "@/lib/equityFeeModel";
 
-interface USEquityStock {
+interface USEquityStockStatic {
   symbol: string;
   name: string;
   sector: string;
   tvSymbol: string;
-  price: number;
-  changePct: number;
   peRatio: number;
   peSectorMedian: number;
   peZScore: number;
   epsGrowthYoY: number;
   mom12_1: number;
-  dist200SmaPct: number;
-  isAbove200Sma: boolean;
 }
 
-const US_EQUITIES_UNIVERSE: USEquityStock[] = [
+interface LiveQuote {
+  symbol: string;
+  price: number;
+  previousClose: number;
+  changePct: number;
+  changeUSD: number;
+  timestamp: number;
+}
+
+interface RegimeData {
+  symbol: string;
+  price: number;
+  sma200: number;
+  dist200SmaPct: number;
+  isAbove200Sma: boolean;
+  regime: "RISK_ON" | "CASH_DEFENSE";
+  barsEvaluated: number;
+}
+
+// Point-in-time fundamentals universe (static research attributes)
+const US_EQUITIES_STATIC_UNIVERSE: USEquityStockStatic[] = [
   {
     symbol: "SPY",
     name: "SPDR S&P 500 ETF Trust",
     sector: "Broad Benchmark",
     tvSymbol: "AMEX:SPY",
-    price: 596.42,
-    changePct: 0.35,
     peRatio: 27.8,
     peSectorMedian: 27.8,
     peZScore: 0.42,
     epsGrowthYoY: 9.8,
     mom12_1: 28.5,
-    dist200SmaPct: 8.6,
-    isAbove200Sma: true,
   },
   {
     symbol: "AAPL",
     name: "Apple Inc.",
     sector: "Technology / Hardware",
     tvSymbol: "NASDAQ:AAPL",
-    price: 228.28,
-    changePct: 0.72,
     peRatio: 34.6,
     peSectorMedian: 29.4,
     peZScore: 0.85,
     epsGrowthYoY: 12.4,
     mom12_1: 24.1,
-    dist200SmaPct: 11.2,
-    isAbove200Sma: true,
   },
   {
     symbol: "NVDA",
     name: "NVIDIA Corporation",
     sector: "Technology / Semiconductors",
     tvSymbol: "NASDAQ:NVDA",
-    price: 147.50,
-    changePct: 2.15,
     peRatio: 52.4,
     peSectorMedian: 29.4,
     peZScore: 1.65,
     epsGrowthYoY: 128.0,
     mom12_1: 178.5,
-    dist200SmaPct: 28.4,
-    isAbove200Sma: true,
   },
   {
     symbol: "MSFT",
     name: "Microsoft Corporation",
     sector: "Technology / Software",
     tvSymbol: "NASDAQ:MSFT",
-    price: 426.15,
-    changePct: -0.22,
     peRatio: 33.1,
     peSectorMedian: 29.4,
     peZScore: 0.61,
     epsGrowthYoY: 10.5,
     mom12_1: 16.8,
-    dist200SmaPct: 4.8,
-    isAbove200Sma: true,
   },
   {
     symbol: "AMZN",
     name: "Amazon.com Inc.",
     sector: "Consumer Discretionary",
     tvSymbol: "NASDAQ:AMZN",
-    price: 209.10,
-    changePct: 1.05,
     peRatio: 42.8,
     peSectorMedian: 26.5,
     peZScore: 0.32,
     epsGrowthYoY: 52.1,
     mom12_1: 42.0,
-    dist200SmaPct: 14.5,
-    isAbove200Sma: true,
   },
   {
     symbol: "GOOGL",
     name: "Alphabet Inc.",
     sector: "Communication Services",
     tvSymbol: "NASDAQ:GOOGL",
-    price: 180.25,
-    changePct: 0.48,
     peRatio: 23.5,
     peSectorMedian: 24.2,
     peZScore: -0.15,
     epsGrowthYoY: 34.2,
     mom12_1: 36.2,
-    dist200SmaPct: 7.9,
-    isAbove200Sma: true,
   },
   {
     symbol: "META",
     name: "Meta Platforms Inc.",
     sector: "Communication Services",
     tvSymbol: "NASDAQ:META",
-    price: 584.50,
-    changePct: -0.65,
     peRatio: 26.2,
     peSectorMedian: 24.2,
     peZScore: 0.12,
     epsGrowthYoY: 37.4,
     mom12_1: 72.4,
-    dist200SmaPct: 18.2,
-    isAbove200Sma: true,
   },
   {
     symbol: "TSLA",
     name: "Tesla Inc.",
     sector: "Automotive / Clean Energy",
     tvSymbol: "NASDAQ:TSLA",
-    price: 330.15,
-    changePct: 3.40,
     peRatio: 78.5,
     peSectorMedian: 26.5,
     peZScore: 1.15,
     epsGrowthYoY: -7.5,
     mom12_1: 52.8,
-    dist200SmaPct: 32.1,
-    isAbove200Sma: true,
   },
   {
     symbol: "JPM",
     name: "JPMorgan Chase & Co.",
     sector: "Financials / Banks",
     tvSymbol: "NYSE:JPM",
-    price: 243.60,
-    changePct: 0.85,
     peRatio: 12.8,
     peSectorMedian: 14.2,
     peZScore: 0.25,
     epsGrowthYoY: 8.2,
     mom12_1: 48.2,
-    dist200SmaPct: 19.4,
-    isAbove200Sma: true,
   },
 ];
 
@@ -189,41 +168,116 @@ export default function USEquitiesTerminalPage() {
   const [timeframe, setTimeframe] = useState<string>("1D");
   const [isChartMaximized, setIsChartMaximized] = useState<boolean>(false);
   const [dockTab, setDockTab] = useState<"fundamentals" | "holdings" | "universe">("fundamentals");
-  const [selectedStrategy, setSelectedStrategy] = useState<"T" | "V" | "VT" | "VM">("T");
 
+  // Live quotes & market state
+  const [quotes, setQuotes] = useState<Record<string, LiveQuote>>({});
+  const [isMarketOpen, setIsMarketOpen] = useState<boolean>(false);
+  const [isQuotesLoading, setIsQuotesLoading] = useState<boolean>(true);
+  const [quotesError, setQuotesError] = useState<string | null>(null);
+  const [isQuotesStale, setIsQuotesStale] = useState<boolean>(false);
+  const [lastUpdated, setLastUpdated] = useState<string>("");
+
+  // Live SPY 200-SMA regime state
+  const [regimeData, setRegimeData] = useState<RegimeData | null>(null);
+  const [isRegimeLoading, setIsRegimeLoading] = useState<boolean>(true);
+
+  // Paper trades & capital
   const [trades, setTrades] = useState<any[]>([]);
   const [metrics, setMetrics] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [lastUpdated, setLastUpdated] = useState<string>(new Date().toLocaleTimeString());
 
-  const currentStock = US_EQUITIES_UNIVERSE.find((s) => s.symbol === selectedSymbol) || US_EQUITIES_UNIVERSE[0];
-  const spyStock = US_EQUITIES_UNIVERSE[0];
-  const isMarketRiskOn = spyStock.isAbove200Sma;
-
-  const fetchEquitiesData = async () => {
+  // Poll quotes every 20 seconds
+  const fetchQuotes = async () => {
     try {
-      setIsLoading(true);
+      const res = await fetch("/api/equities/quotes");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.quotes) {
+          setQuotes(data.quotes);
+          setIsMarketOpen(Boolean(data.market?.isOpen));
+          setIsQuotesStale(Boolean(data.stale));
+          setQuotesError(null);
+          setLastUpdated(new Date().toLocaleTimeString());
+        }
+      } else {
+        // If 503 or error, set error state
+        setQuotesError("Live quote stream temporarily degraded; retrying...");
+      }
+    } catch {
+      setQuotesError("Network error fetching live quotes; retrying...");
+    } finally {
+      setIsQuotesLoading(false);
+    }
+  };
+
+  // Poll SPY 200 SMA regime every 60 seconds
+  const fetchRegime = async () => {
+    try {
+      const res = await fetch("/api/equities/regime");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) {
+          setRegimeData({
+            symbol: data.symbol,
+            price: data.price,
+            sma200: data.sma200,
+            dist200SmaPct: data.dist200SmaPct,
+            isAbove200Sma: data.isAbove200Sma,
+            regime: data.regime,
+            barsEvaluated: data.barsEvaluated,
+          });
+        }
+      }
+    } catch {
+      // Pass
+    } finally {
+      setIsRegimeLoading(false);
+    }
+  };
+
+  // Fetch paper trades
+  const fetchTrades = async () => {
+    try {
       const res = await fetch("/api/equities/trades");
       if (res.ok) {
         const data = await res.json();
         setTrades(data.trades || []);
         setMetrics(data.metrics || null);
-        setLastUpdated(new Date().toLocaleTimeString());
       }
-    } catch (e) {
-      console.warn("Could not fetch equities data:", e);
-    } finally {
-      setIsLoading(false);
+    } catch {
+      // Pass
     }
   };
 
   useEffect(() => {
-    fetchEquitiesData();
+    fetchQuotes();
+    fetchRegime();
+    fetchTrades();
+
+    // Quotes polling interval (20s)
+    const quoteInterval = setInterval(() => {
+      fetchQuotes();
+    }, 20000);
+
+    // Regime polling interval (60s)
+    const regimeInterval = setInterval(() => {
+      fetchRegime();
+    }, 60000);
+
+    return () => {
+      clearInterval(quoteInterval);
+      clearInterval(regimeInterval);
+    };
   }, []);
+
+  const currentStatic =
+    US_EQUITIES_STATIC_UNIVERSE.find((s) => s.symbol === selectedSymbol) ||
+    US_EQUITIES_STATIC_UNIVERSE[0];
+  const currentQuote = quotes[selectedSymbol];
+  const spyQuote = quotes["SPY"];
 
   const startingCapitalUSD = BOOK_CONFIGS.us_equities.startingCapital;
   const currentEquityUSD = metrics?.currentEquityUSD ?? startingCapitalUSD;
-  const netPnLUSD = metrics?.netPnLUSD ?? 0.0;
+  const isMarketRiskOn = regimeData ? regimeData.isAbove200Sma : true;
 
   return (
     <div className="h-screen w-screen flex flex-col bg-[#f8fafc] text-slate-900 font-sans overflow-hidden select-none">
@@ -244,18 +298,22 @@ export default function USEquitiesTerminalPage() {
 
           <div className="h-4 w-px bg-slate-200 hidden sm:block shrink-0"></div>
 
-          {/* US Stock Selector Dropdown */}
+          {/* US Stock Selector Dropdown with Live Prices */}
           <div className="flex items-center shrink-0">
             <select
               value={selectedSymbol}
               onChange={(e) => setSelectedSymbol(e.target.value)}
               className="bg-white border border-slate-300 rounded px-2.5 py-1 text-xs font-mono font-bold text-slate-900 hover:border-slate-400 focus:outline-none focus:border-blue-600 cursor-pointer shadow-2xs"
             >
-              {US_EQUITIES_UNIVERSE.map((stock) => (
-                <option key={stock.symbol} value={stock.symbol}>
-                  {stock.symbol} · {stock.name.split(" ")[0]} (${stock.price.toFixed(2)})
-                </option>
-              ))}
+              {US_EQUITIES_STATIC_UNIVERSE.map((stock) => {
+                const q = quotes[stock.symbol];
+                const priceStr = q ? `$${q.price.toFixed(2)}` : "--";
+                return (
+                  <option key={stock.symbol} value={stock.symbol}>
+                    {stock.symbol} · {stock.name.split(" ")[0]} ({priceStr})
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -276,19 +334,27 @@ export default function USEquitiesTerminalPage() {
 
           {/* Live Price Display */}
           <div className="hidden sm:flex items-center gap-1.5 font-mono text-xs shrink-0 pl-1">
-            <span className="font-black text-slate-900">${currentStock.price.toFixed(2)}</span>
-            <span
-              className={`text-[11px] font-bold ${
-                currentStock.changePct >= 0 ? "text-emerald-700" : "text-rose-700"
-              }`}
-            >
-              {currentStock.changePct >= 0 ? "+" : ""}
-              {currentStock.changePct.toFixed(2)}%
-            </span>
+            {isQuotesLoading && !currentQuote ? (
+              <span className="text-slate-400 animate-pulse text-xs">Streaming quotes...</span>
+            ) : currentQuote ? (
+              <>
+                <span className="font-black text-slate-900">${currentQuote.price.toFixed(2)}</span>
+                <span
+                  className={`text-[11px] font-bold ${
+                    currentQuote.changePct >= 0 ? "text-emerald-700" : "text-rose-700"
+                  }`}
+                >
+                  {currentQuote.changePct >= 0 ? "+" : ""}
+                  {currentQuote.changePct.toFixed(2)}%
+                </span>
+              </>
+            ) : (
+              <span className="text-slate-400 text-xs">Awaiting Quote</span>
+            )}
           </div>
         </div>
 
-        {/* Right: Segregated Market Switcher + Capital Badge + AI Engine Link */}
+        {/* Right: Segregated Market Switcher + Capital Badge + Status */}
         <div className="flex items-center gap-2 shrink-0">
           
           {/* Segregated Market Switcher Tab */}
@@ -310,7 +376,10 @@ export default function USEquitiesTerminalPage() {
           </div>
 
           {/* Capital Badge ($100 USD Segregated) */}
-          <div className="flex items-center gap-1 px-2.5 py-1 bg-white border border-slate-200 rounded font-mono text-xs shadow-2xs shrink-0" title="Live US Equities Capital: $100.00 Starting Baseline">
+          <div
+            className="flex items-center gap-1 px-2.5 py-1 bg-white border border-slate-200 rounded font-mono text-xs shadow-2xs shrink-0"
+            title="Live US Equities Capital: $100.00 Starting Baseline"
+          >
             <span className="text-slate-400 text-[10px] font-bold uppercase hidden lg:inline">US Cap:</span>
             <span className="font-black text-blue-800 tabular-nums text-xs">
               ${currentEquityUSD.toFixed(2)} USD
@@ -321,17 +390,40 @@ export default function USEquitiesTerminalPage() {
           <Link
             href="/equities/ai-engine"
             className="flex items-center gap-1 px-2.5 py-1 text-xs font-mono font-bold text-slate-700 bg-white border border-slate-200 rounded hover:text-blue-700 transition-all cursor-pointer shrink-0 shadow-2xs"
-            title="Open US Equities AI Strategy Engine"
+            title="Open US Equities AI Strategy Engine (Static Econometric Findings)"
           >
             <Zap className="w-3.5 h-3.5 text-blue-600" />
             <span className="hidden sm:inline">US AI Engine</span>
           </Link>
 
-          {/* Market Status Badge */}
-          <div className="flex items-center gap-1 font-mono text-[11px] bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-full shadow-2xs shrink-0">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
-            <span className="font-bold hidden xl:inline">NYSE REGULATED</span>
+          {/* Market Status Badge (NYSE Hours Live vs Closed) */}
+          <div
+            className={`flex items-center gap-1.5 font-mono text-[11px] border px-2 py-0.5 rounded-full shadow-2xs shrink-0 ${
+              isMarketOpen
+                ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                : "bg-amber-50 text-amber-800 border-amber-300"
+            }`}
+            title={isMarketOpen ? "NYSE Regular Trading Session Open" : "NYSE Market Closed (Regular Hours: 09:30 - 16:00 ET)"}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full ${
+                isMarketOpen ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+              }`}
+            ></span>
+            <span className="font-bold hidden xl:inline">
+              {isMarketOpen ? "NYSE OPEN" : "MARKET CLOSED"}
+            </span>
+            {lastUpdated && (
+              <span className="text-[9px] text-slate-400 hidden 2xl:inline">({lastUpdated})</span>
+            )}
           </div>
+
+          {/* Stale Badge if needed */}
+          {isQuotesStale && (
+            <div className="hidden lg:flex items-center gap-1 font-mono text-[10px] bg-amber-100 text-amber-900 border border-amber-300 px-1.5 py-0.5 rounded">
+              <span>STALE</span>
+            </div>
+          )}
 
           {/* User Auth Pill */}
           <div className="shrink-0">
@@ -344,11 +436,17 @@ export default function USEquitiesTerminalPage() {
       <div className={`flex-1 flex overflow-hidden ${isChartMaximized ? "relative" : "flex-row"}`}>
         
         {/* Left Column: Full-Height Interactive TradingView Candlestick Chart + Bottom Dock */}
-        <div className={`flex flex-col h-full overflow-hidden bg-white ${isChartMaximized ? "w-full" : "w-full lg:w-[calc(100%-340px)] xl:w-[calc(100%-380px)] border-r border-slate-200/90"}`}>
+        <div
+          className={`flex flex-col h-full overflow-hidden bg-white ${
+            isChartMaximized
+              ? "w-full"
+              : "w-full lg:w-[calc(100%-340px)] xl:w-[calc(100%-380px)] border-r border-slate-200/90"
+          }`}
+        >
           
           {/* Edge-to-Edge Live TradingView Chart */}
           <div className="flex-1 w-full h-full relative bg-white overflow-hidden">
-            <TradingViewChart symbol={currentStock.tvSymbol} interval={timeframe} />
+            <TradingViewChart symbol={currentStatic.tvSymbol} interval={timeframe} market="us" />
             
             {/* Maximize Toggle Button */}
             <button
@@ -398,7 +496,7 @@ export default function USEquitiesTerminalPage() {
                     }`}
                   >
                     <Layers className="w-3 h-3" />
-                    <span>S&amp;P 500 Top 30 Radar</span>
+                    <span>Live Universe Radar ({US_EQUITIES_STATIC_UNIVERSE.length})</span>
                   </button>
                 </div>
 
@@ -416,23 +514,23 @@ export default function USEquitiesTerminalPage() {
                     <div className="bg-white border border-slate-200 rounded p-2.5 shadow-2xs">
                       <div className="text-[10px] font-mono text-slate-500 uppercase font-bold">5-Yr Trailing PE Z-Score</div>
                       <div className="text-base font-black font-mono text-slate-900 mt-0.5">
-                        {currentStock.peZScore > 0 ? `+${currentStock.peZScore.toFixed(2)}` : currentStock.peZScore.toFixed(2)}
+                        {currentStatic.peZScore > 0 ? `+${currentStatic.peZScore.toFixed(2)}` : currentStatic.peZScore.toFixed(2)}
                       </div>
-                      <div className="text-[10px] font-mono text-slate-500">P/E: {currentStock.peRatio.toFixed(1)}x</div>
+                      <div className="text-[10px] font-mono text-slate-500">P/E: {currentStatic.peRatio.toFixed(1)}x</div>
                     </div>
 
                     <div className="bg-white border border-slate-200 rounded p-2.5 shadow-2xs">
                       <div className="text-[10px] font-mono text-slate-500 uppercase font-bold">Sector Median P/E</div>
-                      <div className="text-base font-black font-mono text-slate-900 mt-0.5">{currentStock.peSectorMedian.toFixed(1)}x</div>
-                      <div className="text-[10px] font-mono text-slate-500">{currentStock.sector}</div>
+                      <div className="text-base font-black font-mono text-slate-900 mt-0.5">{currentStatic.peSectorMedian.toFixed(1)}x</div>
+                      <div className="text-[10px] font-mono text-slate-500">{currentStatic.sector}</div>
                     </div>
 
                     <div className="bg-white border border-slate-200 rounded p-2.5 shadow-2xs">
                       <div className="text-[10px] font-mono text-slate-500 uppercase font-bold">Diluted EPS YoY Growth</div>
-                      <div className={`text-base font-black font-mono mt-0.5 ${currentStock.epsGrowthYoY >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
-                        {currentStock.epsGrowthYoY >= 0 ? "+" : ""}{currentStock.epsGrowthYoY.toFixed(1)}%
+                      <div className={`text-base font-black font-mono mt-0.5 ${currentStatic.epsGrowthYoY >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                        {currentStatic.epsGrowthYoY >= 0 ? "+" : ""}{currentStatic.epsGrowthYoY.toFixed(1)}%
                       </div>
-                      <div className="text-[10px] font-mono text-slate-500">Trailing Twelve Months</div>
+                      <div className="text-[10px] font-mono text-slate-500">Trailing Twelve Months (SEC)</div>
                     </div>
 
                     <div className="bg-white border border-slate-200 rounded p-2.5 shadow-2xs">
@@ -498,34 +596,53 @@ export default function USEquitiesTerminalPage() {
                           <th className="p-1.5">Ticker</th>
                           <th className="p-1.5">Company Name</th>
                           <th className="p-1.5">Sector</th>
-                          <th className="p-1.5">Price</th>
+                          <th className="p-1.5">Live Price</th>
+                          <th className="p-1.5">Daily Change</th>
                           <th className="p-1.5">12-1 Momentum</th>
-                          <th className="p-1.5">200 SMA Distance</th>
-                          <th className="p-1.5">Regime Status</th>
+                          <th className="p-1.5">SPY Macro Gate</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {US_EQUITIES_UNIVERSE.map((stock) => (
-                          <tr
-                            key={stock.symbol}
-                            onClick={() => setSelectedSymbol(stock.symbol)}
-                            className={`border-b border-slate-200 cursor-pointer transition-colors ${
-                              selectedSymbol === stock.symbol ? "bg-blue-50 font-bold" : "hover:bg-white"
-                            }`}
-                          >
-                            <td className="p-1.5 text-blue-700">{stock.symbol}</td>
-                            <td className="p-1.5">{stock.name}</td>
-                            <td className="p-1.5 text-slate-500">{stock.sector}</td>
-                            <td className="p-1.5">${stock.price.toFixed(2)}</td>
-                            <td className="p-1.5 text-emerald-700">+{stock.mom12_1.toFixed(1)}%</td>
-                            <td className="p-1.5">+{stock.dist200SmaPct.toFixed(1)}%</td>
-                            <td className="p-1.5">
-                              <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded text-[10px] font-bold">
-                                ABOVE 200 SMA
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
+                        {US_EQUITIES_STATIC_UNIVERSE.map((stock) => {
+                          const q = quotes[stock.symbol];
+                          return (
+                            <tr
+                              key={stock.symbol}
+                              onClick={() => setSelectedSymbol(stock.symbol)}
+                              className={`border-b border-slate-200 cursor-pointer transition-colors ${
+                                selectedSymbol === stock.symbol ? "bg-blue-50 font-bold" : "hover:bg-white"
+                              }`}
+                            >
+                              <td className="p-1.5 text-blue-700">{stock.symbol}</td>
+                              <td className="p-1.5">{stock.name}</td>
+                              <td className="p-1.5 text-slate-500">{stock.sector}</td>
+                              <td className="p-1.5 font-bold">
+                                {q ? `$${q.price.toFixed(2)}` : "--"}
+                              </td>
+                              <td className="p-1.5">
+                                {q ? (
+                                  <span className={q.changePct >= 0 ? "text-emerald-700" : "text-rose-700"}>
+                                    {q.changePct >= 0 ? "+" : ""}{q.changePct.toFixed(2)}%
+                                  </span>
+                                ) : (
+                                  "--"
+                                )}
+                              </td>
+                              <td className="p-1.5 text-emerald-700">+{stock.mom12_1.toFixed(1)}%</td>
+                              <td className="p-1.5">
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                    isMarketRiskOn
+                                      ? "bg-emerald-100 text-emerald-800"
+                                      : "bg-rose-100 text-rose-800"
+                                  }`}
+                                >
+                                  {isMarketRiskOn ? "RISK-ON" : "CASH SAFE"}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -560,50 +677,84 @@ export default function USEquitiesTerminalPage() {
               </div>
             </div>
 
-            {/* Macro Regime Audit Card */}
+            {/* Macro Regime Audit Card with LIVE SPY 200 SMA */}
             <div className="bg-white border border-slate-200 rounded-lg p-3 space-y-2 shadow-2xs">
               <div className="flex items-center justify-between text-xs font-mono font-bold">
                 <span className="text-slate-600 uppercase">SPY 200-Day SMA Trend Shield</span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-black ${isMarketRiskOn ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
-                  {isMarketRiskOn ? "🟢 RISK-ON (ABOVE 200 SMA)" : "🔴 100% CASH DEFENSE"}
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] font-black ${
+                    isMarketRiskOn ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
+                  }`}
+                >
+                  {isRegimeLoading
+                    ? "COMPUTING..."
+                    : isMarketRiskOn
+                    ? "🟢 RISK-ON (ABOVE 200 SMA)"
+                    : "🔴 100% CASH DEFENSE"}
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-slate-50 p-2 rounded border border-slate-100">
                 <div>
-                  <div className="text-[10px] text-slate-500">SPY Current:</div>
-                  <div className="font-bold text-slate-900">${spyStock.price.toFixed(2)}</div>
+                  <div className="text-[10px] text-slate-500">SPY Live Close:</div>
+                  <div className="font-bold text-slate-900">
+                    {regimeData ? `$${regimeData.price.toFixed(2)}` : spyQuote ? `$${spyQuote.price.toFixed(2)}` : "--"}
+                  </div>
                 </div>
                 <div>
-                  <div className="text-[10px] text-slate-500">200 SMA Est:</div>
-                  <div className="font-bold text-slate-900">${(spyStock.price / (1 + spyStock.dist200SmaPct / 100)).toFixed(2)}</div>
+                  <div className="text-[10px] text-slate-500">200 SMA (Live 200D):</div>
+                  <div className="font-bold text-slate-900">
+                    {regimeData ? `$${regimeData.sma200.toFixed(2)}` : "--"}
+                  </div>
                 </div>
               </div>
               <div className="text-[10px] text-slate-500 font-mono leading-tight">
-                Historical Audit: 100% cash defense preserved capital in 2022 (-29.36% in unhedged momentum).
+                {regimeData ? (
+                  <span>
+                    Spread: {regimeData.dist200SmaPct >= 0 ? "+" : ""}{regimeData.dist200SmaPct.toFixed(2)}% vs 200 SMA. (Live 200 trading days evaluated).
+                  </span>
+                ) : (
+                  <span>Evaluating daily closing history...</span>
+                )}
               </div>
             </div>
 
             {/* Active Model Signal Card for Selected Stock */}
             <div className="bg-white border border-slate-200 rounded-lg p-3 space-y-2.5 shadow-2xs">
               <div className="flex items-center justify-between text-xs font-mono font-bold">
-                <span className="text-slate-700 uppercase">Live Model Signal ({currentStock.symbol})</span>
-                <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold">
-                  {currentStock.isAbove200Sma ? "MOMENTUM CANDIDATE" : "BELOW 200 SMA"}
+                <span className="text-slate-700 uppercase">Live Model Signal ({currentStatic.symbol})</span>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                  isMarketRiskOn ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"
+                }`}>
+                  {isMarketRiskOn ? "MOMENTUM CANDIDATE" : "CASH DEFENSE (SPY < 200)"}
                 </span>
               </div>
 
               <div className="space-y-1.5 text-xs font-mono">
                 <div className="flex justify-between text-slate-600">
+                  <span>Current Price:</span>
+                  <strong className="text-slate-900 font-bold">
+                    {currentQuote ? `$${currentQuote.price.toFixed(2)}` : "--"}
+                  </strong>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Daily Session Chg:</span>
+                  <strong className={currentQuote && currentQuote.changePct >= 0 ? "text-emerald-700" : "text-rose-700"}>
+                    {currentQuote ? `${currentQuote.changePct >= 0 ? "+" : ""}${currentQuote.changePct.toFixed(2)}%` : "--"}
+                  </strong>
+                </div>
+                <div className="flex justify-between text-slate-600">
                   <span>12-1 Month Momentum:</span>
-                  <strong className="text-emerald-700">+{currentStock.mom12_1.toFixed(1)}%</strong>
+                  <strong className="text-emerald-700">+{currentStatic.mom12_1.toFixed(1)}%</strong>
                 </div>
                 <div className="flex justify-between text-slate-600">
                   <span>P/E vs Sector Median:</span>
-                  <strong className="text-slate-900">{currentStock.peRatio.toFixed(1)}x vs {currentStock.peSectorMedian.toFixed(1)}x</strong>
+                  <strong className="text-slate-900">
+                    {currentStatic.peRatio.toFixed(1)}x vs {currentStatic.peSectorMedian.toFixed(1)}x
+                  </strong>
                 </div>
                 <div className="flex justify-between text-slate-600">
                   <span>EPS YoY Growth:</span>
-                  <strong className="text-slate-900">+{currentStock.epsGrowthYoY.toFixed(1)}%</strong>
+                  <strong className="text-slate-900">+{currentStatic.epsGrowthYoY.toFixed(1)}%</strong>
                 </div>
                 <div className="flex justify-between text-slate-600">
                   <span>Max Position Budget:</span>
