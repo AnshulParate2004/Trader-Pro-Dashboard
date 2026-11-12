@@ -7,47 +7,49 @@ import {
   Activity,
   Layers,
   Sparkles,
+  TrendingUp,
+  Database,
+  BarChart2,
+  Clock,
+  DollarSign,
 } from "lucide-react";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen w-full flex flex-col bg-chrome-bg font-body text-chrome-ink selection:bg-accent-tint selection:text-chrome-ink">
+    <div className="min-h-screen w-full flex flex-col bg-slate-50 font-sans text-slate-900 selection:bg-blue-100 selection:text-blue-900">
       
-      {/* Top Header Bar matching Portfolio & Terminal Header */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-chrome-line px-4 sm:px-8 py-3.5 flex items-center justify-between select-none">
+      {/* Top Header Bar */}
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200 px-4 sm:px-8 py-3 flex items-center justify-between select-none shadow-2xs">
         <div className="flex items-center gap-3">
-          <span className="size-6 rounded-full bg-accent text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+          <span className="size-7 rounded-lg bg-slate-900 text-white text-xs font-mono font-bold flex items-center justify-center shrink-0 shadow-xs">
             TP
           </span>
           <div className="flex flex-col sm:flex-row sm:items-baseline gap-0 sm:gap-2">
-            <span className="font-brand text-lg font-medium tracking-tight text-chrome-ink">
-              Trader-Pro
+            <span className="font-mono text-base font-black tracking-tight text-slate-900">
+              TRADER-PRO
             </span>
-            <span className="font-mono text-xs lowercase text-chrome-dim hidden sm:inline">
-              btc strategy research &amp; paper-trading
+            <span className="font-mono text-xs text-slate-500 hidden sm:inline">
+              institutional quantitative research &amp; paper execution
             </span>
-          </div>
-          <div className="hidden md:flex items-center gap-1.5 font-mono text-[11px] text-chrome-green-ink bg-win-tint border border-win/30 px-2 py-0.5 rounded ml-2">
-            <span className="size-1.5 rounded-full bg-chrome-green animate-pulse" />
-            <span>PAPER SYSTEM ACTIVE</span>
           </div>
         </div>
 
-        <nav className="flex items-center gap-2.5">
+        {/* Header Links & Market Switchers */}
+        <nav className="flex items-center gap-2">
           <Link
-            href="/ai-engine"
-            className="flex items-center gap-1 text-chrome-dim hover:text-chrome-ink bg-white border border-chrome-line font-mono text-xs font-bold px-3 py-1.5 rounded transition-all shadow-xs hover:border-chrome-ink"
+            href="/terminal"
+            className="hidden md:flex items-center gap-1.5 text-slate-600 hover:text-slate-900 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 font-mono text-xs font-bold transition-all"
+            title="Launch 24/7 Perpetual Derivatives Terminal"
           >
-            <Zap className="w-3.5 h-3.5 text-chrome-green-ink" />
-            <span>AI Engine Logs</span>
+            <span>🪙 Perp Terminal (₹)</span>
           </Link>
 
           <Link
-            href="/terminal"
-            className="flex items-center gap-1 bg-accent hover:bg-accent-hover text-white font-mono text-xs font-bold px-3.5 py-1.5 rounded transition-all shadow-xs"
+            href="/equities"
+            className="hidden md:flex items-center gap-1.5 text-blue-700 hover:text-blue-900 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 font-mono text-xs font-bold transition-all"
+            title="Launch US Equities Stock Terminal"
           >
-            <span>Launch Terminal</span>
-            <ArrowUpRight className="w-3.5 h-3.5" />
+            <span>🇺🇸 US Stock Terminal ($)</span>
           </Link>
 
           <UserAuthPill />
@@ -55,125 +57,205 @@ export default function LandingPage() {
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-10 sm:py-14 flex flex-col gap-10">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-10 sm:py-14 flex flex-col gap-10">
         
-        {/* Simple & Clear Hero */}
-        <div className="flex flex-col gap-4 text-center items-center max-w-2xl mx-auto pt-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-white border border-chrome-line text-chrome-dim font-mono text-xs">
-            <span className="text-chrome-green-ink font-bold">● Walk-Forward Strategy Research</span>
+        {/* Hero Section */}
+        <div className="flex flex-col gap-3 text-center items-center max-w-3xl mx-auto pt-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-slate-200 text-slate-600 font-mono text-xs shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="font-bold text-slate-900">Segregated Multi-Market Platform</span>
             <span>·</span>
-            <span>Zero Lookahead Bias</span>
+            <span>Zero Cross-Market Co-Mingling</span>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-brand font-medium tracking-tight text-chrome-ink leading-tight">
-            BTC Strategy Research &amp; <span className="text-chrome-green-ink">Paper-Trading Dashboard</span>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-mono font-black tracking-tight text-slate-900 leading-tight">
+            Institutional Quantitative Terminals &amp; <span className="text-blue-600">AI Strategy Engines</span>
           </h1>
 
-          <p className="text-chrome-dim text-sm sm:text-base leading-relaxed font-body max-w-xl">
-            A transparent quantitative research terminal evaluating algorithmic BTC models under realistic taker friction (0.040% fee + 18% GST + 0.010% slippage per side).
+          <p className="text-slate-600 text-sm sm:text-base leading-relaxed font-sans max-w-2xl">
+            Choose your specialized market below. The platform provides two completely segregated trading environments with dedicated charts, isolated capital baselines, distinct fee structures, and separate AI engines.
           </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <Link
-              href="/ai-engine"
-              className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-white font-mono text-sm font-bold px-6 py-2.5 rounded transition-all shadow-xs"
-            >
-              View Research &amp; Paper Engine
-              <ArrowUpRight className="w-4 h-4" />
-            </Link>
-            <Link
-              href="/terminal"
-              className="flex items-center gap-2 bg-white border border-chrome-line text-chrome-ink font-mono text-sm font-semibold px-5 py-2.5 rounded hover:bg-chrome-field transition-all shadow-xs"
-            >
-              Open Live Chart Terminal
-            </Link>
-          </div>
         </div>
 
-        {/* Honest Parameters & Invariants */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-white border border-chrome-line rounded-lg p-5 shadow-xs">
-          <div className="flex flex-col gap-0.5 border-r border-chrome-edge pr-3 last:border-none">
-            <span className="text-[10px] font-mono text-chrome-dim uppercase font-bold">Swing Friction Model</span>
-            <span className="text-2xl font-bold font-mono text-chrome-green-ink">0.100%</span>
-            <span className="text-[10px] text-chrome-dim font-mono">Round-Trip Taker Cost Deducted</span>
+        {/* Dual-Market Gateway Cards (Side by Side Segregation) */}
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+          
+          {/* Market 1: Crypto & Commodities Perpetual Derivatives */}
+          <div className="bg-white border-2 border-emerald-500/80 rounded-2xl p-6 sm:p-8 flex flex-col justify-between shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+            <div className="absolute top-0 right-0 bg-emerald-500 text-white font-mono text-[10px] font-black uppercase px-3 py-1 rounded-bl-lg tracking-wider">
+              24/7/365 CONTINUOUS · INR
+            </div>
+
+            <div className="space-y-4">
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 text-2xl shadow-2xs">
+                🪙
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-mono font-black text-slate-900">
+                    24x7 Perpetual Derivatives
+                  </h2>
+                  <span className="bg-emerald-100 text-emerald-800 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full">
+                    COINSWITCH PRO
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 font-mono mt-0.5">
+                  Crypto &amp; Commodities Systematic Swing Trading
+                </p>
+              </div>
+
+              <p className="text-xs text-slate-600 leading-relaxed font-sans">
+                Algorithmic 4H and 1H models executing on Bitcoin, Ethereum, Solana, Gold, Silver, and Crude Oil.
+                Calibrated to realistic taker fees (0.040% fee + 18% GST + 1% TDS).
+              </p>
+
+              {/* Key Specs */}
+              <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs font-mono">
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Base Capital</span>
+                  <span className="font-bold text-slate-900">₹7,000.00 INR</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Trading Hours</span>
+                  <span className="font-bold text-emerald-700">24/7 Continuous</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Active Brain</span>
+                  <span className="font-bold text-slate-900">4H Timeframe Router</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Cadence</span>
+                  <span className="font-bold text-blue-700">2-Min Live Engine</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Launch Buttons */}
+            <div className="pt-6 space-y-2">
+              <Link
+                href="/terminal"
+                className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-mono text-sm font-bold px-4 py-3 rounded-xl transition-all shadow-xs cursor-pointer"
+              >
+                <span>Launch Crypto &amp; Cmdty Terminal</span>
+                <ArrowUpRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/ai-engine"
+                className="w-full flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-mono text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer"
+              >
+                <Zap className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Open Crypto AI Engine Logs</span>
+              </Link>
+            </div>
           </div>
-          <div className="flex flex-col gap-0.5 border-r border-chrome-edge pr-3 last:border-none">
-            <span className="text-[10px] font-mono text-chrome-dim uppercase font-bold">4H Swing Expectancy</span>
-            <span className="text-2xl font-bold font-mono text-win">+0.175 R</span>
-            <span className="text-[10px] text-chrome-dim font-mono">Active OOS Paper Engine</span>
+
+          {/* Market 2: US Equities Institutional Book */}
+          <div className="bg-white border-2 border-blue-500/80 rounded-2xl p-6 sm:p-8 flex flex-col justify-between shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+            <div className="absolute top-0 right-0 bg-blue-600 text-white font-mono text-[10px] font-black uppercase px-3 py-1 rounded-bl-lg tracking-wider">
+              NYSE REGULATED · USD
+            </div>
+
+            <div className="space-y-4">
+              <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 text-2xl shadow-2xs">
+                🇺🇸
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-mono font-black text-slate-900">
+                    US Equities Institutional
+                  </h2>
+                  <span className="bg-blue-100 text-blue-800 text-[10px] font-mono font-bold px-2 py-0.5 rounded-full">
+                    S&amp;P 500 TOP 30
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 font-mono mt-0.5">
+                  Point-in-Time Daily Systematic Stocks &amp; Benchmark Tracking
+                </p>
+              </div>
+
+              <p className="text-xs text-slate-600 leading-relaxed font-sans">
+                Point-in-time Top 30 US equities (SPY, AAPL, NVDA, MSFT, AMZN, META, TSLA).
+                Causal SEC EDGAR XBRL filings, 200-day SMA regime shield, and next-day open fills (O_(t+1)).
+              </p>
+
+              {/* Key Specs */}
+              <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs font-mono">
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Base Capital</span>
+                  <span className="font-bold text-slate-900">$100.00 USD</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Trading Hours</span>
+                  <span className="font-bold text-blue-700">09:30 - 16:00 ET</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Active Brain</span>
+                  <span className="font-bold text-slate-900">S2 Momentum + 200 SMA</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">SEC Compliance</span>
+                  <span className="font-bold text-emerald-700">Filing Date (Zero Bias)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Launch Buttons */}
+            <div className="pt-6 space-y-2">
+              <Link
+                href="/equities"
+                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-mono text-sm font-bold px-4 py-3 rounded-xl transition-all shadow-xs cursor-pointer"
+              >
+                <span>Launch US Stock Terminal</span>
+                <ArrowUpRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/equities/ai-engine"
+                className="w-full flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-mono text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer"
+              >
+                <BarChart2 className="w-3.5 h-3.5 text-blue-600" />
+                <span>Open US Strategy Engine &amp; Factor Surfaces</span>
+              </Link>
+            </div>
           </div>
-          <div className="flex flex-col gap-0.5 border-r border-chrome-edge pr-3 last:border-none">
-            <span className="text-[10px] font-mono text-chrome-dim uppercase font-bold">Exchange Fee Base</span>
-            <span className="text-2xl font-bold font-mono text-chrome-ink">0.040%</span>
-            <span className="text-[10px] text-chrome-dim font-mono">Shark Exchange Default</span>
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-mono text-chrome-dim uppercase font-bold">Paper Capital</span>
-            <span className="text-2xl font-bold font-mono text-chrome-ink">₹1,000</span>
-            <span className="text-[10px] text-chrome-dim font-mono">1% Max Risk / Trade</span>
-          </div>
+
         </section>
 
-        {/* 3-Column Architecture */}
-        <section className="grid md:grid-cols-3 gap-4">
-          <div className="bg-white border border-chrome-line rounded-lg p-4 sm:p-5 flex flex-col gap-2.5 shadow-xs">
-            <div className="w-8 h-8 rounded bg-chrome-field border border-chrome-line flex items-center justify-center text-accent">
-              <Layers className="w-4 h-4" />
+        {/* Platform Integrity & Invariant Pillars */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs space-y-2">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+              <ShieldCheck className="w-4 h-4" />
             </div>
-            <h3 className="text-xs font-bold font-mono text-chrome-ink uppercase">1. Live Market Bridge</h3>
-            <p className="text-chrome-dim text-xs leading-relaxed font-body">
-              Pulls live closed candles from Binance data feeds and evaluates LightGBM conviction models strictly at bar close.
+            <h3 className="font-mono text-xs font-bold uppercase text-slate-900">Strict Capital Isolation</h3>
+            <p className="text-xs text-slate-600 font-sans leading-relaxed">
+              Crypto/Commodity balances (INR) and US Equities accounts (USD) are stored in isolated database collections and never merged.
             </p>
           </div>
 
-          <div className="bg-white border border-accent/40 rounded-lg p-4 sm:p-5 flex flex-col gap-2.5 shadow-xs">
-            <div className="w-8 h-8 rounded bg-accent-tint border border-accent/30 flex items-center justify-center text-accent">
-              <Zap className="w-4 h-4" />
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs space-y-2">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
+              <Database className="w-4 h-4" />
             </div>
-            <h3 className="text-xs font-bold font-mono text-accent uppercase">2. Honest Post-Fee Metrics</h3>
-            <p className="text-chrome-dim text-xs leading-relaxed font-body">
-              All metrics track true win rate, net win rate, and net R after accounting for 0.04% taker fee, 18% GST, and 0.01% slippage.
+            <h3 className="font-mono text-xs font-bold uppercase text-slate-900">Point-in-Time Data Only</h3>
+            <p className="text-xs text-slate-600 font-sans leading-relaxed">
+              US Equities use SEC EDGAR acceptance dates (<code className="font-mono text-blue-700">filed &le; t</code>). Truncation test verifies bit-for-bit parity across 200 random dates.
             </p>
           </div>
 
-          <div className="bg-white border border-chrome-line rounded-lg p-4 sm:p-5 flex flex-col gap-2.5 shadow-xs">
-            <div className="w-8 h-8 rounded bg-chrome-field border border-chrome-line flex items-center justify-center text-chrome-dim">
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs space-y-2">
+            <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
               <Activity className="w-4 h-4" />
             </div>
-            <h3 className="text-xs font-bold font-mono text-chrome-ink uppercase">3. Sealed Hold-Out Studies</h3>
-            <p className="text-chrome-dim text-xs leading-relaxed font-body">
-              Pre-registered multi-coin walk-forward studies across BTC, ETH, SOL, BNB, and XRP with transparent verdicts.
+            <h3 className="font-mono text-xs font-bold uppercase text-slate-900">Separate Specialized AI Brains</h3>
+            <p className="text-xs text-slate-600 font-sans leading-relaxed">
+              Crypto uses a 4H multi-asset LightGBM router; US equities uses an empirical 200-SMA regime shield with point-in-time momentum and value composites.
             </p>
           </div>
         </section>
 
-        {/* Action Callout */}
-        <div className="bg-white border border-chrome-line rounded-lg p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
-          <div>
-            <h4 className="text-sm font-brand font-medium text-chrome-ink">Inspect Research &amp; Execution Stream</h4>
-            <p className="text-xs text-chrome-dim font-body mt-0.5">Explore the live paper engine, walk-forward research studies, and trade logs.</p>
-          </div>
-          <Link
-            href="/ai-engine"
-            className="flex items-center gap-1.5 bg-accent hover:bg-accent-hover text-white font-mono text-xs font-bold px-4 py-2 rounded transition-all shadow-xs whitespace-nowrap"
-          >
-            Launch AI Engine
-            <ArrowUpRight className="w-4 h-4" />
-          </Link>
-        </div>
-
       </main>
-
-      {/* Simple Footer Note */}
-      <footer className="border-t border-chrome-line py-8 px-6 bg-white text-center font-mono text-xs text-chrome-dim flex flex-col items-center justify-center gap-2 select-none">
-        <p className="font-semibold text-chrome-ink">
-          Research and paper trading only. Not financial advice.
-        </p>
-        <p className="text-[11px] text-chrome-dim">
-          Trader-Pro · BTC strategy research and paper-trading dashboard
-        </p>
-      </footer>
-
     </div>
   );
 }

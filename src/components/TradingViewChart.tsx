@@ -40,8 +40,27 @@ function TradingViewChart({ symbol, interval }: TradingViewChartProps) {
     const tvInterval = intervalMap[interval.toLowerCase()] || "15";
 
     // Format symbol for TradingView
+    const US_EQUITY_PREFIX_MAP: Record<string, string> = {
+      SPY: "AMEX:SPY",
+      AAPL: "NASDAQ:AAPL",
+      NVDA: "NASDAQ:NVDA",
+      MSFT: "NASDAQ:MSFT",
+      AMZN: "NASDAQ:AMZN",
+      GOOGL: "NASDAQ:GOOGL",
+      META: "NASDAQ:META",
+      TSLA: "NASDAQ:TSLA",
+      "BRK-B": "NYSE:BRK.B",
+      BRK_B: "NYSE:BRK.B",
+      JPM: "NYSE:JPM",
+      QQQ: "NASDAQ:QQQ",
+      DIA: "AMEX:DIA",
+      IWM: "AMEX:IWM",
+    };
+
     let tvSymbol = symbol;
-    if (!tvSymbol.includes(":")) {
+    if (US_EQUITY_PREFIX_MAP[symbol.toUpperCase()]) {
+      tvSymbol = US_EQUITY_PREFIX_MAP[symbol.toUpperCase()];
+    } else if (!tvSymbol.includes(":")) {
       tvSymbol = `BINANCE:${symbol}`;
     }
 

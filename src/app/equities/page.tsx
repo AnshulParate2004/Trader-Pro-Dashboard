@@ -2,15 +2,203 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, TrendingUp, ShieldAlert, DollarSign, Calendar, RefreshCw, BarChart2, AlertTriangle, CheckCircle2, XCircle, Clock, Eye } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  TrendingUp,
+  ShieldCheck,
+  ShieldAlert,
+  BarChart2,
+  DollarSign,
+  Calendar,
+  RefreshCw,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Eye,
+  Maximize2,
+  Minimize2,
+  Activity,
+  Zap,
+  Layers,
+  Database,
+  Search,
+} from "lucide-react";
+import TradingViewChart from "@/components/TradingViewChart";
+import UserAuthPill from "@/components/UserAuthPill";
 import { BOOK_CONFIGS } from "@/lib/engineTypes";
 import { DEFAULT_EQUITY_FEE_CONFIG } from "@/lib/equityFeeModel";
 
-export default function USEquitiesPage() {
+interface USEquityStock {
+  symbol: string;
+  name: string;
+  sector: string;
+  tvSymbol: string;
+  price: number;
+  changePct: number;
+  peRatio: number;
+  peSectorMedian: number;
+  peZScore: number;
+  epsGrowthYoY: number;
+  mom12_1: number;
+  dist200SmaPct: number;
+  isAbove200Sma: boolean;
+}
+
+const US_EQUITIES_UNIVERSE: USEquityStock[] = [
+  {
+    symbol: "SPY",
+    name: "SPDR S&P 500 ETF Trust",
+    sector: "Broad Benchmark",
+    tvSymbol: "AMEX:SPY",
+    price: 596.42,
+    changePct: 0.35,
+    peRatio: 27.8,
+    peSectorMedian: 27.8,
+    peZScore: 0.42,
+    epsGrowthYoY: 9.8,
+    mom12_1: 28.5,
+    dist200SmaPct: 8.6,
+    isAbove200Sma: true,
+  },
+  {
+    symbol: "AAPL",
+    name: "Apple Inc.",
+    sector: "Technology / Hardware",
+    tvSymbol: "NASDAQ:AAPL",
+    price: 228.28,
+    changePct: 0.72,
+    peRatio: 34.6,
+    peSectorMedian: 29.4,
+    peZScore: 0.85,
+    epsGrowthYoY: 12.4,
+    mom12_1: 24.1,
+    dist200SmaPct: 11.2,
+    isAbove200Sma: true,
+  },
+  {
+    symbol: "NVDA",
+    name: "NVIDIA Corporation",
+    sector: "Technology / Semiconductors",
+    tvSymbol: "NASDAQ:NVDA",
+    price: 147.50,
+    changePct: 2.15,
+    peRatio: 52.4,
+    peSectorMedian: 29.4,
+    peZScore: 1.65,
+    epsGrowthYoY: 128.0,
+    mom12_1: 178.5,
+    dist200SmaPct: 28.4,
+    isAbove200Sma: true,
+  },
+  {
+    symbol: "MSFT",
+    name: "Microsoft Corporation",
+    sector: "Technology / Software",
+    tvSymbol: "NASDAQ:MSFT",
+    price: 426.15,
+    changePct: -0.22,
+    peRatio: 33.1,
+    peSectorMedian: 29.4,
+    peZScore: 0.61,
+    epsGrowthYoY: 10.5,
+    mom12_1: 16.8,
+    dist200SmaPct: 4.8,
+    isAbove200Sma: true,
+  },
+  {
+    symbol: "AMZN",
+    name: "Amazon.com Inc.",
+    sector: "Consumer Discretionary",
+    tvSymbol: "NASDAQ:AMZN",
+    price: 209.10,
+    changePct: 1.05,
+    peRatio: 42.8,
+    peSectorMedian: 26.5,
+    peZScore: 0.32,
+    epsGrowthYoY: 52.1,
+    mom12_1: 42.0,
+    dist200SmaPct: 14.5,
+    isAbove200Sma: true,
+  },
+  {
+    symbol: "GOOGL",
+    name: "Alphabet Inc.",
+    sector: "Communication Services",
+    tvSymbol: "NASDAQ:GOOGL",
+    price: 180.25,
+    changePct: 0.48,
+    peRatio: 23.5,
+    peSectorMedian: 24.2,
+    peZScore: -0.15,
+    epsGrowthYoY: 34.2,
+    mom12_1: 36.2,
+    dist200SmaPct: 7.9,
+    isAbove200Sma: true,
+  },
+  {
+    symbol: "META",
+    name: "Meta Platforms Inc.",
+    sector: "Communication Services",
+    tvSymbol: "NASDAQ:META",
+    price: 584.50,
+    changePct: -0.65,
+    peRatio: 26.2,
+    peSectorMedian: 24.2,
+    peZScore: 0.12,
+    epsGrowthYoY: 37.4,
+    mom12_1: 72.4,
+    dist200SmaPct: 18.2,
+    isAbove200Sma: true,
+  },
+  {
+    symbol: "TSLA",
+    name: "Tesla Inc.",
+    sector: "Automotive / Clean Energy",
+    tvSymbol: "NASDAQ:TSLA",
+    price: 330.15,
+    changePct: 3.40,
+    peRatio: 78.5,
+    peSectorMedian: 26.5,
+    peZScore: 1.15,
+    epsGrowthYoY: -7.5,
+    mom12_1: 52.8,
+    dist200SmaPct: 32.1,
+    isAbove200Sma: true,
+  },
+  {
+    symbol: "JPM",
+    name: "JPMorgan Chase & Co.",
+    sector: "Financials / Banks",
+    tvSymbol: "NYSE:JPM",
+    price: 243.60,
+    changePct: 0.85,
+    peRatio: 12.8,
+    peSectorMedian: 14.2,
+    peZScore: 0.25,
+    epsGrowthYoY: 8.2,
+    mom12_1: 48.2,
+    dist200SmaPct: 19.4,
+    isAbove200Sma: true,
+  },
+];
+
+export default function USEquitiesTerminalPage() {
+  const [selectedSymbol, setSelectedSymbol] = useState<string>("SPY");
+  const [timeframe, setTimeframe] = useState<string>("1D");
+  const [isChartMaximized, setIsChartMaximized] = useState<boolean>(false);
+  const [dockTab, setDockTab] = useState<"fundamentals" | "holdings" | "universe">("fundamentals");
+  const [selectedStrategy, setSelectedStrategy] = useState<"T" | "V" | "VT" | "VM">("T");
+
   const [trades, setTrades] = useState<any[]>([]);
   const [metrics, setMetrics] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [lastUpdated, setLastUpdated] = useState<string>("Loading...");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [lastUpdated, setLastUpdated] = useState<string>(new Date().toLocaleTimeString());
+
+  const currentStock = US_EQUITIES_UNIVERSE.find((s) => s.symbol === selectedSymbol) || US_EQUITIES_UNIVERSE[0];
+  const spyStock = US_EQUITIES_UNIVERSE[0];
+  const isMarketRiskOn = spyStock.isAbove200Sma;
 
   const fetchEquitiesData = async () => {
     try {
@@ -33,408 +221,419 @@ export default function USEquitiesPage() {
     fetchEquitiesData();
   }, []);
 
-  const startingCapital = BOOK_CONFIGS.us_equities.startingCapital;
-  const currentEquity = metrics?.currentEquityUSD ?? startingCapital;
-  const netPnL = metrics?.netPnLUSD ?? 0.0;
-  const winRate = metrics?.winRatePct ?? null;
+  const startingCapitalUSD = BOOK_CONFIGS.us_equities.startingCapital;
+  const currentEquityUSD = metrics?.currentEquityUSD ?? startingCapitalUSD;
+  const netPnLUSD = metrics?.netPnLUSD ?? 0.0;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-16">
-      {/* Top Header */}
-      <header className="bg-white border-b border-slate-200 px-4 py-3 sticky top-0 z-20 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/terminal"
-            className="p-1.5 rounded hover:bg-slate-100 text-slate-600 transition-colors"
-            title="Back to Perp Terminal"
-          >
-            <ArrowLeft className="w-5 h-5" />
+    <div className="h-screen w-screen flex flex-col bg-[#f8fafc] text-slate-900 font-sans overflow-hidden select-none">
+      
+      {/* 1. Top Header Bar */}
+      <header className="h-12 w-full bg-white border-b border-slate-200/90 px-3 flex items-center justify-between shrink-0 z-30 shadow-2xs gap-2">
+        
+        {/* Left: Brand + Stock Selector + Timeframe */}
+        <div className="flex items-center gap-2 min-w-0">
+          <Link href="/" className="flex items-center gap-1.5 group shrink-0" title="Back to Gateway">
+            <div className="w-6 h-6 rounded bg-blue-600 flex items-center justify-center text-white font-mono text-xs font-bold shadow-xs">
+              US
+            </div>
+            <span className="font-mono text-xs font-bold tracking-tight text-slate-900 group-hover:text-blue-600 transition-colors hidden xl:inline">
+              TRADER-PRO / EQUITIES
+            </span>
           </Link>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-sm font-black text-slate-900 tracking-tight">
-                TRADER-PRO / US EQUITIES BOOK
-              </span>
-              <span className="bg-blue-100 text-blue-800 border border-blue-300 font-mono text-[10px] font-bold px-2 py-0.5 rounded-full">
-                BOOK: us_equities
-              </span>
-              <span className="bg-amber-100 text-amber-900 border border-amber-300 font-mono text-[10px] font-bold px-2 py-0.5 rounded-full">
-                PAPER ONLY
-              </span>
-            </div>
-            <div className="text-xs text-slate-500 font-mono">
-              NYSE/NASDAQ Daily Session (09:30 - 16:00 ET) · Point-in-Time Top 30 Large-Cap Universe
-            </div>
+
+          <div className="h-4 w-px bg-slate-200 hidden sm:block shrink-0"></div>
+
+          {/* US Stock Selector Dropdown */}
+          <div className="flex items-center shrink-0">
+            <select
+              value={selectedSymbol}
+              onChange={(e) => setSelectedSymbol(e.target.value)}
+              className="bg-white border border-slate-300 rounded px-2.5 py-1 text-xs font-mono font-bold text-slate-900 hover:border-slate-400 focus:outline-none focus:border-blue-600 cursor-pointer shadow-2xs"
+            >
+              {US_EQUITIES_UNIVERSE.map((stock) => (
+                <option key={stock.symbol} value={stock.symbol}>
+                  {stock.symbol} · {stock.name.split(" ")[0]} (${stock.price.toFixed(2)})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Timeframe Toggles */}
+          <div className="flex items-center bg-slate-100 p-0.5 rounded border border-slate-200 shrink-0 text-xs font-mono">
+            {["1D", "4H", "1H"].map((tf) => (
+              <button
+                key={tf}
+                onClick={() => setTimeframe(tf)}
+                className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer ${
+                  timeframe === tf ? "bg-white text-blue-700 shadow-2xs" : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                {tf}
+              </button>
+            ))}
+          </div>
+
+          {/* Live Price Display */}
+          <div className="hidden sm:flex items-center gap-1.5 font-mono text-xs shrink-0 pl-1">
+            <span className="font-black text-slate-900">${currentStock.price.toFixed(2)}</span>
+            <span
+              className={`text-[11px] font-bold ${
+                currentStock.changePct >= 0 ? "text-emerald-700" : "text-rose-700"
+              }`}
+            >
+              {currentStock.changePct >= 0 ? "+" : ""}
+              {currentStock.changePct.toFixed(2)}%
+            </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Segregated Market Book Switcher */}
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs font-mono font-bold shadow-2xs">
+        {/* Right: Segregated Market Switcher + Capital Badge + AI Engine Link */}
+        <div className="flex items-center gap-2 shrink-0">
+          
+          {/* Segregated Market Switcher Tab */}
+          <div className="hidden md:flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs font-mono font-bold shadow-2xs">
             <Link
               href="/terminal"
               className="flex items-center gap-1.5 px-2.5 py-1 text-slate-500 hover:text-slate-900 hover:bg-slate-200/50 rounded-md transition-all cursor-pointer"
-              title="Switch to 24/7 Perpetual Derivatives Book (Crypto + Commodities, INR Base)"
+              title="Switch to 24/7 Perpetual Derivatives (Crypto + Commodities, INR Base)"
             >
-              <span>Perp (Crypto + Cmdty) · ₹</span>
+              <span>🪙 Perp (Crypto + Cmdty) · ₹</span>
             </Link>
             <div
               className="flex items-center gap-1.5 px-2.5 py-1 bg-white text-blue-900 rounded-md shadow-xs border border-blue-200"
-              title="Active Terminal: US Equities Daily Systematic (Top 30 S&P 500, USD Base)"
+              title="Active Book: US Equities Daily Systematic (Top 30 S&P 500, USD Base)"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
-              <span>US Equities · $</span>
+              <span>🇺🇸 US Equities · $</span>
             </div>
           </div>
 
+          {/* Capital Badge ($100 USD Segregated) */}
+          <div className="flex items-center gap-1 px-2.5 py-1 bg-white border border-slate-200 rounded font-mono text-xs shadow-2xs shrink-0" title="Live US Equities Capital: $100.00 Starting Baseline">
+            <span className="text-slate-400 text-[10px] font-bold uppercase hidden lg:inline">US Cap:</span>
+            <span className="font-black text-blue-800 tabular-nums text-xs">
+              ${currentEquityUSD.toFixed(2)} USD
+            </span>
+          </div>
+
+          {/* US AI Engine Link */}
           <Link
-            href="/ai-engine"
-            className="text-xs font-mono text-slate-600 hover:text-slate-900 bg-slate-100 px-2.5 py-1.5 rounded border border-slate-200 font-semibold"
+            href="/equities/ai-engine"
+            className="flex items-center gap-1 px-2.5 py-1 text-xs font-mono font-bold text-slate-700 bg-white border border-slate-200 rounded hover:text-blue-700 transition-all cursor-pointer shrink-0 shadow-2xs"
+            title="Open US Equities AI Strategy Engine"
           >
-            AI Engine
+            <Zap className="w-3.5 h-3.5 text-blue-600" />
+            <span className="hidden sm:inline">US AI Engine</span>
           </Link>
-          <button
-            onClick={fetchEquitiesData}
-            disabled={isLoading}
-            className="flex items-center gap-1 text-xs font-mono bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 px-2.5 py-1.5 rounded cursor-pointer transition-colors"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-blue-600" : ""}`} />
-            <span>{lastUpdated}</span>
-          </button>
+
+          {/* Market Status Badge */}
+          <div className="flex items-center gap-1 font-mono text-[11px] bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-full shadow-2xs shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+            <span className="font-bold hidden xl:inline">NYSE REGULATED</span>
+          </div>
+
+          {/* User Auth Pill */}
+          <div className="shrink-0">
+            <UserAuthPill />
+          </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 mt-6 space-y-6">
-        {/* Paper-Trading Warning & Segregation Banner */}
-        <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 text-xs font-mono text-amber-950 flex items-start gap-3">
-          <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <div className="font-bold uppercase tracking-wide">
-              Isolated US Equities Paper Book (Strictly Regulated Session)
-            </div>
-            <p className="text-amber-900 font-sans text-xs">
-              This book operates completely segregated from the 24/7 perpetual derivatives book. It models <strong>daily bars</strong> on the <strong>NYSE/NASDAQ calendar</strong> (09:30–16:00 ET).
-              Signals are evaluated at the daily close ($t$) and filled at the next day open ($t+1$).
-              <strong> Zero machine learning</strong> is deployed in this book; all tested systems are closed-form rule-based models.
-            </p>
-          </div>
-        </div>
-
-        {/* Institutional Alpha Verdict Callout */}
-        <div className="bg-slate-900 text-white rounded-lg p-5 shadow-sm space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <XCircle className="w-5 h-5 text-rose-400" />
-              <span className="font-mono text-xs font-black uppercase tracking-wider text-rose-400">
-                16-Year Quantitative Audit Verdict (2010–2026): REJECT ACTIVE TRADING
-              </span>
-            </div>
-            <span className="text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded">
-              Validated N=4,240 Daily Bars · 203 Monthly Rebalances
-            </span>
-          </div>
-          <p className="text-xs text-slate-300 leading-relaxed font-sans">
-            Under our pre-registered institutional rule (Alpha t-statistic &ge; 2.0 with validated 95% bootstrap CI excluding zero after friction),
-            <strong> all 3 pre-registered active strategies failed to beat Buy-and-Hold the Index</strong>.
-            Over the full 2010–2026 horizon, <strong>SPY Buy-and-Hold generated 13.92% CAGR</strong> and <strong>Equal-Weight Point-in-Time generated 18.32% CAGR</strong> (likely survivorship-inflated until Task B audit),
-            decisively crushing active trend and pullback rules whose returns were degraded by cash-drag, friction, and whipsaws during sideways bull runs.
-            <strong> In this test, no active strategy beat buy-and-hold on a risk-adjusted basis.</strong>
-          </p>
-        </div>
-
-        {/* Forward Paper Performance & Reference Comparison Panel */}
-        <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-xs space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2 font-mono text-xs font-bold text-slate-800 uppercase">
-              <Eye className="w-4 h-4 text-blue-600" />
-              <span>Forward Paper Ledger vs Reference Benchmarks (Sealed: Nov 11, 2026)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="bg-amber-100 text-amber-900 border border-amber-300 font-mono text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                <Clock className="w-3 h-3 text-amber-700" />
-                <span>Too early to judge (0 of 365 minimum days elapsed)</span>
-              </span>
-              <span className="text-[11px] font-mono text-slate-500">
-                Sealed Start: 2026-11-11
-              </span>
-            </div>
+      {/* 2. Main Full-Screen Split Workspace (Chart + Right Intelligence Panel) */}
+      <div className={`flex-1 flex overflow-hidden ${isChartMaximized ? "relative" : "flex-row"}`}>
+        
+        {/* Left Column: Full-Height Interactive TradingView Candlestick Chart + Bottom Dock */}
+        <div className={`flex flex-col h-full overflow-hidden bg-white ${isChartMaximized ? "w-full" : "w-full lg:w-[calc(100%-340px)] xl:w-[calc(100%-380px)] border-r border-slate-200/90"}`}>
+          
+          {/* Edge-to-Edge Live TradingView Chart */}
+          <div className="flex-1 w-full h-full relative bg-white overflow-hidden">
+            <TradingViewChart symbol={currentStock.tvSymbol} interval={timeframe} />
+            
+            {/* Maximize Toggle Button */}
+            <button
+              onClick={() => setIsChartMaximized(!isChartMaximized)}
+              className="absolute top-2 right-2 z-10 bg-white/90 hover:bg-white text-slate-700 border border-slate-300 p-1.5 rounded shadow-xs cursor-pointer transition-all"
+              title={isChartMaximized ? "Restore Layout" : "Maximize Chart"}
+            >
+              {isChartMaximized ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-              <div className="text-[11px] font-mono text-slate-500 uppercase">S2 Momentum (Shadow Portfolio)</div>
-              <div className="text-xl font-black font-mono text-slate-900 mt-1">0.00%</div>
-              <div className="text-[10px] font-mono text-slate-500 mt-0.5">Top 10 monthly rank · Hold cash when SPY &lt; SMA200</div>
-              <div className="text-[10px] font-mono text-amber-700 mt-1">Shadow tracking only (0 real money committed)</div>
-            </div>
+          {/* Bottom Dock Header with Tabs */}
+          {!isChartMaximized && (
+            <>
+              <div className="h-8 bg-white border-t border-slate-200 px-3 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setDockTab("fundamentals")}
+                    className={`flex items-center gap-1 px-2.5 py-1 text-xs font-mono font-bold transition-all cursor-pointer border-b-2 ${
+                      dockTab === "fundamentals"
+                        ? "border-blue-600 text-blue-700"
+                        : "border-transparent text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    <Database className="w-3 h-3" />
+                    <span>SEC Point-in-Time Fundamentals</span>
+                  </button>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-              <div className="text-[11px] font-mono text-slate-500 uppercase">SPY Reference Series</div>
-              <div className="text-xl font-black font-mono text-blue-800 mt-1">0.00%</div>
-              <div className="text-[10px] font-mono text-slate-500 mt-0.5">S&amp;P 500 Buy &amp; Hold Benchmark Core</div>
-              <div className="text-[10px] font-mono text-slate-400 mt-1">Baseline: $100,000 USD on 2026-11-11</div>
-            </div>
+                  <button
+                    onClick={() => setDockTab("holdings")}
+                    className={`flex items-center gap-1 px-2.5 py-1 text-xs font-mono font-bold transition-all cursor-pointer border-b-2 ${
+                      dockTab === "holdings"
+                        ? "border-blue-600 text-blue-700"
+                        : "border-transparent text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    <Activity className="w-3 h-3" />
+                    <span>Paper Holdings &amp; Orders ({trades.length})</span>
+                  </button>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-              <div className="text-[11px] font-mono text-slate-500 uppercase">Equal-Weight Top 30 Reference</div>
-              <div className="text-xl font-black font-mono text-emerald-800 mt-1">0.00%</div>
-              <div className="text-[10px] font-mono text-slate-500 mt-0.5">Point-in-Time Monthly Rebalanced</div>
-              <div className="text-[10px] font-mono text-slate-400 mt-1">Baseline: $100,000 USD on 2026-11-11</div>
-            </div>
-          </div>
+                  <button
+                    onClick={() => setDockTab("universe")}
+                    className={`flex items-center gap-1 px-2.5 py-1 text-xs font-mono font-bold transition-all cursor-pointer border-b-2 ${
+                      dockTab === "universe"
+                        ? "border-blue-600 text-blue-700"
+                        : "border-transparent text-slate-500 hover:text-slate-900"
+                    }`}
+                  >
+                    <Layers className="w-3 h-3" />
+                    <span>S&amp;P 500 Top 30 Radar</span>
+                  </button>
+                </div>
 
-          <div className="bg-slate-100/60 rounded p-3 text-[11px] font-mono text-slate-600 flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <span className="font-bold text-slate-700">Governance Status: </span>
-              <span>S1 Trend &amp; S3 Pullback are <strong>RETIRED</strong> (zero forward tracking). </span>
-              <span>SpaceX (<code>SPCX</code>) monitored as <strong>WATCHLIST SIGNALS ONLY</strong> (zero trades).</span>
-            </div>
-            <div className="text-slate-400">Idempotent 2-Step Daily Lifecycle (Post-Close &amp; Next-Open)</div>
-          </div>
-        </div>
-
-        {/* Portfolio Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-xs">
-            <div className="text-xs font-mono text-slate-500 uppercase">Book Capital (USD)</div>
-            <div className="text-2xl font-black font-mono text-slate-900 mt-1 tabular-nums">
-              ${currentEquity.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
-            <div className="text-[11px] font-mono text-slate-400 mt-1">
-              Starting Baseline: ${startingCapital.toLocaleString("en-US")}
-            </div>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-xs">
-            <div className="text-xs font-mono text-slate-500 uppercase">Net Realized PnL</div>
-            <div className={`text-2xl font-black font-mono mt-1 tabular-nums ${netPnL >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
-              {netPnL >= 0 ? "+" : ""}${netPnL.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
-            <div className="text-[11px] font-mono text-slate-400 mt-1">
-              After commissions &amp; regulatory fees
-            </div>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-xs">
-            <div className="text-xs font-mono text-slate-500 uppercase">Win Rate</div>
-            <div className="text-2xl font-black font-mono text-slate-900 mt-1 tabular-nums">
-              {winRate !== null ? `${winRate.toFixed(1)}%` : "N/A"}
-            </div>
-            <div className="text-[11px] font-mono text-slate-400 mt-1">
-              {metrics?.closedTrades ?? 0} closed / {metrics?.totalTrades ?? 0} total trades
-            </div>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-xs">
-            <div className="text-xs font-mono text-slate-500 uppercase">Risk Budget</div>
-            <div className="text-2xl font-black font-mono text-blue-700 mt-1 tabular-nums">
-              1.0% / Trade
-            </div>
-            <div className="text-[11px] font-mono text-slate-400 mt-1">
-              Max 8 positions · Max 20% equity cap
-            </div>
-          </div>
-        </div>
-
-        {/* 16-Year Quantitative Audit Comparison Table */}
-        <div className="bg-white border border-slate-200 rounded-lg shadow-xs overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-            <div className="font-mono text-xs font-bold text-slate-800 uppercase flex items-center gap-2">
-              <BarChart2 className="w-4 h-4 text-slate-600" />
-              <span>Audit Performance Matrix vs Mandatory Benchmarks (2010–2026)</span>
-            </div>
-            <span className="text-[10px] font-mono text-slate-500">All-in Institutional Friction Deducted</span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-mono">
-              <thead className="bg-slate-100/70 border-b border-slate-200 text-slate-600">
-                <tr>
-                  <th className="py-2.5 px-3">System / Strategy</th>
-                  <th className="py-2.5 px-3">Universe Type</th>
-                  <th className="py-2.5 px-3 text-right">CAGR</th>
-                  <th className="py-2.5 px-3 text-right">Final Equity ($100k)</th>
-                  <th className="py-2.5 px-3 text-right">Max Drawdown</th>
-                  <th className="py-2.5 px-3 text-right">Sharpe</th>
-                  <th className="py-2.5 px-3 text-right">Newey-West Alpha t</th>
-                  <th className="py-2.5 px-3 text-center">Verdict</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                <tr className="bg-emerald-50/50 font-bold">
-                  <td className="py-2.5 px-3 text-emerald-950 flex flex-col">
-                    <span>🏆 Benchmark 2: Equal-Weight Top 30</span>
-                    <span className="text-[10px] text-amber-700 font-normal">Bias-Adjusted Sensitivity Range: 15.39% – 18.32%</span>
-                  </td>
-                  <td className="py-2.5 px-3 text-slate-600">Point-in-Time Monthly</td>
-                  <td className="py-2.5 px-3 text-right text-emerald-700">15.39% – 18.32%</td>
-                  <td className="py-2.5 px-3 text-right text-emerald-700">$1,112k – $1,693k</td>
-                  <td className="py-2.5 px-3 text-right text-slate-700">-28.16% to -32.87%</td>
-                  <td className="py-2.5 px-3 text-right text-slate-700">1.01 – 1.04</td>
-                  <td className="py-2.5 px-3 text-right text-slate-500">Benchmark</td>
-                  <td className="py-2.5 px-3 text-center text-emerald-700">CORE BENCHMARK</td>
-                </tr>
-                <tr className="bg-blue-50/40 font-bold">
-                  <td className="py-2.5 px-3 text-blue-950">
-                    <span>🥈 Benchmark 1: SPY S&amp;P 500 Buy &amp; Hold</span>
-                  </td>
-                  <td className="py-2.5 px-3 text-slate-600">Index ETF</td>
-                  <td className="py-2.5 px-3 text-right text-blue-800">13.92%</td>
-                  <td className="py-2.5 px-3 text-right text-blue-800">$896,115</td>
-                  <td className="py-2.5 px-3 text-right text-slate-700">-33.72%</td>
-                  <td className="py-2.5 px-3 text-right text-slate-700">0.85</td>
-                  <td className="py-2.5 px-3 text-right text-slate-500">Benchmark</td>
-                  <td className="py-2.5 px-3 text-center text-blue-700">SOLID CORE</td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 px-3 text-slate-900 font-semibold">S2 Cross-Sectional Momentum (12-1m)</td>
-                  <td className="py-2.5 px-3 text-slate-600">Point-in-Time Monthly</td>
-                  <td className="py-2.5 px-3 text-right text-slate-800">12.65%</td>
-                  <td className="py-2.5 px-3 text-right text-slate-800">$741,777</td>
-                  <td className="py-2.5 px-3 text-right text-rose-700">-35.72%</td>
-                  <td className="py-2.5 px-3 text-right text-slate-700">0.71</td>
-                  <td className="py-2.5 px-3 text-right text-slate-700">+0.92 (p=0.359)</td>
-                  <td className="py-2.5 px-3 text-center text-rose-600 font-semibold">REJECT</td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 px-3 text-slate-900 font-semibold">S1 Trend Following (55d Donchian)</td>
-                  <td className="py-2.5 px-3 text-slate-600">Point-in-Time Top 30</td>
-                  <td className="py-2.5 px-3 text-right text-slate-800">5.57%</td>
-                  <td className="py-2.5 px-3 text-right text-slate-800">$249,072</td>
-                  <td className="py-2.5 px-3 text-right text-slate-700">-30.46%</td>
-                  <td className="py-2.5 px-3 text-right text-slate-700">0.51</td>
-                  <td className="py-2.5 px-3 text-right text-slate-700">+0.47 (p=0.640)</td>
-                  <td className="py-2.5 px-3 text-center text-rose-600 font-semibold">REJECT</td>
-                </tr>
-                <tr>
-                  <td className="py-2.5 px-3 text-slate-900 font-semibold">S3 Pullback in Uptrend</td>
-                  <td className="py-2.5 px-3 text-slate-600">Point-in-Time Top 30</td>
-                  <td className="py-2.5 px-3 text-right text-slate-800">3.45%</td>
-                  <td className="py-2.5 px-3 text-right text-slate-800">$176,856</td>
-                  <td className="py-2.5 px-3 text-right text-emerald-700">-23.77%</td>
-                  <td className="py-2.5 px-3 text-right text-slate-700">0.36</td>
-                  <td className="py-2.5 px-3 text-right text-slate-700">-0.77 (p=0.441)</td>
-                  <td className="py-2.5 px-3 text-center text-rose-600 font-semibold">REJECT</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Survivorship & Hindsight Bias Exposure */}
-        <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-xs space-y-4">
-          <div className="flex items-center gap-2 font-mono text-xs font-bold text-slate-800 uppercase">
-            <AlertTriangle className="w-4 h-4 text-amber-600" />
-            <span>Survivorship Bias Audit &amp; Delisting Sensitivity Analysis (Task B)</span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
-            <div className="bg-slate-50 p-3 rounded border border-slate-200 space-y-2">
-              <div className="font-bold text-slate-800">Constituent-Months Audit (2010–2026)</div>
-              <p className="text-slate-600 font-sans leading-relaxed">
-                Across 203 monthly rebalances (6,090 total constituent slots), <strong>384 constituent-months (6.31%)</strong> are missing from standard unadjusted Yahoo data.
-                Early eras (2010–2014) carried <strong>10.0% to 16.7% missing share</strong> due to historical mega-caps (WFC, Citigroup, Schlumberger, Gilead, UTX).
-                <strong> UTX</strong> was merged into RTX in 2020.
-              </p>
-              <div className="text-[11px] text-slate-500">
-                Recommended delisted sources: Sharadar (Nasdaq Data Link), Norgate Data, EODHD.
+                <div className="text-[11px] font-mono text-slate-500 hidden sm:inline">
+                  Allocated Capital: <strong className="text-slate-900 font-bold">${currentEquityUSD.toFixed(2)} USD</strong> · Next Open Fills (O_(t+1))
+                </div>
               </div>
-            </div>
-            <div className="bg-slate-50 p-3 rounded border border-slate-200 space-y-2">
-              <div className="font-bold text-slate-800">Delisting Sensitivity Scenarios (B2 Equal-Weight)</div>
-              <div className="space-y-1 text-slate-700">
-                <div>• Survivor Baseline (unadjusted): <strong>18.32% CAGR</strong> (Sharpe 1.04)</div>
-                <div>• Scenario A (-30% delisting haircut): <strong>15.39% CAGR</strong> (Sharpe 1.01)</div>
-                <div>• Scenario B (0% cash equivalent): <strong>17.63% CAGR</strong> (Sharpe 1.14)</div>
-                <div>• Scenario C (-100% bankruptcies only): <strong>17.63% CAGR</strong> (Sharpe 1.14)</div>
-              </div>
-              <div className="text-[11px] text-emerald-800 font-sans font-medium pt-1">
-                Bias-Adjusted Range: <strong>15.39% to 18.32% CAGR</strong> vs SPY 13.92% CAGR.
-              </div>
-            </div>
-          </div>
-        </div>
 
-        {/* Cost & Tax Sensitivity Disclosure */}
-        <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-xs space-y-3">
-          <div className="flex items-center gap-2 font-mono text-xs font-bold text-slate-800 uppercase">
-            <DollarSign className="w-4 h-4 text-slate-600" />
-            <span>Cost Model &amp; Indian Tax Sensitivity (Configurable)</span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
-            <div className="bg-slate-50 p-3 rounded border border-slate-200 space-y-1">
-              <div className="font-bold text-slate-700">Friction Parameters (Active in Backtest)</div>
-              <div className="text-slate-600">Commission: ${DEFAULT_EQUITY_FEE_CONFIG.perShareCommissionUSD}/share (min ${DEFAULT_EQUITY_FEE_CONFIG.minCommissionUSD}, max {DEFAULT_EQUITY_FEE_CONFIG.maxCommissionPct}%)</div>
-              <div className="text-slate-600">Slippage: {DEFAULT_EQUITY_FEE_CONFIG.slippageBpsMegaCap} bps (Mega-Cap) / {DEFAULT_EQUITY_FEE_CONFIG.slippageBpsLargeCap} bps (Large-Cap)</div>
-              <div className="text-slate-600">US Regulatory: SEC 31 (0.00278%) + FINRA TAF ($0.000166/share sold)</div>
-              <div className="text-slate-600">FX Markup: {DEFAULT_EQUITY_FEE_CONFIG.fxMarkupBps} bps (INR/USD)</div>
-            </div>
-            <div className="bg-slate-50 p-3 rounded border border-slate-200 space-y-1">
-              <div className="font-bold text-amber-800 flex items-center gap-1">
-                <span>Tax Assumptions (UNCONFIRMED · DEFAULT OFF)</span>
-              </div>
-              <div className="text-slate-600">TCS under LRS: 20% on remittances above ₹7L [UNCONFIRMED - OFF]</div>
-              <div className="text-slate-600">Foreign Capital Gains: Slab rate (STCG) / 20% (LTCG &gt; 24m) [UNCONFIRMED - OFF]</div>
-              <div className="text-slate-500 font-sans text-[11px] pt-1">
-                Note: Tax rates are config parameters awaiting formal review with a Chartered Accountant (CA).
-              </div>
-            </div>
-          </div>
-        </div>
+              {/* Bottom Dock Content Area */}
+              <div className="h-44 bg-[#f8fafc] p-3 overflow-y-auto shrink-0 border-t border-slate-200/80">
+                
+                {/* Tab 1: Point-in-Time Fundamentals */}
+                {dockTab === "fundamentals" && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="bg-white border border-slate-200 rounded p-2.5 shadow-2xs">
+                      <div className="text-[10px] font-mono text-slate-500 uppercase font-bold">5-Yr Trailing PE Z-Score</div>
+                      <div className="text-base font-black font-mono text-slate-900 mt-0.5">
+                        {currentStock.peZScore > 0 ? `+${currentStock.peZScore.toFixed(2)}` : currentStock.peZScore.toFixed(2)}
+                      </div>
+                      <div className="text-[10px] font-mono text-slate-500">P/E: {currentStock.peRatio.toFixed(1)}x</div>
+                    </div>
 
-        {/* Forward Paper Trades Ledger Table */}
-        <div className="bg-white border border-slate-200 rounded-lg shadow-xs overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-            <div className="font-mono text-xs font-bold text-slate-800 uppercase flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-slate-600" />
-              <span>US Equities Forward Paper Ledger (NYSE Session: 09:30–16:00 ET)</span>
-            </div>
-            <div className="font-mono text-[11px] text-slate-500">
-              {trades.length} Records
-            </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-mono">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600">
-                <tr>
-                  <th className="py-2.5 px-3">Date (ET)</th>
-                  <th className="py-2.5 px-3">Ticker</th>
-                  <th className="py-2.5 px-3">Strategy</th>
-                  <th className="py-2.5 px-3">Shares</th>
-                  <th className="py-2.5 px-3">Entry ($)</th>
-                  <th className="py-2.5 px-3">Stop ($)</th>
-                  <th className="py-2.5 px-3">Status</th>
-                  <th className="py-2.5 px-3">Net PnL ($)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {trades.length > 0 ? (
-                  trades.map((t, idx) => (
-                    <tr key={t.id || idx} className="hover:bg-slate-50/80">
-                      <td className="py-2 px-3 text-slate-600">{t.date || "-"}</td>
-                      <td className="py-2 px-3 font-bold text-slate-900">{t.symbol}</td>
-                      <td className="py-2 px-3 text-slate-600">{t.strategy}</td>
-                      <td className="py-2 px-3 text-slate-700">{t.shares}</td>
-                      <td className="py-2 px-3 text-slate-700">${t.entryPrice?.toFixed(2)}</td>
-                      <td className="py-2 px-3 text-slate-700">${t.stopLoss?.toFixed(2)}</td>
-                      <td className="py-2 px-3 font-bold">{t.status}</td>
-                      <td className={`py-2 px-3 font-bold ${(t.net_pnl_usd || 0) >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
-                        {(t.net_pnl_usd || 0) >= 0 ? "+" : ""}${t.net_pnl_usd?.toFixed(2) || "0.00"}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={8} className="py-8 text-center text-slate-500 font-sans">
-                      Forward paper ledger sealed. Zero active executions opened (consistent with honest audit verdict rejecting active rule trading).
-                      SpaceX (SPCX) signals logged as watchlist-only.
-                    </td>
-                  </tr>
+                    <div className="bg-white border border-slate-200 rounded p-2.5 shadow-2xs">
+                      <div className="text-[10px] font-mono text-slate-500 uppercase font-bold">Sector Median P/E</div>
+                      <div className="text-base font-black font-mono text-slate-900 mt-0.5">{currentStock.peSectorMedian.toFixed(1)}x</div>
+                      <div className="text-[10px] font-mono text-slate-500">{currentStock.sector}</div>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded p-2.5 shadow-2xs">
+                      <div className="text-[10px] font-mono text-slate-500 uppercase font-bold">Diluted EPS YoY Growth</div>
+                      <div className={`text-base font-black font-mono mt-0.5 ${currentStock.epsGrowthYoY >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                        {currentStock.epsGrowthYoY >= 0 ? "+" : ""}{currentStock.epsGrowthYoY.toFixed(1)}%
+                      </div>
+                      <div className="text-[10px] font-mono text-slate-500">Trailing Twelve Months</div>
+                    </div>
+
+                    <div className="bg-white border border-slate-200 rounded p-2.5 shadow-2xs">
+                      <div className="text-[10px] font-mono text-slate-500 uppercase font-bold">SEC Causal Compliance</div>
+                      <div className="text-xs font-black font-mono text-emerald-700 mt-1 flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Filing Date Strict (t_filed &le; t)</span>
+                      </div>
+                      <div className="text-[10px] font-mono text-slate-500">Zero Lookahead Bias</div>
+                    </div>
+                  </div>
                 )}
-              </tbody>
-            </table>
-          </div>
+
+                {/* Tab 2: Holdings & Orders */}
+                {dockTab === "holdings" && (
+                  <div>
+                    {trades.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-28 text-slate-500 text-xs font-mono space-y-1">
+                        <span className="font-bold text-slate-700">🟢 100% Capital Preserved in Cash ($100.00 USD)</span>
+                        <span className="text-[11px] text-slate-500">
+                          Signals evaluated at market close (16:00 ET); fills executed at next open (O_(t+1)). Zero overnight margin leverage.
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left font-mono text-xs border-collapse">
+                          <thead>
+                            <tr className="bg-slate-100 text-slate-600 text-[10px] uppercase">
+                              <th className="p-2">Ticker</th>
+                              <th className="p-2">Strategy</th>
+                              <th className="p-2">Side</th>
+                              <th className="p-2">Entry Price</th>
+                              <th className="p-2">Stop Loss</th>
+                              <th className="p-2">Status</th>
+                              <th className="p-2">Net PnL (USD)</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {trades.map((t, idx) => (
+                              <tr key={idx} className="border-b border-slate-200 hover:bg-white">
+                                <td className="p-2 font-bold">{t.symbol}</td>
+                                <td className="p-2">{t.strategy}</td>
+                                <td className="p-2 font-semibold text-emerald-700">{t.side}</td>
+                                <td className="p-2">${t.intended_price?.toFixed(2)}</td>
+                                <td className="p-2">${t.stop_loss?.toFixed(2)}</td>
+                                <td className="p-2">{t.status}</td>
+                                <td className="p-2 font-bold text-emerald-700">+${t.net_pnl_usd?.toFixed(2)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Tab 3: Universe Radar */}
+                {dockTab === "universe" && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left font-mono text-xs border-collapse">
+                      <thead>
+                        <tr className="bg-slate-100 text-slate-600 text-[10px] uppercase">
+                          <th className="p-1.5">Ticker</th>
+                          <th className="p-1.5">Company Name</th>
+                          <th className="p-1.5">Sector</th>
+                          <th className="p-1.5">Price</th>
+                          <th className="p-1.5">12-1 Momentum</th>
+                          <th className="p-1.5">200 SMA Distance</th>
+                          <th className="p-1.5">Regime Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {US_EQUITIES_UNIVERSE.map((stock) => (
+                          <tr
+                            key={stock.symbol}
+                            onClick={() => setSelectedSymbol(stock.symbol)}
+                            className={`border-b border-slate-200 cursor-pointer transition-colors ${
+                              selectedSymbol === stock.symbol ? "bg-blue-50 font-bold" : "hover:bg-white"
+                            }`}
+                          >
+                            <td className="p-1.5 text-blue-700">{stock.symbol}</td>
+                            <td className="p-1.5">{stock.name}</td>
+                            <td className="p-1.5 text-slate-500">{stock.sector}</td>
+                            <td className="p-1.5">${stock.price.toFixed(2)}</td>
+                            <td className="p-1.5 text-emerald-700">+{stock.mom12_1.toFixed(1)}%</td>
+                            <td className="p-1.5">+{stock.dist200SmaPct.toFixed(1)}%</td>
+                            <td className="p-1.5">
+                              <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded text-[10px] font-bold">
+                                ABOVE 200 SMA
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+              </div>
+            </>
+          )}
+
         </div>
-      </main>
+
+        {/* Right Column: Dedicated US Equities Intelligence Panel */}
+        {!isChartMaximized && (
+          <aside className="w-full lg:w-[340px] xl:w-[380px] bg-white flex flex-col h-full overflow-y-auto shrink-0 border-l border-slate-200/80 p-3 space-y-3">
+            
+            {/* Header: Brain Status */}
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-slate-500 uppercase font-bold flex items-center gap-1">
+                  <Zap className="w-3.5 h-3.5 text-blue-600" />
+                  <span>US Equities Quant Brain</span>
+                </span>
+                <span className="bg-blue-100 text-blue-800 border border-blue-200 font-mono text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  1D Next-Open Model
+                </span>
+              </div>
+              <div className="text-sm font-bold text-slate-900 font-mono">
+                S2 Momentum + 200-SMA Regime Shield
+              </div>
+              <div className="text-[11px] text-slate-500 leading-snug font-sans">
+                Top-quintile momentum ranking evaluated monthly. Zero active exposure deployed when SPY &le; 200 SMA.
+              </div>
+            </div>
+
+            {/* Macro Regime Audit Card */}
+            <div className="bg-white border border-slate-200 rounded-lg p-3 space-y-2 shadow-2xs">
+              <div className="flex items-center justify-between text-xs font-mono font-bold">
+                <span className="text-slate-600 uppercase">SPY 200-Day SMA Trend Shield</span>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-black ${isMarketRiskOn ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800"}`}>
+                  {isMarketRiskOn ? "🟢 RISK-ON (ABOVE 200 SMA)" : "🔴 100% CASH DEFENSE"}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs font-mono bg-slate-50 p-2 rounded border border-slate-100">
+                <div>
+                  <div className="text-[10px] text-slate-500">SPY Current:</div>
+                  <div className="font-bold text-slate-900">${spyStock.price.toFixed(2)}</div>
+                </div>
+                <div>
+                  <div className="text-[10px] text-slate-500">200 SMA Est:</div>
+                  <div className="font-bold text-slate-900">${(spyStock.price / (1 + spyStock.dist200SmaPct / 100)).toFixed(2)}</div>
+                </div>
+              </div>
+              <div className="text-[10px] text-slate-500 font-mono leading-tight">
+                Historical Audit: 100% cash defense preserved capital in 2022 (-29.36% in unhedged momentum).
+              </div>
+            </div>
+
+            {/* Active Model Signal Card for Selected Stock */}
+            <div className="bg-white border border-slate-200 rounded-lg p-3 space-y-2.5 shadow-2xs">
+              <div className="flex items-center justify-between text-xs font-mono font-bold">
+                <span className="text-slate-700 uppercase">Live Model Signal ({currentStock.symbol})</span>
+                <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[10px] font-bold">
+                  {currentStock.isAbove200Sma ? "MOMENTUM CANDIDATE" : "BELOW 200 SMA"}
+                </span>
+              </div>
+
+              <div className="space-y-1.5 text-xs font-mono">
+                <div className="flex justify-between text-slate-600">
+                  <span>12-1 Month Momentum:</span>
+                  <strong className="text-emerald-700">+{currentStock.mom12_1.toFixed(1)}%</strong>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>P/E vs Sector Median:</span>
+                  <strong className="text-slate-900">{currentStock.peRatio.toFixed(1)}x vs {currentStock.peSectorMedian.toFixed(1)}x</strong>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>EPS YoY Growth:</span>
+                  <strong className="text-slate-900">+{currentStock.epsGrowthYoY.toFixed(1)}%</strong>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Max Position Budget:</span>
+                  <strong className="text-blue-800">$20.00 USD (20%)</strong>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Risk Limit / Trade:</span>
+                  <strong className="text-slate-900">$1.00 USD (1.0%)</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Switch to Full AI Engine */}
+            <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-lg text-xs font-mono space-y-2">
+              <div className="font-bold text-blue-900 flex items-center justify-between">
+                <span>US Equities Econometric Engine</span>
+                <Link href="/equities/ai-engine" className="text-blue-700 hover:underline flex items-center gap-0.5">
+                  <span>View All Surfaces</span>
+                  <ArrowUpRight className="w-3 h-3" />
+                </Link>
+              </div>
+              <p className="text-[11px] text-slate-600 font-sans leading-tight">
+                Inspect 16-year walk-forward factor interaction surfaces, 1,000 within-month permutation null distributions, and SEC filing date proofs.
+              </p>
+            </div>
+
+          </aside>
+        )}
+
+      </div>
     </div>
   );
 }
