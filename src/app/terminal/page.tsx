@@ -747,13 +747,13 @@ export default function TerminalPage() {
       {/* 1. Full-Screen Edge-to-Edge Pure White Tactile Header Bar */}
       <header className="h-12 w-full bg-white border-b border-slate-200/80 px-2 sm:px-3 flex items-center justify-between shrink-0 z-30 shadow-2xs gap-1.5 sm:gap-2">
         
-        {/* Left Section: Brand + Pair Selector + Model Dropdown + Live Price */}
+        {/* Left Section: Brand + Pair Selector + Live Price + Model Dropdown */}
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
           <Link href="/" className="flex items-center gap-1.5 group shrink-0" title="Back to Home">
             <div className="w-6 h-6 rounded bg-accent flex items-center justify-center text-white font-mono text-xs font-bold shadow-xs">
               TP
             </div>
-            <span className="font-mono text-xs font-bold tracking-tight text-gray-900 group-hover:text-accent transition-colors hidden xl:inline">
+            <span className="font-mono text-xs font-bold tracking-tight text-gray-900 group-hover:text-accent transition-colors hidden 2xl:inline">
               TRADER-PRO
             </span>
           </Link>
@@ -783,14 +783,21 @@ export default function TerminalPage() {
             </select>
           </div>
 
-          <div className="h-4 w-px bg-slate-200 hidden md:block shrink-0"></div>
+          {/* Real Live Price Ticker - Grouped immediately with the Asset Symbol */}
+          <div className="flex items-center font-mono shrink-0">
+            <span className="text-xs sm:text-sm font-black text-gray-950 tracking-tight tabular-nums px-1.5 py-0.5 rounded bg-slate-100/90 border border-slate-200/80 shadow-2xs">
+              {livePrice ? `$${livePrice.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}` : "—"}
+            </span>
+          </div>
+
+          <div className="h-4 w-px bg-slate-200 hidden sm:block shrink-0"></div>
 
           {/* AI Strategy Model Selector Dropdown in Terminal Header */}
-          <div className="flex items-center min-w-0">
+          <div className="flex items-center min-w-0 max-w-[125px] sm:max-w-[155px] md:max-w-[185px] lg:max-w-[210px] xl:max-w-[240px] shrink overflow-hidden">
             <select
               value={activeModelId}
               onChange={(e) => handleSelectModel(e.target.value)}
-              className="clay-white-btn bg-emerald-50/60 border-emerald-300 text-emerald-950 px-2 py-1 text-xs font-mono font-bold hover:border-emerald-400 focus:outline-none focus:border-emerald-600 cursor-pointer transition-all max-w-[125px] sm:max-w-[155px] md:max-w-[185px] lg:max-w-[220px] truncate"
+              className="w-full max-w-full clay-white-btn bg-emerald-50/60 border-emerald-300 text-emerald-950 px-2 py-1 text-xs font-mono font-bold hover:border-emerald-400 focus:outline-none focus:border-emerald-600 cursor-pointer transition-all truncate block"
             >
               {/* Group 1: Champion Multi-Asset Routers & Hand-Crafted Models */}
               <optgroup label="🏆 Champion Routers & Hand-Crafted Models">
@@ -858,15 +865,6 @@ export default function TerminalPage() {
               )}
             </select>
           </div>
-
-          <div className="h-4 w-px bg-slate-200 hidden lg:block shrink-0"></div>
-
-          {/* Real Live Price Ticker */}
-          <div className="hidden lg:flex items-center gap-1 font-mono shrink-0">
-            <span className="text-sm font-black text-gray-950 tracking-tight tabular-nums">
-              {livePrice ? `$${livePrice.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 2 })}` : "—"}
-            </span>
-          </div>
         </div>
 
         {/* Center: Tactile Pure White Segmented Timeframe Selector + Maximize */}
@@ -879,7 +877,7 @@ export default function TerminalPage() {
                   setTimeframe(tf);
                   setIsLoading(true);
                 }}
-                className={`px-2 sm:px-2.5 py-0.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                className={`px-1.5 sm:px-2.5 py-0.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
                   timeframe === tf
                     ? "bg-white text-gray-900 shadow-2xs border border-slate-200/90 font-black"
                     : "text-slate-500 hover:text-slate-900"
@@ -903,12 +901,12 @@ export default function TerminalPage() {
             {isChartMaximized ? (
               <>
                 <Minimize2 className="w-3.5 h-3.5" />
-                <span className="hidden xl:inline">Minimize</span>
+                <span className="hidden 2xl:inline">Minimize</span>
               </>
             ) : (
               <>
                 <Maximize2 className="w-3.5 h-3.5 text-blue-600" />
-                <span className="hidden xl:inline">Maximize</span>
+                <span className="hidden 2xl:inline">Maximize</span>
               </>
             )}
           </button>
@@ -931,7 +929,7 @@ export default function TerminalPage() {
             title="AI Strategy Engine"
           >
             <Zap className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="hidden md:inline">AI Engine</span>
+            <span className="hidden xl:inline">AI Engine</span>
           </Link>
 
           {/* Segregated Market Book Switcher */}
@@ -941,7 +939,8 @@ export default function TerminalPage() {
               title="Active Book: 24/7 Continuous Perpetual Derivatives (Crypto + Commodities, INR Base)"
             >
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Perp (Crypto + Cmdty) · ₹</span>
+              <span className="hidden 2xl:inline">Perp (Crypto + Cmdty) · ₹</span>
+              <span className="2xl:hidden">Perp · ₹</span>
             </div>
             <Link
               href="/equities"
@@ -949,7 +948,8 @@ export default function TerminalPage() {
               title="Switch to US Equities Systematic Book (S&P 500 Large-Cap, USD Base, NYSE Session)"
             >
               <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
-              <span>US Equities · $</span>
+              <span className="hidden 2xl:inline">US Equities · $</span>
+              <span className="2xl:hidden">Equities · $</span>
             </Link>
           </div>
 
@@ -960,7 +960,7 @@ export default function TerminalPage() {
             title="Switch to US Equities Book (USD Base)"
           >
             <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
-            <span className="hidden sm:inline">US Equities ($)</span>
+            <span className="hidden sm:inline">Equities ($)</span>
           </Link>
 
           {/* LIVE status badge */}
