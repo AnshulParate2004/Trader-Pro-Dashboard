@@ -32,11 +32,13 @@ async function verifyToken(token: string): Promise<boolean> {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // 1. Allow completely public static routes and landing page
+  // 1. Allow completely public static routes, landing page, and public market quotes
   if (
     pathname === "/" ||
     pathname.startsWith("/login") ||
-    pathname.startsWith("/api/auth/")
+    pathname.startsWith("/api/auth/") ||
+    pathname.startsWith("/api/equities/quotes") ||
+    pathname.startsWith("/api/equities/regime")
   ) {
     return NextResponse.next();
   }
@@ -110,8 +112,12 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // 4. Protected UI Pages (/terminal, /ai-engine): Redirect unauthenticated users to /login
-  if (pathname.startsWith("/terminal") || pathname.startsWith("/ai-engine")) {
+  // 4. Protected UI Pages (/terminal, /ai-engine, /equities): Redirect unauthenticated users to /login
+  if (
+    pathname.startsWith("/terminal") ||
+    pathname.startsWith("/ai-engine") ||
+    pathname.startsWith("/equities")
+  ) {
     if (!isAuthenticated) {
       const loginUrl = new URL("/login", req.url);
       loginUrl.searchParams.set("from", pathname);

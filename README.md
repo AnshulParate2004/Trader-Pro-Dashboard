@@ -71,7 +71,23 @@ Automated execution safeguards are codified in [`src/lib/riskEngine.ts`](src/lib
 
 ---
 
-## 5. Documentation Suite
+## 6. US Equities Quantitative Architecture & Market Data
+
+The US Equities book operates completely segregated from the 24/7 cryptocurrency perpetual book:
+- **Base Currency & Capital**: Isolated `$100.00 USD` capital (`BOOK_CONFIGS.us_equities`).
+- **Trading Session**: NYSE/NASDAQ regulated session (09:30–16:00 ET).
+- **Execution Model**: Next-day open fills ($O_{t+1}$) with 200-day SMA macro regime defense (`SPY` > 200 SMA).
+- **Point-in-Time Data**: Sourced from official SEC EDGAR XBRL filings tagged strictly by acceptance date ($t_{\text{filed}} \le t$).
+
+### Environment Variables & Market Data Configuration
+
+Live quotes and SPY 200-SMA regime data are retrieved via `/api/equities/quotes` and `/api/equities/regime`:
+- **Default Provider**: Yahoo Finance v8 chart API (free, zero API key required, in-memory 20-30s caching).
+- **Optional Fallback Providers** (configured via environment variables in `.env.local` or Vercel project settings):
+  - `FINNHUB_API_KEY`: Finnhub Stock API key for real-time quote fallback.
+  - `ALPHA_VANTAGE_API_KEY`: Alpha Vantage API key (optional secondary fallback).
+- **Client Polling**: Client-driven `setInterval` (20s for quotes, 60s for regime). Zero serverless cron dependency on Vercel Hobby.
+
 
 - [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md): Exhaustive breakdown of historical notebook training bugs (leaks, label distortion, global lookahead, optimistic fills).
 - [`docs/RESEARCH_FINDINGS.md`](docs/RESEARCH_FINDINGS.md): Empirical results from Foundation Models (TimesFM/Chronos), intraday scalping audits, and Stage X macro overlays.
