@@ -1,5 +1,12 @@
 import { fetchCommodityKlines } from "./commoditiesData";
 import { getDb } from "./mongodb";
+import {
+  executeNewRouterTrade,
+  auditRouterActiveTrades,
+  reconcilePastRouterTrades,
+} from "./routerTradeManager";
+
+let hasReconciledPastTrades = false;
 
 export async function persistRouterLogsToDb(logs: EvaluatedAssetLog[]): Promise<void> {
   if (!logs || logs.length === 0) return;
@@ -28,7 +35,7 @@ export async function persistRouterLogsToDb(logs: EvaluatedAssetLog[]): Promise<
       decision: l.decision,
       decision_reason: l.reason,
       reason: l.reason,
-      trade_details: null,
+      trade_details: l.trade_details || null,
       routed_engine: l.routed_engine,
       routed_engine_label: l.routed_engine_label,
       asset_class: ["XAUUSDT", "XAGUSDT", "CLUSDT"].includes(l.symbol) ? "commodities" : "crypto",
@@ -62,6 +69,7 @@ export interface EvaluatedAssetLog {
   timeframe: string;
   routed_engine: string;
   routed_engine_label: string;
+  trade_details?: any;
 }
 
 const BINANCE_ENDPOINTS = [
@@ -147,6 +155,7 @@ export async function getRouterLiveEvaluations(forceRefresh: boolean = false): P
 
   const nowIso = new Date().toISOString().replace("T", " ").slice(0, 16);
   const evaluationLogs: EvaluatedAssetLog[] = [];
+  const candlesMap: Record<string, any[]> = {};
 
   for (const asset of ASSETS) {
     if (asset.engine === "no_trade_policy") {
@@ -185,6 +194,8 @@ export async function getRouterLiveEvaluations(forceRefresh: boolean = false): P
         continue;
       }
 
+      candlesMap[asset.symbol] = candles;
+
       const closedCandles = candles.slice(0, -1);
       const lastCandle = candles[candles.length - 1];
       const curClose = lastCandle.close;
@@ -197,34 +208,76 @@ export async function getRouterLiveEvaluations(forceRefresh: boolean = false): P
       const dh = Math.max(...donchianBars.map((c) => c.high));
       const dl = Math.min(...donchianBars.map((c) => c.low));
 
+      const slice10 = closedCandles.slice(-10);
+      const lowestLow10 = Math.min(...slice10.map((c) => c.low));
+      const highestHigh10 = Math.max(...slice10.map((c) => c.high));
+
+      const digits = asset.symbol.includes("DOT") ? 3 : asset.symbol.includes("XAG") ? 3 : 2;
       const isAboveSma = curClose > sma200;
-      const isBreakoutLong = curClose > dh;
+      const isBreakoutLong = curClose > dh && isAboveSma;
+      const isBreakdownShort = !isAboveSma && curClose < dl && asset.engine.startsWith("om-");
 
       let decision: "EXECUTED_TRADE" | "CASH_SHIELD" | "CASH_PROTECTED_CONSOLIDATION" = "CASH_PROTECTED_CONSOLIDATION";
-      let reason = `Consolidating in [$${dl.toFixed(asset.symbol.includes("DOT") ? 3 : 1)}, $${dh.toFixed(asset.symbol.includes("DOT") ? 3 : 1)}]`;
+      let reason = `Consolidating in [$${dl.toFixed(digits)}, $${dh.toFixed(digits)}]`;
       let regime: "BULLISH" | "BEARISH" | "CONSOLIDATING" = isAboveSma ? "BULLISH" : "BEARISH";
       let conviction = 50.0;
 
-      if (!isAboveSma) {
+      if (isBreakoutLong) {
+        decision = "EXECUTED_TRADE";
+        reason = `Confirmed Donchian Breakout above $${dh.toFixed(digits)}`;
+        regime = "BULLISH";
+        conviction = 92.4;
+      } else if (isBreakdownShort) {
+        decision = "EXECUTED_TRADE";
+        reason = `Confirmed Donchian Breakdown below $${dl.toFixed(digits)} (Short)`;
+        regime = "BEARISH";
+        conviction = 91.5;
+      } else if (!isAboveSma) {
         decision = "CASH_SHIELD";
         reason = `Below 200 SMA (Bearish ▼)`;
         regime = "BEARISH";
         const distPct = (sma200 - curClose) / sma200;
         conviction = Math.min(88.5, Math.max(55.0, 50.0 + distPct * 300));
-      } else if (isBreakoutLong) {
-        decision = "EXECUTED_TRADE";
-        reason = `Confirmed Donchian Breakout above $${dh.toFixed(1)}`;
-        regime = "BULLISH";
-        conviction = 92.4;
       } else {
         decision = "CASH_PROTECTED_CONSOLIDATION";
-        reason = `Above 200 SMA · Consolidating in [$${dl.toFixed(1)}, $${dh.toFixed(1)}]`;
+        reason = `Above 200 SMA · Consolidating in [$${dl.toFixed(digits)}, $${dh.toFixed(digits)}]`;
         regime = "CONSOLIDATING";
         conviction = 45.0;
       }
 
       const pVal = Number((conviction / 100).toFixed(3));
-      const digits = asset.symbol.includes("DOT") ? 3 : 2;
+      const passesGate = decision === "EXECUTED_TRADE" && pVal >= asset.cutoff;
+      let tradeDetails = null;
+
+      if (passesGate) {
+        try {
+          const executedTrade = await executeNewRouterTrade({
+            symbol: asset.symbol,
+            direction: isBreakoutLong ? "LONG" : "SHORT",
+            entryPrice: curClose,
+            lowestLow10,
+            highestHigh10,
+            routedEngine: asset.engine,
+            routedEngineLabel: asset.label,
+            probability: pVal,
+            pCutoff: asset.cutoff,
+            candleTimeMs: lastCandle.time,
+          });
+          if (executedTrade) {
+            tradeDetails = {
+              trade_id: executedTrade.id,
+              side: executedTrade.direction,
+              entry_price: executedTrade.entryPrice,
+              stop_loss: executedTrade.stopLoss,
+              take_profit: executedTrade.takeProfit,
+              position_size: executedTrade.positionSizeINR,
+              risk_r: 1.0,
+            };
+          }
+        } catch (err) {
+          console.warn(`[RouterTradeManager] Failed to execute trade for ${asset.symbol}:`, err);
+        }
+      }
 
       evaluationLogs.push({
         id: `live_eval_${asset.symbol}_${now}`,
@@ -241,17 +294,37 @@ export async function getRouterLiveEvaluations(forceRefresh: boolean = false): P
         conviction_p: pVal,
         probability: pVal,
         p_cutoff: asset.cutoff,
-        passes_gate: isAboveSma && isBreakoutLong && pVal >= asset.cutoff,
+        passes_gate: passesGate,
         decision,
         reason,
         regime,
         timeframe: "4h",
         routed_engine: asset.engine,
         routed_engine_label: asset.label,
+        trade_details: tradeDetails,
       });
     } catch (err) {
       console.warn(`Evaluation error for ${asset.symbol}:`, err);
     }
+  }
+
+  // Audit active router trades against collected candles
+  if (Object.keys(candlesMap).length > 0) {
+    try {
+      await auditRouterActiveTrades(candlesMap);
+    } catch (auditErr) {
+      console.warn("[RouterTradeManager] Error during auditRouterActiveTrades:", auditErr);
+    }
+  }
+
+  // One-time reconciliation of past unrecorded prediction log trades
+  if (!hasReconciledPastTrades) {
+    hasReconciledPastTrades = true;
+    reconcilePastRouterTrades((sym) =>
+      ["XAUUSDT", "XAGUSDT", "CLUSDT"].includes(sym)
+        ? fetchCommodityCandles(sym)
+        : fetchCryptoCandles(sym)
+    ).catch((e) => console.warn("[RouterTradeManager] Reconcile error:", e));
   }
 
   if (evaluationLogs.length > 0) {

@@ -157,106 +157,73 @@ async function syncDeltaWatermark(modelId: string, db: any): Promise<void> {
 
 
   // If new completed bars exist between lastTs and now
-
   if (now - lastTs >= intervalMs) {
-
     console.log(
-
       `[Delta Watermark] Syncing missing period for ${modelId} from ${new Date(lastTs).toISOString()} to ${new Date(now).toISOString()}`
-
     );
-
   }
 
+  // If router model, ensure router live evaluations and trade audits run
+  if (modelId === "4hr-timeframe-router" || modelId === "router-c-4h") {
+    try {
+      await getRouterLiveEvaluations(false);
+    } catch (e) {
+      console.warn("[RouterSync] syncDeltaWatermark error:", e);
+    }
+  }
 }
 
 
 
 function mapRecordToTradeOrder(
-
   t: any,
-
   modelId: string,
-
   feePercent: number = TAKER_BASE_FEE_PERCENT
-
 ): TradeOrder {
-
   const riskINR = 100.0;
-
   const posSize = t.positionSizeINR || t.position_size_inr || 1000.0;
 
-
-
   const gross_r =
-
     t.gross_r ??
-
     (t.net_r !== undefined && t.cost_r !== undefined ? t.net_r + t.cost_r : 0);
-
   const grossPnL = Number((gross_r * riskINR).toFixed(2));
 
-
-
   const roundTripPct = (2 * (feePercent * 1.18 + 0.010)) / 100;
-
   const totalFeeINR = Number((posSize * roundTripPct).toFixed(2));
-
   const netPnLINR = Number((grossPnL - totalFeeINR).toFixed(2));
-
   const cost_r = Number((totalFeeINR / riskINR).toFixed(4));
-
   const net_r = Number((gross_r - cost_r).toFixed(3));
 
-
-
   const entryFeeINR = Number((totalFeeINR / 2).toFixed(4));
-
   const exitFeeINR = Number((totalFeeINR / 2).toFixed(4));
-
   const slippageINR = Number((posSize * 0.0002).toFixed(4));
 
-
-
   const rawSym = t.rawSymbol || t.symbol || t.coin || "";
-
   const displaySym = toDisplaySymbol(rawSym);
 
-
-
   const openedAt =
-
     t.entry_time_ms ||
-
     (t.entry_time ? Date.parse(t.entry_time) : 0) ||
-
     (t.timestamp ? Date.parse(t.timestamp) : 0) ||
-
     (t.entryTime ? Date.parse(t.entryTime) : 0) ||
-
     (t.openedAt || Date.now());
 
-
-
   const closedAt =
-
     t.exit_time_ms ||
-
     (t.exit_time ? Date.parse(t.exit_time) : undefined) ||
-
     (t.exitTime ? Date.parse(t.exitTime) : undefined) ||
-
     t.closedAt;
 
-
-
+  const isRouter = modelId === "4hr-timeframe-router" || modelId === "router-c-4h";
   const isOM = modelId.startsWith("om-");
   const isDistributed1H = modelId === "distributed-1h-engine";
   const isDistributed4H = modelId === "distributed-4h-engine";
-  const is4H = modelId === "unified-4h-engine" || modelId === "4h-swing-meta-017" || modelId.includes("4h");
+  const is4H = modelId === "unified-4h-engine" || modelId === "4h-swing-meta-017" || (modelId.includes("4h") && !isRouter);
   const isPure = modelId === "pure-rules-baseline" || modelId === "pure-rules-1h-baseline" || modelId === "pure-rules-4h-baseline";
 
-  const modelName = isOM
+  const modelName = isRouter
+    ? "[Router] 4HR Timeframe Router"
+    : isOM
     ? modelId === "om-distributed-4h-engine"
       ? "[OM] Distributed 4H Specialists [7 Models]"
       : modelId === "om-stacking-meta-engine"
