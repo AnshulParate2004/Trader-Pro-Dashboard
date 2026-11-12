@@ -1154,7 +1154,7 @@ export default function TerminalPage() {
                     className="flex items-center gap-1.5 font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-2.5 py-0.5 rounded cursor-pointer transition-all"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Show Pro Markings (SL, TP, Fib)</span>
+                    <span>Show Classic Trade Box (Entry, SL, TP)</span>
                   </button>
                   <span className="text-slate-300">|</span>
                   <span className="text-slate-600 font-bold">
