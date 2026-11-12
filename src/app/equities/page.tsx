@@ -69,17 +69,29 @@ export default function USEquitiesPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link
-            href="/terminal"
-            className="text-xs font-mono text-slate-600 hover:text-slate-900 bg-slate-100 px-2.5 py-1.5 rounded border border-slate-200 font-semibold"
-          >
-            24x7 Perp Book (Crypto/Cmdty)
-          </Link>
+          {/* Segregated Market Book Switcher */}
+          <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs font-mono font-bold shadow-2xs">
+            <Link
+              href="/terminal"
+              className="flex items-center gap-1.5 px-2.5 py-1 text-slate-500 hover:text-slate-900 hover:bg-slate-200/50 rounded-md transition-all cursor-pointer"
+              title="Switch to 24/7 Perpetual Derivatives Book (Crypto + Commodities, INR Base)"
+            >
+              <span>Perp (Crypto + Cmdty) · ₹</span>
+            </Link>
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-white text-blue-900 rounded-md shadow-xs border border-blue-200"
+              title="Active Terminal: US Equities Daily Systematic (Top 30 S&P 500, USD Base)"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
+              <span>US Equities · $</span>
+            </div>
+          </div>
+
           <Link
             href="/ai-engine"
             className="text-xs font-mono text-slate-600 hover:text-slate-900 bg-slate-100 px-2.5 py-1.5 rounded border border-slate-200 font-semibold"
           >
-            AI Engine (Perp)
+            AI Engine
           </Link>
           <button
             onClick={fetchEquitiesData}

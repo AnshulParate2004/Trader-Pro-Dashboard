@@ -934,14 +934,33 @@ export default function TerminalPage() {
             <span className="hidden md:inline">AI Engine</span>
           </Link>
 
-          {/* US Equities Book Link */}
+          {/* Segregated Market Book Switcher */}
+          <div className="hidden lg:flex items-center bg-slate-100/90 p-0.5 rounded-lg border border-slate-200/90 text-xs font-mono font-bold shadow-2xs shrink-0">
+            <div
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-white text-emerald-800 rounded-md shadow-xs border border-slate-200/60"
+              title="Active Book: 24/7 Continuous Perpetual Derivatives (Crypto + Commodities, INR Base)"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Perp (Crypto + Cmdty) · ₹</span>
+            </div>
+            <Link
+              href="/equities"
+              className="flex items-center gap-1.5 px-2.5 py-1 text-slate-500 hover:text-slate-900 hover:bg-slate-200/50 rounded-md transition-all cursor-pointer"
+              title="Switch to US Equities Systematic Book (S&P 500 Large-Cap, USD Base, NYSE Session)"
+            >
+              <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
+              <span>US Equities · $</span>
+            </Link>
+          </div>
+
+          {/* Compact US Equities Book Link for smaller screens */}
           <Link
             href="/equities"
-            className="flex items-center gap-1 px-2 py-1 text-xs font-mono font-bold text-slate-700 clay-white-btn hover:text-gray-900 transition-all cursor-pointer shrink-0"
-            title="US Equities Daily Book"
+            className="lg:hidden flex items-center gap-1 px-2 py-1 text-xs font-mono font-bold text-slate-700 clay-white-btn hover:text-gray-900 transition-all cursor-pointer shrink-0"
+            title="Switch to US Equities Book (USD Base)"
           >
             <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
-            <span className="hidden md:inline">US Equities</span>
+            <span className="hidden sm:inline">US Equities ($)</span>
           </Link>
 
           {/* LIVE status badge */}
