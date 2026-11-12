@@ -7,25 +7,25 @@ import {
   ArrowUpRight,
   TrendingUp,
   ShieldCheck,
-  ShieldAlert,
+  AlertTriangle,
   BarChart2,
   Database,
   CheckCircle2,
-  XCircle,
   Zap,
   Activity,
   Layers,
-  Sparkles,
-  RefreshCw,
-  Clock,
-  Eye,
-  SlidersHorizontal,
   FileText,
+  Info,
 } from "lucide-react";
 import UserAuthPill from "@/components/UserAuthPill";
+import researchData from "@/data/us_research_summary.json";
 
 export default function USEquitiesAiEnginePage() {
-  const [activeTab, setActiveTab] = useState<"factor_surfaces" | "backtest_audit" | "permutation_null" | "sec_pit">("factor_surfaces");
+  const [activeTab, setActiveTab] = useState<
+    "factor_surfaces" | "backtest_audit" | "permutation_null" | "sec_pit"
+  >("factor_surfaces");
+
+  const { benchmarks, factorInteractions, permutationNull, caveats, meta } = researchData;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-16">
@@ -47,9 +47,9 @@ export default function USEquitiesAiEnginePage() {
               <span className="bg-blue-100 text-blue-800 border border-blue-300 font-mono text-[10px] font-bold px-2 py-0.5 rounded-full">
                 BOOK: us_equities ($)
               </span>
-              <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>POINT-IN-TIME VERIFIED</span>
+              <span className="bg-amber-100 text-amber-800 border border-amber-300 font-mono text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                <Info className="w-3 h-3 text-amber-700" />
+                <span>RESEARCH RESULTS (STATIC)</span>
               </span>
             </div>
             <div className="text-xs text-slate-500 font-mono">
@@ -92,62 +92,58 @@ export default function USEquitiesAiEnginePage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 mt-6 space-y-6">
         
-        {/* Compliance & Segregation Banner */}
-        <div className="bg-blue-50/80 border border-blue-200 rounded-xl p-4 text-xs font-mono text-blue-950 flex items-start gap-3 shadow-2xs">
-          <Database className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+        {/* Static Research Disclaimer & Segregation Banner */}
+        <div className="bg-amber-50/80 border border-amber-300/80 rounded-xl p-4 text-xs font-mono text-amber-950 flex items-start gap-3 shadow-2xs">
+          <Info className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <div className="font-bold uppercase tracking-wider text-blue-900">
-              Dedicated US Equities Research &amp; Quantitative Engine (Zero Crypto / Commodity Co-mingling)
+            <div className="font-bold uppercase tracking-wider text-amber-900 flex items-center gap-2">
+              <span>Historical Research Audit (Static Econometric Findings 2010–2026)</span>
+              <span className="text-[10px] bg-amber-200/70 text-amber-900 px-1.5 py-0.5 rounded font-mono font-bold">
+                Non-Streaming Benchmark
+              </span>
             </div>
-            <p className="text-slate-600 leading-relaxed font-sans">
-              This engine operates in complete separation from the 24/7 continuous perpetual derivatives models.
-              All empirical findings and execution systems strictly obey SEC EDGAR filing acceptance dates (<code className="font-mono text-blue-800">filed &le; t</code>),
-              causal next-day open fills (<code className="font-mono text-blue-800">O_(t+1)</code>), and institutional transaction friction models.
+            <p className="text-amber-900/90 leading-relaxed font-sans">
+              The metrics on this page represent rigorous, pre-registered econometric backtest results derived from official SEC EDGAR XBRL filings and historical daily bars.
+              All findings are sourced directly from <code className="font-mono text-amber-950 font-bold">{meta.sources[0]}</code> and <code className="font-mono text-amber-950 font-bold">{meta.sources[1]}</code>.
+              These figures are not live streaming quotes.
             </p>
           </div>
         </div>
 
         {/* 16-Year Quantitative Benchmark Strip */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-            <div className="text-[11px] font-mono text-slate-500 uppercase font-bold flex items-center justify-between">
-              <span>SPY Benchmark</span>
-              <span className="text-blue-600">Core Index</span>
+          {benchmarks.slice(0, 4).map((bm) => (
+            <div key={bm.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+              <div className="text-[11px] font-mono text-slate-500 uppercase font-bold flex items-center justify-between">
+                <span>{bm.name}</span>
+                <span className="text-blue-600">{bm.role}</span>
+              </div>
+              <div className={`text-2xl font-black font-mono mt-1 ${bm.id === 'T' ? 'text-emerald-700' : 'text-slate-900'}`}>
+                {bm.cagr.toFixed(2)}% CAGR
+              </div>
+              <div className="text-[11px] font-mono text-slate-500 mt-0.5">
+                Sharpe: {bm.sharpe.toFixed(2)} · Max DD: {bm.maxDrawdown.toFixed(2)}%
+              </div>
+              <div className={`text-[10px] font-mono mt-1.5 font-bold ${
+                bm.status.includes('REJECTED') ? 'text-rose-700' : 'text-emerald-700'
+              }`}>
+                {bm.status}
+              </div>
             </div>
-            <div className="text-2xl font-black font-mono text-blue-800 mt-1">13.85% CAGR</div>
-            <div className="text-[11px] font-mono text-slate-500 mt-0.5">Sharpe: 0.78 · Max DD: -33.72%</div>
-            <div className="text-[10px] font-mono text-emerald-700 mt-1.5 font-bold">Validated Long-Term Core</div>
-          </div>
+          ))}
+        </div>
 
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-            <div className="text-[11px] font-mono text-slate-500 uppercase font-bold flex items-center justify-between">
-              <span>Equal-Weight S&amp;P 500</span>
-              <span className="text-slate-600">PIT Universe</span>
-            </div>
-            <div className="text-2xl font-black font-mono text-slate-900 mt-1">16.45% CAGR</div>
-            <div className="text-[11px] font-mono text-slate-500 mt-0.5">Sharpe: 0.86 · Max DD: -37.80%</div>
-            <div className="text-[10px] font-mono text-slate-600 mt-1.5 font-bold">Unweighted 30 Constituents</div>
+        {/* Caveats Box */}
+        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-2">
+          <div className="font-mono text-xs font-bold text-slate-900 uppercase flex items-center gap-1.5">
+            <AlertTriangle className="w-4 h-4 text-amber-600" />
+            <span>Key Institutional Caveats &amp; Empirical Findings</span>
           </div>
-
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-            <div className="text-[11px] font-mono text-slate-500 uppercase font-bold flex items-center justify-between">
-              <span>S2 Momentum (T)</span>
-              <span className="text-emerald-700">Trend Strategy</span>
-            </div>
-            <div className="text-2xl font-black font-mono text-emerald-700 mt-1">17.85% CAGR</div>
-            <div className="text-[11px] font-mono text-slate-500 mt-0.5">Sharpe: 0.80 · Max DD: -38.30%</div>
-            <div className="text-[10px] font-mono text-emerald-700 mt-1.5 font-bold">+70.00% Return in 2020</div>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-            <div className="text-[11px] font-mono text-slate-500 uppercase font-bold flex items-center justify-between">
-              <span>Point-in-Time Value (V)</span>
-              <span className="text-amber-700">PE Z-Score</span>
-            </div>
-            <div className="text-2xl font-black font-mono text-slate-900 mt-1">14.12% CAGR</div>
-            <div className="text-[11px] font-mono text-slate-500 mt-0.5">Sharpe: 0.68 · Max DD: -44.15%</div>
-            <div className="text-[10px] font-mono text-rose-700 mt-1.5 font-bold">Lacks Alpha Over Index</div>
-          </div>
+          <ul className="list-disc list-inside space-y-1.5 text-xs text-slate-600 font-sans leading-relaxed">
+            {caveats.map((caveat, idx) => (
+              <li key={idx}>{caveat}</li>
+            ))}
+          </ul>
         </div>
 
         {/* Tab Navigation */}
@@ -173,7 +169,7 @@ export default function USEquitiesAiEnginePage() {
             }`}
           >
             <Activity className="w-3.5 h-3.5" />
-            <span>Permutation Null Test (1,000 Runs)</span>
+            <span>Permutation Null Test ({permutationNull.runs.toLocaleString()} Runs)</span>
           </button>
 
           <button
@@ -211,12 +207,12 @@ export default function USEquitiesAiEnginePage() {
                     Bivariate Factor Interaction Surfaces (Discovery 2010–19 vs Validation 2020–26)
                   </h3>
                   <p className="text-xs text-slate-500 font-sans mt-0.5">
-                    Pre-registered 8 factor pairs across 170 grid cells evaluated under month-clustered standard errors.
+                    Pre-registered 8 factor pairs across {factorInteractions.totalGridCells} grid cells evaluated under month-clustered standard errors.
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="bg-rose-100 text-rose-800 border border-rose-300 font-mono text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    Verdict: Interactivity Not Supported (2.35% pass)
+                    Verdict: {factorInteractions.verdict} ({factorInteractions.tightenedBar2Pct}% pass)
                   </span>
                 </div>
               </div>
@@ -236,93 +232,33 @@ export default function USEquitiesAiEnginePage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    <tr className="hover:bg-slate-50/80">
-                      <td className="p-2.5 font-bold text-blue-700">a</td>
-                      <td className="p-2.5 font-semibold">value_z_own_pe &times; momentum_12_1</td>
-                      <td className="p-2.5">25</td>
-                      <td className="p-2.5 text-emerald-700 font-bold">3 cells</td>
-                      <td className="p-2.5 text-rose-700 font-bold">0 cells</td>
-                      <td className="p-2.5 text-slate-500">0.09 cells</td>
-                      <td className="p-2.5">1.0000</td>
-                      <td className="p-2.5 text-slate-600 font-semibold">Fails Tightened Bar</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/80">
-                      <td className="p-2.5 font-bold text-blue-700">b</td>
-                      <td className="p-2.5 font-semibold">pe_vs_sector &times; eps_growth_yoy</td>
-                      <td className="p-2.5">25</td>
-                      <td className="p-2.5 text-emerald-700 font-bold">2 cells</td>
-                      <td className="p-2.5 text-emerald-700 font-bold">1 cell</td>
-                      <td className="p-2.5 text-slate-500">0.07 cells</td>
-                      <td className="p-2.5">0.0640</td>
-                      <td className="p-2.5 text-slate-600 font-semibold">Isolated Cell (Noise)</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/80">
-                      <td className="p-2.5 font-bold text-blue-700">c</td>
-                      <td className="p-2.5 font-semibold">value_z_own_pe &times; ema20_50_state</td>
-                      <td className="p-2.5">10</td>
-                      <td className="p-2.5 text-emerald-700 font-bold">1 cell</td>
-                      <td className="p-2.5 text-emerald-700 font-bold">1 cell</td>
-                      <td className="p-2.5 text-slate-500">0.04 cells</td>
-                      <td className="p-2.5">0.0360</td>
-                      <td className="p-2.5 text-slate-600 font-semibold">Single Cell Pass</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/80">
-                      <td className="p-2.5 font-bold text-blue-700">d</td>
-                      <td className="p-2.5 font-semibold">value_z_own_pe &times; dist_above_support_atr</td>
-                      <td className="p-2.5">25</td>
-                      <td className="p-2.5 text-emerald-700 font-bold">1 cell</td>
-                      <td className="p-2.5 text-emerald-700 font-bold">1 cell</td>
-                      <td className="p-2.5 text-slate-500">0.08 cells</td>
-                      <td className="p-2.5">0.0750</td>
-                      <td className="p-2.5 text-rose-700 font-semibold">Support Floor Not Supported</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/80">
-                      <td className="p-2.5 font-bold text-blue-700">e</td>
-                      <td className="p-2.5 font-semibold">rsi14 &times; ema20_50_state</td>
-                      <td className="p-2.5">10</td>
-                      <td className="p-2.5 text-emerald-700 font-bold">1 cell</td>
-                      <td className="p-2.5 text-rose-700 font-bold">0 cells</td>
-                      <td className="p-2.5 text-slate-500">0.03 cells</td>
-                      <td className="p-2.5">1.0000</td>
-                      <td className="p-2.5 text-slate-600 font-semibold">Fails Tightened Bar</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/80">
-                      <td className="p-2.5 font-bold text-blue-700">f</td>
-                      <td className="p-2.5 font-semibold">dist_above_support_atr &times; volume_ratio_50d</td>
-                      <td className="p-2.5">25</td>
-                      <td className="p-2.5 text-rose-700 font-bold">0 cells</td>
-                      <td className="p-2.5 text-rose-700 font-bold">0 cells</td>
-                      <td className="p-2.5 text-slate-500">0.10 cells</td>
-                      <td className="p-2.5">1.0000</td>
-                      <td className="p-2.5 text-slate-500 font-semibold">Zero Alpha</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/80">
-                      <td className="p-2.5 font-bold text-blue-700">g</td>
-                      <td className="p-2.5 font-semibold">trendline_dist_atr &times; value_z_own_pe</td>
-                      <td className="p-2.5">25</td>
-                      <td className="p-2.5 text-emerald-700 font-bold">2 cells</td>
-                      <td className="p-2.5 text-rose-700 font-bold">0 cells</td>
-                      <td className="p-2.5 text-slate-500">0.09 cells</td>
-                      <td className="p-2.5">1.0000</td>
-                      <td className="p-2.5 text-slate-600 font-semibold">Fails Tightened Bar</td>
-                    </tr>
-                    <tr className="hover:bg-slate-50/80">
-                      <td className="p-2.5 font-bold text-blue-700">h</td>
-                      <td className="p-2.5 font-semibold">momentum_12_1 &times; rsi14</td>
-                      <td className="p-2.5">25</td>
-                      <td className="p-2.5 text-emerald-700 font-bold">2 cells</td>
-                      <td className="p-2.5 text-emerald-700 font-bold">1 cell</td>
-                      <td className="p-2.5 text-slate-500">0.10 cells</td>
-                      <td className="p-2.5">0.0980</td>
-                      <td className="p-2.5 text-slate-600 font-semibold">Single Cell Pass</td>
-                    </tr>
+                    {factorInteractions.pairs.map((p) => (
+                      <tr key={p.id} className="hover:bg-slate-50/80">
+                        <td className="p-2.5 font-bold text-blue-700">{p.id}</td>
+                        <td className="p-2.5 font-semibold">{p.name}</td>
+                        <td className="p-2.5">{p.totalCells}</td>
+                        <td className={`p-2.5 font-bold ${p.bar1Cells > 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                          {p.bar1Cells} {p.bar1Cells === 1 ? "cell" : "cells"}
+                        </td>
+                        <td className={`p-2.5 font-bold ${p.bar2Cells > 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                          {p.bar2Cells} {p.bar2Cells === 1 ? "cell" : "cells"}
+                        </td>
+                        <td className="p-2.5 text-slate-500">{p.nullMean.toFixed(2)} cells</td>
+                        <td className="p-2.5">{p.pValue.toFixed(4)}</td>
+                        <td className="p-2.5 text-slate-600 font-semibold">{p.verdict}</td>
+                      </tr>
+                    ))}
                     <tr className="bg-slate-50 font-bold border-t-2 border-slate-300">
                       <td className="p-2.5 text-slate-900" colSpan={2}>TOTAL EVALUATED SPACE</td>
-                      <td className="p-2.5">170</td>
-                      <td className="p-2.5 text-emerald-700">12 (7.06%)</td>
-                      <td className="p-2.5 text-rose-700">4 (2.35%)</td>
-                      <td className="p-2.5 text-slate-600">0.60 cells</td>
-                      <td className="p-2.5 text-blue-800">0.0080</td>
+                      <td className="p-2.5">{factorInteractions.totalGridCells}</td>
+                      <td className="p-2.5 text-emerald-700">
+                        {factorInteractions.clusteredBar1Cells} ({factorInteractions.clusteredBar1Pct}%)
+                      </td>
+                      <td className="p-2.5 text-rose-700">
+                        {factorInteractions.tightenedBar2Cells} ({factorInteractions.tightenedBar2Pct}%)
+                      </td>
+                      <td className="p-2.5 text-slate-600">{factorInteractions.nullExpectation.toFixed(2)} cells</td>
+                      <td className="p-2.5 text-blue-800">{factorInteractions.permutationPValue.toFixed(4)}</td>
                       <td className="p-2.5 text-rose-800">NO SYSTEMIC EDGE</td>
                     </tr>
                   </tbody>
@@ -339,40 +275,48 @@ export default function USEquitiesAiEnginePage() {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
                   <h3 className="font-mono text-sm font-bold text-slate-900 uppercase">
-                    Within-Month Permutation Null Test (1,000 Runs, Seed 42)
+                    Within-Month Permutation Null Test ({permutationNull.runs.toLocaleString()} Runs, Seed {permutationNull.seed})
                   </h3>
                   <p className="text-xs text-slate-500 font-sans mt-0.5">
                     Shuffles forward returns across stocks strictly within each month, destroying factor predictive links while preserving market shocks.
                   </p>
                 </div>
                 <span className="font-mono text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md border border-slate-200">
-                  Fixed Seed: 42 · 1,000 Permutations
+                  Fixed Seed: {permutationNull.seed} · {permutationNull.runs.toLocaleString()} Permutations
                 </span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
                   <div className="text-[11px] font-mono text-slate-500 uppercase">Null Distribution Mean</div>
-                  <div className="text-xl font-black font-mono text-slate-900 mt-1">0.60 Cells</div>
-                  <div className="text-[10px] font-mono text-slate-500 mt-0.5">Std: 0.77 · Median: 0.0</div>
+                  <div className="text-xl font-black font-mono text-slate-900 mt-1">{permutationNull.nullMean.toFixed(2)} Cells</div>
+                  <div className="text-[10px] font-mono text-slate-500 mt-0.5">
+                    Std: {permutationNull.nullStd.toFixed(2)} · Median: {permutationNull.nullMedian.toFixed(1)}
+                  </div>
                 </div>
 
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
                   <div className="text-[11px] font-mono text-slate-500 uppercase">Observed Tightened Bar 2</div>
-                  <div className="text-xl font-black font-mono text-emerald-700 mt-1">4 Cells</div>
-                  <div className="text-[10px] font-mono text-slate-500 mt-0.5">Out of 170 grid cells (2.35%)</div>
+                  <div className="text-xl font-black font-mono text-emerald-700 mt-1">
+                    {permutationNull.observedTightened} Cells
+                  </div>
+                  <div className="text-[10px] font-mono text-slate-500 mt-0.5">
+                    Out of {permutationNull.observedTotalCells} grid cells ({((permutationNull.observedTightened / permutationNull.observedTotalCells) * 100).toFixed(2)}%)
+                  </div>
                 </div>
 
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
                   <div className="text-[11px] font-mono text-slate-500 uppercase">Empirical p-Value</div>
-                  <div className="text-xl font-black font-mono text-blue-800 mt-1">p = 0.0080</div>
-                  <div className="text-[10px] font-mono text-slate-500 mt-0.5">8 of 1,000 runs reached &ge; 4</div>
+                  <div className="text-xl font-black font-mono text-blue-800 mt-1">p = {permutationNull.empiricalPValue.toFixed(4)}</div>
+                  <div className="text-[10px] font-mono text-slate-500 mt-0.5">
+                    8 of {permutationNull.runs.toLocaleString()} runs reached &ge; {permutationNull.observedTightened}
+                  </div>
                 </div>
               </div>
 
               <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 text-xs text-slate-700 space-y-2 font-sans leading-relaxed">
                 <p>
-                  <strong>Statistical Interpretation:</strong> While 4 cells is statistically unlikely under pure cross-sectional noise (<code className="font-mono text-blue-700">p = 0.0080</code>),
+                  <strong>Statistical Interpretation:</strong> While {permutationNull.observedTightened} cells is statistically unlikely under pure cross-sectional noise (<code className="font-mono text-blue-700">p = {permutationNull.empiricalPValue.toFixed(4)}</code>),
                   the 4 surviving cells are isolated across 4 completely distinct pairs (Pair b: 1, Pair c: 1, Pair d: 1, Pair h: 1).
                   They do not form contiguous, economically actionable surfaces.
                 </p>
@@ -406,46 +350,26 @@ export default function USEquitiesAiEnginePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  <tr className="hover:bg-slate-50">
-                    <td className="p-2.5 font-bold text-blue-800">SPY Buy &amp; Hold</td>
-                    <td className="p-2.5 font-bold">13.85%</td>
-                    <td className="p-2.5">0.78</td>
-                    <td className="p-2.5 text-rose-700 font-semibold">-33.72%</td>
-                    <td className="p-2.5 text-emerald-700">+18.40%</td>
-                    <td className="p-2.5 text-rose-700">-18.17%</td>
-                    <td className="p-2.5">Benchmark</td>
-                    <td className="p-2.5 text-blue-700 font-bold">BENCHMARK CORE</td>
-                  </tr>
-                  <tr className="hover:bg-slate-50">
-                    <td className="p-2.5 font-bold text-slate-900">Equal-Weight Top 30</td>
-                    <td className="p-2.5 font-bold">16.45%</td>
-                    <td className="p-2.5">0.86</td>
-                    <td className="p-2.5 text-rose-700 font-semibold">-37.80%</td>
-                    <td className="p-2.5 text-emerald-700">+22.10%</td>
-                    <td className="p-2.5 text-rose-700">-21.31%</td>
-                    <td className="p-2.5">+1.42</td>
-                    <td className="p-2.5 text-slate-600 font-bold">REFERENCE</td>
-                  </tr>
-                  <tr className="hover:bg-slate-50">
-                    <td className="p-2.5 font-bold text-emerald-700">S2 Momentum (T)</td>
-                    <td className="p-2.5 font-bold">17.85%</td>
-                    <td className="p-2.5">0.80</td>
-                    <td className="p-2.5 text-rose-700 font-semibold">-38.30%</td>
-                    <td className="p-2.5 text-emerald-700 font-bold">+70.00%</td>
-                    <td className="p-2.5 text-rose-700 font-bold">-29.36%</td>
-                    <td className="p-2.5">+1.18</td>
-                    <td className="p-2.5 text-emerald-700 font-bold">SHADOW TRACKING</td>
-                  </tr>
-                  <tr className="hover:bg-slate-50">
-                    <td className="p-2.5 font-bold text-slate-800">Point-in-Time Value (V)</td>
-                    <td className="p-2.5 font-bold">14.12%</td>
-                    <td className="p-2.5">0.68</td>
-                    <td className="p-2.5 text-rose-700 font-semibold">-44.15%</td>
-                    <td className="p-2.5 text-emerald-700">+11.20%</td>
-                    <td className="p-2.5 text-rose-700">-16.50%</td>
-                    <td className="p-2.5">-0.34</td>
-                    <td className="p-2.5 text-rose-700 font-bold">REJECTED (NO ALPHA)</td>
-                  </tr>
+                  {benchmarks.map((bm) => (
+                    <tr key={bm.id} className="hover:bg-slate-50">
+                      <td className="p-2.5 font-bold text-blue-800">{bm.name}</td>
+                      <td className="p-2.5 font-bold">{bm.cagr.toFixed(2)}%</td>
+                      <td className="p-2.5">{bm.sharpe.toFixed(2)}</td>
+                      <td className="p-2.5 text-rose-700 font-semibold">{bm.maxDrawdown.toFixed(2)}%</td>
+                      <td className={`p-2.5 font-bold ${bm.return2020 >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                        {bm.return2020 >= 0 ? "+" : ""}{bm.return2020.toFixed(2)}%
+                      </td>
+                      <td className={`p-2.5 font-bold ${bm.return2022 >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                        {bm.return2022 >= 0 ? "+" : ""}{bm.return2022.toFixed(2)}%
+                      </td>
+                      <td className="p-2.5">{bm.alphaT === 0 ? "Benchmark" : `${bm.alphaT > 0 ? "+" : ""}${bm.alphaT.toFixed(2)}`}</td>
+                      <td className={`p-2.5 font-bold ${
+                        bm.status.includes("REJECTED") ? "text-rose-700" : bm.status.includes("CORE") ? "text-blue-700" : "text-slate-600"
+                      }`}>
+                        {bm.status}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

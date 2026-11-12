@@ -1,0 +1,200 @@
+{
+  "_note": "Empirical quantitative research findings extracted directly from docs/research/US_FACTOR_INTERACTIONS.md and docs/research/US_VALUE_VS_TREND.md. These are static econometric benchmark results, not live quotes.",
+  "meta": {
+    "status": "RESEARCH_RESULTS_STATIC",
+    "sources": [
+      "docs/research/US_FACTOR_INTERACTIONS.md",
+      "docs/research/US_VALUE_VS_TREND.md"
+    ],
+    "sampleHorizon": "2010-10 to 2026-10",
+    "totalRebalancePeriods": 194,
+    "universe": "Top-30 S&P 500 Point-in-Time",
+    "compliance": "Zero lookahead bias (SEC EDGAR acceptance timestamp t_filed <= t), next-open causal fills O_(t+1), equityFeeModel friction"
+  },
+  "benchmarks": [
+    {
+      "id": "SPY",
+      "name": "SPY Buy & Hold",
+      "cagr": 13.85,
+      "sharpe": 0.78,
+      "maxDrawdown": -33.72,
+      "return2020": 18.40,
+      "return2022": -18.17,
+      "alphaT": 0.0,
+      "role": "BENCHMARK CORE",
+      "status": "VALIDATED CORE"
+    },
+    {
+      "id": "B_EW",
+      "name": "Equal-Weight Top 30",
+      "cagr": 16.45,
+      "sharpe": 0.86,
+      "maxDrawdown": -37.80,
+      "return2020": 22.10,
+      "return2022": -21.31,
+      "alphaT": 1.46,
+      "role": "UNWEIGHTED UNIVERSE",
+      "status": "REFERENCE"
+    },
+    {
+      "id": "T",
+      "name": "S2 Momentum (T)",
+      "cagr": 17.85,
+      "sharpe": 0.80,
+      "maxDrawdown": -38.30,
+      "return2020": 70.00,
+      "return2022": -29.36,
+      "alphaT": 2.01,
+      "role": "TREND STRATEGY",
+      "status": "SHADOW TRACKING"
+    },
+    {
+      "id": "V",
+      "name": "Point-in-Time Value (V)",
+      "cagr": 14.12,
+      "sharpe": 0.68,
+      "maxDrawdown": -44.15,
+      "return2020": 11.20,
+      "return2022": -16.50,
+      "alphaT": -0.34,
+      "role": "PE Z-SCORE",
+      "status": "REJECTED (NO ALPHA)"
+    },
+    {
+      "id": "VT",
+      "name": "Value + Trend (VT)",
+      "cagr": 10.89,
+      "sharpe": 0.71,
+      "maxDrawdown": -18.85,
+      "return2020": 14.30,
+      "return2022": -8.50,
+      "alphaT": 1.57,
+      "role": "VALUE + 200 SMA",
+      "status": "INDEX WINS (LOW RETURN)"
+    },
+    {
+      "id": "VM",
+      "name": "Value + Momentum (VM)",
+      "cagr": 14.23,
+      "sharpe": 0.61,
+      "maxDrawdown": -35.54,
+      "return2020": 24.10,
+      "return2022": -22.40,
+      "alphaT": 0.02,
+      "role": "50/50 COMPOSITE",
+      "status": "NO ACTIVE EDGE"
+    }
+  ],
+  "factorInteractions": {
+    "totalGridCells": 170,
+    "clusteredBar1Cells": 12,
+    "clusteredBar1Pct": 7.06,
+    "tightenedBar2Cells": 4,
+    "tightenedBar2Pct": 2.35,
+    "nullExpectation": 0.60,
+    "permutationPValue": 0.0080,
+    "verdict": "Interactivity Not Supported Out-of-Sample",
+    "pairs": [
+      {
+        "id": "a",
+        "name": "value_z_own_pe x momentum_12_1",
+        "totalCells": 25,
+        "bar1Cells": 3,
+        "bar2Cells": 0,
+        "nullMean": 0.09,
+        "pValue": 1.0000,
+        "verdict": "Fails Tightened Bar"
+      },
+      {
+        "id": "b",
+        "name": "pe_vs_sector x eps_growth_yoy",
+        "totalCells": 25,
+        "bar1Cells": 2,
+        "bar2Cells": 1,
+        "nullMean": 0.07,
+        "pValue": 0.0640,
+        "verdict": "Isolated Cell (Noise)"
+      },
+      {
+        "id": "c",
+        "name": "value_z_own_pe x ema20_50_state",
+        "totalCells": 10,
+        "bar1Cells": 1,
+        "bar2Cells": 1,
+        "nullMean": 0.04,
+        "pValue": 0.0360,
+        "verdict": "Single Cell Pass"
+      },
+      {
+        "id": "d",
+        "name": "value_z_own_pe x dist_above_support_atr",
+        "totalCells": 25,
+        "bar1Cells": 1,
+        "bar2Cells": 1,
+        "nullMean": 0.08,
+        "pValue": 0.0750,
+        "verdict": "Support Floor Not Supported"
+      },
+      {
+        "id": "e",
+        "name": "rsi14 x ema20_50_state",
+        "totalCells": 10,
+        "bar1Cells": 1,
+        "bar2Cells": 0,
+        "nullMean": 0.03,
+        "pValue": 1.0000,
+        "verdict": "Fails Tightened Bar"
+      },
+      {
+        "id": "f",
+        "name": "dist_above_support_atr x volume_ratio_50d",
+        "totalCells": 25,
+        "bar1Cells": 0,
+        "bar2Cells": 0,
+        "nullMean": 0.10,
+        "pValue": 1.0000,
+        "verdict": "Zero Alpha"
+      },
+      {
+        "id": "g",
+        "name": "trendline_dist_atr x value_z_own_pe",
+        "totalCells": 25,
+        "bar1Cells": 2,
+        "bar2Cells": 0,
+        "nullMean": 0.09,
+        "pValue": 1.0000,
+        "verdict": "Fails Tightened Bar"
+      },
+      {
+        "id": "h",
+        "name": "momentum_12_1 x rsi14",
+        "totalCells": 25,
+        "bar1Cells": 2,
+        "bar2Cells": 1,
+        "nullMean": 0.10,
+        "pValue": 0.0980,
+        "verdict": "Single Cell Pass"
+      }
+    ]
+  },
+  "permutationNull": {
+    "runs": 1000,
+    "seed": 42,
+    "nullMean": 0.60,
+    "nullStd": 0.77,
+    "nullMedian": 0.0,
+    "pct95": 2.0,
+    "pct99": 3.0,
+    "nullMax": 5.0,
+    "observedTightened": 4,
+    "observedTotalCells": 170,
+    "empiricalPValue": 0.0080
+  },
+  "caveats": [
+    "After transaction friction (0.04% taker + 18% GST equivalent) and Bonferroni multi-hypothesis adjustment, SPY buy-and-hold and Equal-Weight beat long-only factor tilts on a risk-adjusted basis.",
+    "Strategy T (Momentum) suffered a severe maximum drawdown of -38.30% (and -29.36% in 2022).",
+    "Tightened clustered standard errors reduced surviving interaction cells from 12 down to only 4 out of 170 (2.35%), and the surviving cells are isolated across distinct pairs without contiguous cluster support.",
+    "Belief 1 ('Undervalued stocks rarely fall more than 2-3%') is empirically refuted: 49.5% fall >3% in 21 days, and mean 1-year fall is -14.75%.",
+    "Belief 2 ('Undervalued stocks rocket if they go up') is not supported: 28.92% rocket >30% (virtually identical to the equal-weight base rate of 28.38%)."
+  ]
+}
