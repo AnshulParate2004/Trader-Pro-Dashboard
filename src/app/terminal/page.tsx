@@ -1,10 +1,23 @@
 "use client";
 import { toRawSymbol, toDisplaySymbol, symbolsMatch } from "@/lib/symbolMapper";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import UserAuthPill from "@/components/UserAuthPill";
 import TradingViewChart from "@/components/TradingViewChart";
+
+const ProTradeChart = dynamic(() => import("@/components/ProTradeChart"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center bg-white text-slate-500 font-mono text-xs">
+      <div className="flex flex-col items-center gap-2">
+        <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        <span>Loading Pro Visualizer Chart & Trade Markings...</span>
+      </div>
+    </div>
+  ),
+});
 import {
   ArrowLeft,
   Shield,
@@ -247,6 +260,77 @@ export default function TerminalPage() {
   const riskPercent = 1.0; // 1% risk = ₹10.00 on ₹1,000
   const activeTrades = recentTrades.filter((t) => t.status === "ACTIVE" || t.status === "BE_ACTIVATED");
   const currentActiveTrade = activeTrades[0] || null;
+
+  // Pro Visualizer Chart with Trade Markings, SL, TP, and Fibonacci
+  const [chartEngineMode, setChartEngineMode] = useState<"pro" | "tradingview">("pro");
+  const [chartSymbolHistTrades, setChartSymbolHistTrades] = useState<any[]>([]);
+  const [isChartTradesLoading, setIsChartTradesLoading] = useState<boolean>(false);
+  const [selectedChartTrade, setSelectedChartTrade] = useState<any | null>(null);
+  const [showFibonacci, setShowFibonacci] = useState<boolean>(true);
+  const [chartTradeFilter, setChartTradeFilter] = useState<"ALL" | "LIVE" | "HISTORICAL">("ALL");
+
+  // Lazy load historical trades strictly for the current graph symbol when that graph loads:
+  useEffect(() => {
+    let isCancelled = false;
+    const fetchSymbolHistoricalTradesForGraph = async () => {
+      setIsChartTradesLoading(true);
+      try {
+        const res = await fetch(
+          `/api/all-history?modelId=${activeModelId}&symbol=${encodeURIComponent(symbol)}&limit=100`
+        );
+        if (res.ok && !isCancelled) {
+          const data = await res.json();
+          setChartSymbolHistTrades(data.trades || []);
+        }
+      } catch (err) {
+        console.warn("Could not load symbol historical trades for graph:", err);
+      } finally {
+        if (!isCancelled) setIsChartTradesLoading(false);
+      }
+    };
+
+    fetchSymbolHistoricalTradesForGraph();
+    return () => {
+      isCancelled = true;
+    };
+  }, [symbol, activeModelId]);
+
+  // Filter live trades matching active chart symbol
+  const chartSymbolLiveTrades = useMemo(() => {
+    return recentTrades.filter(
+      (t: any) =>
+        symbolsMatch(t.symbol, symbol) ||
+        symbolsMatch(t.rawSymbol || "", symbol) ||
+        symbolsMatch(t.displaySymbol || "", symbol)
+    );
+  }, [recentTrades, symbol]);
+
+  // Combined trades for this symbol's graph
+  const allSymbolGraphTrades = useMemo(() => {
+    return [...chartSymbolLiveTrades, ...chartSymbolHistTrades];
+  }, [chartSymbolLiveTrades, chartSymbolHistTrades]);
+
+  // Synchronize selected trade when symbol or trades change
+  useEffect(() => {
+    if (chartSymbolLiveTrades.length > 0) {
+      setSelectedChartTrade(chartSymbolLiveTrades[0]);
+    } else if (chartSymbolHistTrades.length > 0) {
+      setSelectedChartTrade(chartSymbolHistTrades[0]);
+    } else {
+      setSelectedChartTrade(null);
+    }
+  }, [symbol, chartSymbolLiveTrades, chartSymbolHistTrades]);
+
+  // Action callback to inspect any trade directly on the chart
+  const handleInspectTradeOnChart = useCallback((trade: any) => {
+    const tradeSym = trade.symbol || trade.displaySymbol || trade.rawSymbol;
+    if (tradeSym && !symbolsMatch(tradeSym, symbol)) {
+      setSymbol(tradeSym);
+    }
+    setSelectedChartTrade(trade);
+    setChartEngineMode("pro");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [symbol]);
 
   // Handle ESC key to minimize chart and trigger resize on TradingView
   useEffect(() => {
@@ -1044,9 +1128,43 @@ export default function TerminalPage() {
           isChartMaximized ? "w-full" : "border-r border-slate-200/80"
         }`}>
           
-          {/* Edge-to-Edge Live TradingView Chart */}
+          {/* Edge-to-Edge Live Chart: Pro Visualizer with SL/TP/Fib Markings OR TradingView Cloud */}
           <div className="flex-1 w-full h-full relative bg-white overflow-hidden">
-            <TradingViewChart symbol={getTradingViewSymbol(symbol)} interval={timeframe} />
+            {chartEngineMode === "pro" ? (
+              <ProTradeChart
+                symbol={symbol}
+                interval={timeframe}
+                trades={allSymbolGraphTrades}
+                selectedTrade={selectedChartTrade}
+                onSelectTrade={setSelectedChartTrade}
+                showFibonacci={showFibonacci}
+                onToggleFibonacci={() => setShowFibonacci(!showFibonacci)}
+                filterType={chartTradeFilter}
+                onChangeFilterType={setChartTradeFilter}
+                onSwitchToTradingView={() => setChartEngineMode("tradingview")}
+                isMaximized={isChartMaximized}
+                onToggleMaximize={() => setIsChartMaximized(!isChartMaximized)}
+              />
+            ) : (
+              <div className="relative w-full h-full">
+                {/* Switch back to Pro Visualizer Floating Badge */}
+                <div className="absolute top-2 left-2 z-30 flex items-center gap-2 bg-white/95 backdrop-blur-sm px-3 py-1 rounded-lg border border-slate-200 shadow-md font-mono text-xs">
+                  <button
+                    onClick={() => setChartEngineMode("pro")}
+                    className="flex items-center gap-1.5 font-bold text-emerald-800 bg-emerald-100 hover:bg-emerald-200 px-2.5 py-0.5 rounded cursor-pointer transition-all"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Show Pro Markings (SL, TP, Fib)</span>
+                  </button>
+                  <span className="text-slate-300">|</span>
+                  <span className="text-slate-600 font-bold">
+                    {allSymbolGraphTrades.length} Trades Available for {symbol}
+                  </span>
+                </div>
+
+                <TradingViewChart symbol={getTradingViewSymbol(symbol)} interval={timeframe} />
+              </div>
+            )}
 
             {/* Floating Bottom Ledger Pill when Chart is Maximized */}
             {isChartMaximized && (
@@ -1363,16 +1481,26 @@ export default function TerminalPage() {
                                 </span>
                               </td>
                               <td className="py-2 px-2.5">
-                                {!isClosed ? (
+                                <div className="flex items-center gap-1.5">
                                   <button
-                                    onClick={() => handleCloseTrade(t.id)}
-                                    className="bg-gray-900 hover:bg-black text-white text-[9px] font-bold px-2 py-0.5 rounded transition-colors cursor-pointer"
+                                    onClick={() => handleInspectTradeOnChart(t)}
+                                    className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[9px] font-bold px-2 py-0.5 rounded transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                                    title="Inspect this live trade on the chart with SL, TP, and Fibonacci markings"
                                   >
-                                    Close
+                                    <Target className="w-2.5 h-2.5" />
+                                    <span>Chart</span>
                                   </button>
-                                ) : (
-                                  <span className="text-gray-400 text-[9px]">{t.exitReason || "Done"}</span>
-                                )}
+                                  {!isClosed ? (
+                                    <button
+                                      onClick={() => handleCloseTrade(t.id)}
+                                      className="bg-gray-900 hover:bg-black text-white text-[9px] font-bold px-2 py-0.5 rounded transition-colors cursor-pointer"
+                                    >
+                                      Close
+                                    </button>
+                                  ) : (
+                                    <span className="text-gray-400 text-[9px]">{t.exitReason || "Done"}</span>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           );
@@ -1456,12 +1584,13 @@ export default function TerminalPage() {
                         <th className="py-2 px-2.5">Return %</th>
                         <th className="py-2 px-2.5">Net PnL (₹)</th>
                         <th className="py-2 px-2.5">Status</th>
+                        <th className="py-2 px-2.5">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200/60 bg-white">
                       {terminalHistLoading ? (
                         <tr>
-                          <td colSpan={10} className="py-6 text-center text-slate-500 font-mono text-xs">
+                          <td colSpan={11} className="py-6 text-center text-slate-500 font-mono text-xs">
                             <span className="animate-pulse">Loading historical router trades...</span>
                           </td>
                         </tr>
@@ -1525,12 +1654,22 @@ export default function TerminalPage() {
                                   CLOSED
                                 </span>
                               </td>
+                              <td className="py-1.5 px-2.5">
+                                <button
+                                  onClick={() => handleInspectTradeOnChart(t)}
+                                  className="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-[9px] font-bold px-2 py-0.5 rounded transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                                  title="Inspect this historical trade on the chart with SL, TP, and Fibonacci markings"
+                                >
+                                  <Target className="w-2.5 h-2.5" />
+                                  <span>Chart</span>
+                                </button>
+                              </td>
                             </tr>
                           );
                         })
                       ) : (
                         <tr>
-                          <td colSpan={10} className="py-6 text-center text-slate-500 font-mono text-xs">
+                          <td colSpan={11} className="py-6 text-center text-slate-500 font-mono text-xs">
                             No historical trades match the selected filter.
                           </td>
                         </tr>
