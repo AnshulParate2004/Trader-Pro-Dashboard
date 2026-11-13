@@ -4,6 +4,7 @@ import {
   executeNewRouterTrade,
   auditRouterActiveTrades,
   reconcilePastRouterTrades,
+  getAllRouterTrades,
 } from "./routerTradeManager";
 
 let hasReconciledPastTrades = false;
@@ -157,6 +158,16 @@ export async function getRouterLiveEvaluations(forceRefresh: boolean = false): P
   const evaluationLogs: EvaluatedAssetLog[] = [];
   const candlesMap: Record<string, any[]> = {};
 
+  // Pre-load all current router active trades to enforce strict single-position-per-asset concurrency
+  const allExistingTrades = await getAllRouterTrades();
+  const activeTradeMap = new Map<string, any>();
+  for (const t of allExistingTrades) {
+    if (t.status === "ACTIVE" && !t.exitTime && !t.exit_time) {
+      activeTradeMap.set(t.symbol, t);
+      if (t.rawSymbol) activeTradeMap.set(t.rawSymbol, t);
+    }
+  }
+
   for (const asset of ASSETS) {
     if (asset.engine === "no_trade_policy") {
       evaluationLogs.push({
@@ -217,39 +228,69 @@ export async function getRouterLiveEvaluations(forceRefresh: boolean = false): P
       const isBreakoutLong = curClose > dh && isAboveSma;
       const isBreakdownShort = !isAboveSma && curClose < dl && asset.engine.startsWith("om-");
 
+      const existingActiveTrade = activeTradeMap.get(asset.symbol);
+
       let decision: "EXECUTED_TRADE" | "CASH_SHIELD" | "CASH_PROTECTED_CONSOLIDATION" = "CASH_PROTECTED_CONSOLIDATION";
       let reason = `Consolidating in [$${dl.toFixed(digits)}, $${dh.toFixed(digits)}]`;
       let regime: "BULLISH" | "BEARISH" | "CONSOLIDATING" = isAboveSma ? "BULLISH" : "BEARISH";
       let conviction = 50.0;
 
       if (isBreakoutLong) {
-        decision = "EXECUTED_TRADE";
-        reason = `Confirmed Donchian Breakout above $${dh.toFixed(digits)}`;
-        regime = "BULLISH";
-        conviction = 92.4;
+        if (existingActiveTrade) {
+          decision = "CASH_PROTECTED_CONSOLIDATION";
+          reason = `Active ${existingActiveTrade.direction} position open @ $${existingActiveTrade.entryPrice} (SL: $${existingActiveTrade.stopLoss}, TP: $${existingActiveTrade.takeProfit})`;
+          regime = "BULLISH";
+          conviction = 92.4;
+        } else {
+          decision = "EXECUTED_TRADE";
+          reason = `Confirmed Donchian Breakout above $${dh.toFixed(digits)}`;
+          regime = "BULLISH";
+          conviction = 92.4;
+        }
       } else if (isBreakdownShort) {
-        decision = "EXECUTED_TRADE";
-        reason = `Confirmed Donchian Breakdown below $${dl.toFixed(digits)} (Short)`;
-        regime = "BEARISH";
-        conviction = 91.5;
+        if (existingActiveTrade) {
+          decision = "CASH_SHIELD";
+          reason = `Active ${existingActiveTrade.direction} position open @ $${existingActiveTrade.entryPrice} (SL: $${existingActiveTrade.stopLoss}, TP: $${existingActiveTrade.takeProfit})`;
+          regime = "BEARISH";
+          conviction = 91.5;
+        } else {
+          decision = "EXECUTED_TRADE";
+          reason = `Confirmed Donchian Breakdown below $${dl.toFixed(digits)} (Short)`;
+          regime = "BEARISH";
+          conviction = 91.5;
+        }
       } else if (!isAboveSma) {
         decision = "CASH_SHIELD";
-        reason = `Below 200 SMA (Bearish ▼)`;
+        reason = existingActiveTrade
+          ? `Active ${existingActiveTrade.direction} position open @ $${existingActiveTrade.entryPrice}`
+          : `Below 200 SMA (Bearish ▼)`;
         regime = "BEARISH";
         const distPct = (sma200 - curClose) / sma200;
         conviction = Math.min(88.5, Math.max(55.0, 50.0 + distPct * 300));
       } else {
         decision = "CASH_PROTECTED_CONSOLIDATION";
-        reason = `Above 200 SMA · Consolidating in [$${dl.toFixed(digits)}, $${dh.toFixed(digits)}]`;
+        reason = existingActiveTrade
+          ? `Active ${existingActiveTrade.direction} position open @ $${existingActiveTrade.entryPrice}`
+          : `Above 200 SMA · Consolidating in [$${dl.toFixed(digits)}, $${dh.toFixed(digits)}]`;
         regime = "CONSOLIDATING";
         conviction = 45.0;
       }
 
       const pVal = Number((conviction / 100).toFixed(3));
-      const passesGate = decision === "EXECUTED_TRADE" && pVal >= asset.cutoff;
+      const passesGate = !existingActiveTrade && decision === "EXECUTED_TRADE" && pVal >= asset.cutoff;
       let tradeDetails = null;
 
-      if (passesGate) {
+      if (existingActiveTrade) {
+        tradeDetails = {
+          trade_id: existingActiveTrade.id,
+          side: existingActiveTrade.direction,
+          entry_price: existingActiveTrade.entryPrice,
+          stop_loss: existingActiveTrade.stopLoss,
+          take_profit: existingActiveTrade.takeProfit,
+          position_size: existingActiveTrade.positionSizeINR,
+          risk_r: 1.0,
+        };
+      } else if (passesGate) {
         try {
           const executedTrade = await executeNewRouterTrade({
             symbol: asset.symbol,
@@ -264,6 +305,7 @@ export async function getRouterLiveEvaluations(forceRefresh: boolean = false): P
             candleTimeMs: lastCandle.time,
           });
           if (executedTrade) {
+            activeTradeMap.set(asset.symbol, executedTrade);
             tradeDetails = {
               trade_id: executedTrade.id,
               side: executedTrade.direction,

@@ -196,9 +196,10 @@ export async function executeNewRouterTrade(params: {
   // 1. Check for existing active trade on this symbol
   const allTrades = await getAllRouterTrades();
   const existingActive = allTrades.find(
-    (t) => t.symbol === symbol && t.status === "ACTIVE"
+    (t) => (t.symbol === symbol || t.rawSymbol === symbol) && t.status === "ACTIVE" && !t.exitTime && !t.exit_time
   );
   if (existingActive) {
+    console.log(`[RouterTradeManager] Skipped duplicate trade on ${symbol}: active trade ${existingActive.id} already open.`);
     return existingActive; // Position already open
   }
 
@@ -420,10 +421,28 @@ export async function reconcilePastRouterTrades(
 
     const existingTrades = await getAllRouterTrades();
     const tradeIds = new Set(existingTrades.map((t) => t.id));
+    const activeSymbols = new Set(
+      existingTrades
+        .filter((t) => t.status === "ACTIVE" && !t.exitTime && !t.exit_time)
+        .map((t) => t.symbol)
+    );
 
     for (const log of executedLogs) {
       const expectedId = `router_${log.symbol}_${log.timestamp_ms}`;
       if (tradeIds.has(expectedId)) continue;
+
+      // Invariant: At most 1 active position per asset. Never backfill a duplicate active position.
+      if (activeSymbols.has(log.symbol)) {
+        continue;
+      }
+
+      // Invariant: Never backfill within 4 hours of an existing trade on the same symbol
+      const hasRecentTrade = existingTrades.some(
+        (t) => (t.symbol === log.symbol || t.rawSymbol === log.symbol) && Math.abs(t.entry_time_ms - log.timestamp_ms) < 4 * 3600 * 1000
+      );
+      if (hasRecentTrade) {
+        continue;
+      }
 
       // Found an unrecorded executed trade!
       console.log(`[RouterTradeManager] Reconciling unrecorded trade for ${log.symbol} at ${log.time_utc}...`);
@@ -488,6 +507,8 @@ export async function reconcilePastRouterTrades(
 
       await persistRouterTrade(newTrade);
       tradeIds.add(expectedId);
+      activeSymbols.add(log.symbol);
+      existingTrades.push(newTrade);
 
       // Now audit against candles
       if (candles && candles.length > 0) {
