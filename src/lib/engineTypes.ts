@@ -681,7 +681,9 @@ export interface TradeOrder {
   modelId: string;
   modelName: string;
   entryPrice: number;
+  entry_price?: number;
   exitPrice?: number;
+  exit_price?: number;
   positionSizeINR: number;
   coins: number;
   feePercentage: number; // Shark Exchange fee: 0.040% Taker / 0.016% Maker
@@ -694,12 +696,15 @@ export interface TradeOrder {
   netPnLINR?: number;
   runningBalanceINR?: number;
   stopLoss: number;
+  stop_loss?: number;
   initialStopLoss?: number;
   stopPct?: number;
   riskAmountINR?: number;
   breakevenTrigger: number;
   breakevenLocked: number;
   breakevenActivated: boolean;
+  takeProfit?: number;
+  take_profit?: number;
   takeProfit1: number;
   takeProfit2: number;
   status: "ACTIVE" | "BE_ACTIVATED" | "TP1_HIT" | "TP2_HIT" | "SL_HIT" | "CLOSED";
@@ -707,6 +712,12 @@ export interface TradeOrder {
   triggerReason: string;
   openedAt: number;
   closedAt?: number;
+  entryTime?: string;
+  entry_time?: string;
+  entry_time_ms?: number;
+  exitTime?: string;
+  exit_time?: string;
+  exit_time_ms?: number;
 }
 
 export interface EngineConfig {

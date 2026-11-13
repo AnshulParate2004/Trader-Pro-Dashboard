@@ -47,6 +47,11 @@ export interface ChartTrade {
   stop_loss?: number;
   takeProfit: number;
   take_profit?: number;
+  takeProfit1?: number;
+  takeProfit2?: number;
+  target_price?: number;
+  initialStopLoss?: number;
+  initial_stop_price?: number;
   exitPrice?: number;
   exit_price?: number;
   exitReason?: string;
@@ -478,13 +483,14 @@ export default function ProTradeChart({
       const cExit = exitMs && exitMs > entryMs ? findNearestCandleTime(exitMs) : null;
       // 12 bars padding on 4H = 48 hours = 172800 sec
       const padSec = 172800;
+      const lastCandleSec = Math.floor(candles[candles.length - 1].openTime / 1000);
       const fromTime = Math.max(
         Math.floor(candles[0].openTime / 1000),
         (cEntry as number) - padSec
       ) as UTCTimestamp;
       const toTime = Math.min(
-        Math.floor(candles[candles.length - 1].openTime / 1000) + padSec,
-        ((cExit || cEntry) as number) + padSec
+        lastCandleSec + 86400,
+        cExit ? (cExit as number) + padSec : lastCandleSec + 86400
       ) as UTCTimestamp;
 
       chartInstanceRef.current.timeScale().setVisibleRange({
@@ -496,26 +502,7 @@ export default function ProTradeChart({
     }
   }, [selectedTrade, findNearestCandleTime, candles]);
 
-  // 5. Clean up any existing price lines (Zero infinite lines cutting across the whole screen!)
-  useEffect(() => {
-    const candleSeries = candleSeriesRef.current;
-    if (!candleSeries) return;
-
-    priceLinesRef.current.forEach((line) => {
-      try {
-        candleSeries.removePriceLine(line);
-      } catch (e) {
-        // already removed
-      }
-    });
-    priceLinesRef.current = [];
-
-    // The user explicitly requested: "i just wnat sl an dtp there and the exit"
-    // NO infinite horizontal lines running across the entire screen!
-    // SL, TP, Entry, and Exit are localized strictly to the trade box.
-  }, [selectedTrade]);
-
-  // 6. Compute Pixel Coordinates for Localized Risk/Reward Position Box
+  // 5. Compute Pixel Coordinates for Localized Risk/Reward Position Box
   const updatePositionBox = useCallback(() => {
     if (
       !selectedTrade ||
@@ -531,15 +518,37 @@ export default function ProTradeChart({
     const candleSeries = candleSeriesRef.current;
 
     const entry = Number(selectedTrade.entryPrice || selectedTrade.entry_price || 0);
-    const sl = Number(selectedTrade.stopLoss || selectedTrade.stop_loss || 0);
-    const tp = Number(selectedTrade.takeProfit || selectedTrade.take_profit || 0);
+    const isLong = (selectedTrade.direction || selectedTrade.side) === "LONG";
+
+    let sl = Number(
+      selectedTrade.stopLoss ||
+      selectedTrade.stop_loss ||
+      (selectedTrade as any).initialStopLoss ||
+      (selectedTrade as any).initial_stop_price ||
+      0
+    );
+    if (!sl && entry > 0) {
+      sl = isLong ? entry * 0.97 : entry * 1.03;
+    }
+
+    let tp = Number(
+      selectedTrade.takeProfit ||
+      selectedTrade.take_profit ||
+      (selectedTrade as any).takeProfit1 ||
+      (selectedTrade as any).takeProfit2 ||
+      (selectedTrade as any).target_price ||
+      0
+    );
+    if (!tp && entry > 0 && sl > 0) {
+      const risk = Math.abs(entry - sl);
+      tp = isLong ? entry + 2.5 * risk : entry - 2.5 * risk;
+    }
 
     if (!entry || !sl || !tp) {
       setBoxCoords(null);
       return;
     }
 
-    const isLong = (selectedTrade.direction || selectedTrade.side) === "LONG";
     const entryMs =
       selectedTrade.entry_time_ms ||
       (selectedTrade.entryTime ? new Date(selectedTrade.entryTime).getTime() : 0);
@@ -574,9 +583,18 @@ export default function ProTradeChart({
       x2 = Number(x1) + 60;
     }
 
-    const yEntry = candleSeries.priceToCoordinate(entry) as any;
-    const ySL = candleSeries.priceToCoordinate(sl) as any;
-    const yTP = candleSeries.priceToCoordinate(tp) as any;
+    let yEntry = candleSeries.priceToCoordinate(entry) as any;
+    let ySL = candleSeries.priceToCoordinate(sl) as any;
+    let yTP = candleSeries.priceToCoordinate(tp) as any;
+
+    // Resilient fallback if Y coordinate was outside current viewport
+    if (yEntry !== null && ySL !== null && yTP === null) {
+      const pxPerDollar = Math.abs(Number(yEntry) - Number(ySL)) / Math.max(1, Math.abs(entry - sl));
+      yTP = isLong ? Number(yEntry) - Math.abs(tp - entry) * pxPerDollar : Number(yEntry) + Math.abs(tp - entry) * pxPerDollar;
+    } else if (yEntry !== null && yTP !== null && ySL === null) {
+      const pxPerDollar = Math.abs(Number(yEntry) - Number(yTP)) / Math.max(1, Math.abs(tp - entry));
+      ySL = isLong ? Number(yEntry) + Math.abs(entry - sl) * pxPerDollar : Number(yEntry) - Math.abs(entry - sl) * pxPerDollar;
+    }
 
     if (x1 === null || x2 === null || yEntry === null || ySL === null || yTP === null) {
       setBoxCoords(null);
@@ -598,6 +616,125 @@ export default function ProTradeChart({
       isLive: isTradeLive(selectedTrade),
     });
   }, [selectedTrade, candles, findNearestCandleTime, isTradeLive]);
+
+  // 6. Render Localized Level Price Lines for Selected Trade (Entry, Trailing SL/Stop Loss, TP, Exit)
+  useEffect(() => {
+    const candleSeries = candleSeriesRef.current;
+    if (!candleSeries) return;
+
+    // Clean up existing price lines first
+    priceLinesRef.current.forEach((line) => {
+      try {
+        candleSeries.removePriceLine(line);
+      } catch (e) {
+        // already removed
+      }
+    });
+    priceLinesRef.current = [];
+
+    if (!selectedTrade) return;
+
+    const entry = Number(selectedTrade.entryPrice || selectedTrade.entry_price || 0);
+    const isLong = (selectedTrade.direction || selectedTrade.side) === "LONG";
+    const isLive = isTradeLive(selectedTrade);
+
+    let sl = Number(
+      selectedTrade.stopLoss ||
+      selectedTrade.stop_loss ||
+      (selectedTrade as any).initialStopLoss ||
+      (selectedTrade as any).initial_stop_price ||
+      0
+    );
+    if (!sl && entry > 0) {
+      sl = isLong ? entry * 0.97 : entry * 1.03;
+    }
+
+    let tp = Number(
+      selectedTrade.takeProfit ||
+      selectedTrade.take_profit ||
+      (selectedTrade as any).takeProfit1 ||
+      (selectedTrade as any).takeProfit2 ||
+      (selectedTrade as any).target_price ||
+      0
+    );
+    if (!tp && entry > 0 && sl > 0) {
+      const risk = Math.abs(entry - sl);
+      tp = isLong ? entry + 2.5 * risk : entry - 2.5 * risk;
+    }
+
+    const newLines: IPriceLine[] = [];
+
+    // 1. Entry Line (Blue)
+    if (entry > 0) {
+      try {
+        const entryLine = candleSeries.createPriceLine({
+          price: entry,
+          color: "#2563eb",
+          lineWidth: 2,
+          lineStyle: LineStyle.Solid,
+          axisLabelVisible: true,
+          title: `ENTRY $${entry.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}`,
+        });
+        newLines.push(entryLine);
+      } catch (e) {}
+    }
+
+    // 2. Stop Loss / Trailing SL Line (Red)
+    if (sl > 0) {
+      try {
+        const slLabel = isLive ? "TRAILING SL" : "STOP LOSS";
+        const slLine = candleSeries.createPriceLine({
+          price: sl,
+          color: "#ef4444",
+          lineWidth: 2,
+          lineStyle: LineStyle.Dashed,
+          axisLabelVisible: true,
+          title: `${slLabel} $${sl.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}`,
+        });
+        newLines.push(slLine);
+      } catch (e) {}
+    }
+
+    // 3. Take Profit Line (Emerald / Green)
+    if (tp > 0) {
+      try {
+        const tpLine = candleSeries.createPriceLine({
+          price: tp,
+          color: "#10b981",
+          lineWidth: 2,
+          lineStyle: LineStyle.Dashed,
+          axisLabelVisible: true,
+          title: `TP $${tp.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}`,
+        });
+        newLines.push(tpLine);
+      } catch (e) {}
+    }
+
+    // 4. Exit Level Line (If trade is closed)
+    const exitPrice = Number(selectedTrade.exitPrice || selectedTrade.exit_price || 0);
+    if (!isLive && exitPrice > 0) {
+      try {
+        const exitReason = selectedTrade.exitReason || selectedTrade.exit_type || "CLOSED";
+        const isTP = exitReason === "TAKE_PROFIT" || exitReason === "TARGET" || (selectedTrade.net_r ?? 0) > 0;
+        const exitLine = candleSeries.createPriceLine({
+          price: exitPrice,
+          color: isTP ? "#059669" : "#dc2626",
+          lineWidth: 2,
+          lineStyle: LineStyle.Dotted,
+          axisLabelVisible: true,
+          title: `EXIT (${exitReason}) $${exitPrice.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })}`,
+        });
+        newLines.push(exitLine);
+      } catch (e) {}
+    }
+
+    priceLinesRef.current = newLines;
+
+    // Immediately trigger box coordinate recalculation
+    requestAnimationFrame(() => {
+      updatePositionBox();
+    });
+  }, [selectedTrade, isTradeLive, updatePositionBox, candles]);
 
   // Synchronize Box Coordinates on Chart Scroll / Zoom
   useEffect(() => {

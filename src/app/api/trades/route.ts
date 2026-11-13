@@ -282,8 +282,10 @@ function mapRecordToTradeOrder(
     modelName,
 
     entryPrice: t.entry_price || t.entryPrice || 0,
+    entry_price: t.entry_price || t.entryPrice || 0,
 
-    exitPrice: t.exit_price ?? t.exitPrice ?? t.entry_price ?? 0,
+    exitPrice: t.status === "ACTIVE" ? undefined : (t.exit_price ?? t.exitPrice),
+    exit_price: t.status === "ACTIVE" ? undefined : (t.exit_price ?? t.exitPrice),
 
     positionSizeINR: posSize,
 
@@ -305,11 +307,12 @@ function mapRecordToTradeOrder(
 
     netPnLINR,
 
-    stopLoss: t.stop_loss || t.initial_stop_price || 0,
+    stopLoss: t.stopLoss || t.stop_loss || t.initial_stop_price || 0,
+    stop_loss: t.stopLoss || t.stop_loss || t.initial_stop_price || 0,
 
-    initialStopLoss: t.initial_stop_price || t.stop_loss || 0,
+    initialStopLoss: t.initialStopLoss || t.initial_stop_price || t.stopLoss || t.stop_loss || 0,
 
-    stopPct: t.stop_distance_pct ?? t.stop_dist_pct ?? 0.02,
+    stopPct: t.stop_distance_pct ?? t.stop_dist_pct ?? t.stopDistancePct ?? 0.02,
 
     riskAmountINR: riskINR,
 
@@ -319,9 +322,17 @@ function mapRecordToTradeOrder(
 
     breakevenActivated: false,
 
-    takeProfit1: t.take_profit || t.target_price || 0,
+    takeProfit: t.takeProfit || t.take_profit || t.target_price || t.takeProfit1 || 0,
+    take_profit: t.takeProfit || t.take_profit || t.target_price || t.takeProfit1 || 0,
+    takeProfit1: t.takeProfit || t.take_profit || t.target_price || t.takeProfit1 || 0,
+    takeProfit2: t.takeProfit || t.take_profit || t.target_price || t.takeProfit2 || 0,
 
-    takeProfit2: t.take_profit || t.target_price || 0,
+    entryTime: t.entry_time || t.entryTime,
+    entry_time: t.entry_time || t.entryTime,
+    entry_time_ms: t.entry_time_ms || openedAt,
+    exitTime: t.exit_time || t.exitTime,
+    exit_time: t.exit_time || t.exitTime,
+    exit_time_ms: t.exit_time_ms || closedAt,
 
     status: t.status || (closedAt ? "CLOSED" : "ACTIVE"),
 

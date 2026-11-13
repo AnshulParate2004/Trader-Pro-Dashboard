@@ -333,6 +333,19 @@ function TerminalPageContent() {
     return [...chartSymbolLiveTrades, ...chartSymbolHistTradesTagged];
   }, [chartSymbolLiveTrades, chartSymbolHistTradesTagged]);
 
+  // Synchronize symbol & modelId from URL parameters dynamically
+  useEffect(() => {
+    if (urlSymbol && urlSymbol.toUpperCase() !== symbol) {
+      setSymbol(urlSymbol.toUpperCase());
+    }
+  }, [urlSymbol, symbol]);
+
+  useEffect(() => {
+    if (urlModelId && urlModelId !== activeModelId) {
+      setActiveModelId(urlModelId);
+    }
+  }, [urlModelId, activeModelId]);
+
   // Synchronize selected trade when symbol, URL query, or trades change
   useEffect(() => {
     if (urlTradeId) {
@@ -344,10 +357,16 @@ function TerminalPageContent() {
           (t: any) => t.id === urlTradeId || t.trade_id === urlTradeId
         );
       if (match) {
+        const matchSym = match.symbol || match.rawSymbol || match.displaySymbol;
+        if (matchSym && !symbolsMatch(matchSym, symbol)) {
+          setSymbol(matchSym.toUpperCase());
+        }
         setSelectedChartTrade(match);
         setChartEngineMode("pro");
         return;
       }
+      // If urlTradeId was specified in URL, wait for recent trades to load rather than falling back to historical trade #1
+      if (recentTrades.length === 0) return;
     }
     if (chartSymbolLiveTrades.length > 0) {
       setSelectedChartTrade(chartSymbolLiveTrades[0]);
