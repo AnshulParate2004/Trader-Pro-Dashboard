@@ -2,6 +2,7 @@
 import { toDisplaySymbol, toDisplayName } from "@/lib/symbolMapper";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { TradeOrder, TOP_MODELS, ALL_MODELS } from "@/lib/engineTypes";
 import {
   Filter,
@@ -11,6 +12,8 @@ import {
   ChevronsRight,
   Clock,
   Layers,
+  Target,
+  ExternalLink,
 } from "lucide-react";
 
 interface LiveTradesTableProps {
@@ -40,6 +43,7 @@ interface LiveTradesTableProps {
   handleHistSideChange: (newSide: "ALL" | "LONG" | "SHORT") => void;
   handleHistOutcomeChange: (newOutcome: string) => void;
   handleCloseTrade: (tradeId: string, entryPrice: number, dir: "LONG" | "SHORT") => void;
+  onInspectTrade?: (trade: any) => void;
   totalLiveCount?: number;
   isTaker?: boolean;
   feePercent?: number;
@@ -89,6 +93,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
   handleHistSideChange,
   handleHistOutcomeChange,
   handleCloseTrade,
+  onInspectTrade,
   totalLiveCount,
   isTaker = true,
   feePercent = 0.040,
@@ -171,6 +176,20 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
     if (selectedModelId === "pure-rules-1h-baseline" || selectedModelId === "pure-rules-baseline") return "1H Rules";
     if (t.modelName && !t.modelName.includes("4H Swing Meta")) return t.modelName.slice(0, 14);
     return "Unified 1H";
+  };
+
+  const router = useRouter();
+
+  const handleInspect = (trade: any) => {
+    if (onInspectTrade) {
+      onInspectTrade(trade);
+    } else {
+      const sym = trade.symbol || trade.rawSymbol || "BTCUSDT";
+      const tradeId = trade.id || trade.trade_id || "";
+      router.push(
+        `/terminal?symbol=${encodeURIComponent(sym)}&tradeId=${encodeURIComponent(tradeId)}&modelId=${encodeURIComponent(selectedModelId || "4hr-timeframe-router")}`
+      );
+    }
   };
   // Live Prediction Logs Filter & Pagination State
   const [logAssetFilter, setLogAssetFilter] = React.useState<"ALL" | "crypto" | "commodities">("ALL");
@@ -695,7 +714,12 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                   const isPositive = (trade.netPnLINR || 0) >= 0;
 
                   return (
-                    <tr key={trade.id} className="hover:bg-chrome-field/50 transition-colors">
+                    <tr
+                      key={trade.id}
+                      onClick={() => handleInspect(trade)}
+                      className="hover:bg-blue-50/40 cursor-pointer transition-colors group"
+                      title="Click to view this trade on the Terminal chart"
+                    >
                       <td className="py-2 px-1.5 sm:px-2 text-chrome-dim text-[11px] whitespace-nowrap">
                         {new Date(trade.openedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </td>
@@ -705,7 +729,10 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                         </span>
                       </td>
                       <td className="py-2 px-1.5 sm:px-2 font-bold text-chrome-ink whitespace-nowrap">
-                        {toDisplaySymbol(trade.symbol)}
+                        <span className="flex items-center gap-1 group-hover:text-blue-600 transition-colors">
+                          {toDisplaySymbol(trade.symbol)}
+                          <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 text-blue-500 transition-opacity" />
+                        </span>
                       </td>
                       <td className="py-2 px-1.5 sm:px-2 whitespace-nowrap">
                         <span
@@ -752,23 +779,33 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                         </span>
                       </td>
                       <td className="py-2 px-1.5 sm:px-2 whitespace-nowrap">
-                        {trade.status === "ACTIVE" ? (
+                        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                           <button
-                            onClick={() => handleCloseTrade(trade.id, trade.entryPrice, trade.direction)}
-                            className="px-2 py-0.5 bg-white hover:bg-loss-tint text-loss border border-loss/30 text-[10px] font-bold rounded cursor-pointer transition-colors shadow-2xs"
+                            onClick={() => handleInspect(trade)}
+                            className="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-[10px] font-bold rounded cursor-pointer transition-colors shadow-2xs flex items-center gap-1"
+                            title="Inspect this trade on Terminal Chart"
                           >
-                            Close
+                            <Target className="w-2.5 h-2.5" />
+                            <span>Chart</span>
                           </button>
-                        ) : (
-                          <span className="text-chrome-dim text-[10.5px] font-semibold">
-                            {trade.exitReason === "TARGET"
-                              ? "🎯 Target"
-                              : trade.exitReason === "STOP" || trade.exitReason === "COLLISION_STOP"
-                              ? "🛑 Stop"
-                              : "⏱️ Time"}
-                            <span className="text-[9px] text-slate-400 block font-normal">Closed</span>
-                          </span>
-                        )}
+                          {trade.status === "ACTIVE" ? (
+                            <button
+                              onClick={() => handleCloseTrade(trade.id, trade.entryPrice, trade.direction)}
+                              className="px-2 py-0.5 bg-white hover:bg-loss-tint text-loss border border-loss/30 text-[10px] font-bold rounded cursor-pointer transition-colors shadow-2xs"
+                            >
+                              Close
+                            </button>
+                          ) : (
+                            <span className="text-chrome-dim text-[10.5px] font-semibold">
+                              {trade.exitReason === "TARGET"
+                                ? "🎯 Target"
+                                : trade.exitReason === "STOP" || trade.exitReason === "COLLISION_STOP"
+                                ? "🛑 Stop"
+                                : "⏱️ Time"}
+                              <span className="text-[9px] text-slate-400 block font-normal">Closed</span>
+                            </span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1104,6 +1141,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                 <th className="py-2 px-2 sm:px-2.5">Net PnL (INR)</th>
                 <th className="py-2 px-2 sm:px-2.5">Running Capital (₹7K)</th>
                 <th className="py-2 px-2 sm:px-2.5">Outcome Trigger</th>
+                <th className="py-2 px-2 sm:px-2.5 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-chrome-edge">
@@ -1114,7 +1152,12 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                   const isBE = (t.net_r ?? 0) > 0 && (t.net_r ?? 0) < 0.2;
 
                   return (
-                    <tr key={t.id || idx} className="hover:bg-chrome-field/50 transition-colors">
+                    <tr
+                      key={t.id || idx}
+                      onClick={() => handleInspect(t)}
+                      className="hover:bg-blue-50/40 cursor-pointer transition-colors group"
+                      title="Click to view this trade on the Terminal chart"
+                    >
                       <td className="py-2 px-2 sm:px-2.5 text-chrome-dim text-[11px] font-bold">
                         #{t.pos || idx + 1}
                       </td>
@@ -1182,12 +1225,25 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                             : "🛑 Stop Loss (-1.0R)"}
                         </span>
                       </td>
+                      <td className="py-2 px-2 sm:px-2.5 text-right">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleInspect(t);
+                          }}
+                          className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 border border-blue-500/30 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                          title="Open on Terminal Chart"
+                        >
+                          <Target className="w-3 h-3" />
+                          <span>Chart</span>
+                        </button>
+                      </td>
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan={13} className="py-12 text-center text-chrome-dim">
+                  <td colSpan={14} className="py-12 text-center text-chrome-dim">
                     {isLoadingAllHistorical ? "Loading 6-year complete historical transactions from MongoDB Atlas..." : "No historical transactions found for this filter."}
                   </td>
                 </tr>
@@ -1206,6 +1262,7 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                 <th className="py-2 px-2 sm:px-2.5">Net Return %</th>
                 <th className="py-2 px-2 sm:px-2.5">Outcome Trigger</th>
                 <th className="py-2 px-2 sm:px-2.5">Causality Check</th>
+                <th className="py-2 px-2 sm:px-2.5 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-chrome-edge">
@@ -1215,7 +1272,12 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                   const isBE = t.outcomeR > 0 && t.outcomeR < 0.2;
 
                   return (
-                    <tr key={t.id} className="hover:bg-chrome-field/50 transition-colors">
+                    <tr
+                      key={t.id}
+                      onClick={() => handleInspect(t)}
+                      className="hover:bg-blue-50/40 cursor-pointer transition-colors group"
+                      title="Click to view this trade on the Terminal chart"
+                    >
                       <td className="py-2 px-2 sm:px-2.5 text-chrome-dim text-[11px] whitespace-nowrap">
                         {t.entryTime}
                       </td>
@@ -1276,12 +1338,25 @@ export const LiveTradesTable: React.FC<LiveTradesTableProps> = ({
                           ✔ Point-in-Time (No Leakage)
                         </span>
                       </td>
+                      <td className="py-2 px-2 sm:px-2.5 text-right">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleInspect(t);
+                          }}
+                          className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 border border-blue-500/30 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                          title="Open on Terminal Chart"
+                        >
+                          <Target className="w-3 h-3" />
+                          <span>Chart</span>
+                        </button>
+                      </td>
                     </tr>
                   );
                 })
               ) : (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-chrome-dim">
+                  <td colSpan={9} className="py-12 text-center text-chrome-dim">
                     {isLoadingHistorical ? "Loading verified out-of-sample trades..." : "No historical trades loaded."}
                   </td>
                 </tr>

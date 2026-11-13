@@ -1,7 +1,8 @@
 "use client";
 import { toRawSymbol, toDisplaySymbol, symbolsMatch } from "@/lib/symbolMapper";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import UserAuthPill from "@/components/UserAuthPill";
@@ -224,11 +225,16 @@ const ROUTER_4H_MAPPING: Record<string, {
   }
 };
 
-export default function TerminalPage() {
-  const [symbol, setSymbol] = useState("BTCUSDT");
+function TerminalPageContent() {
+  const searchParams = useSearchParams();
+  const urlSymbol = searchParams.get("symbol");
+  const urlTradeId = searchParams.get("tradeId");
+  const urlModelId = searchParams.get("modelId");
+
+  const [symbol, setSymbol] = useState(urlSymbol ? urlSymbol.toUpperCase() : "BTCUSDT");
   const [isChartMaximized, setIsChartMaximized] = useState(false);
   const [timeframe, setTimeframe] = useState("4h");
-  const [activeModelId, setActiveModelId] = useState<string>("4hr-timeframe-router");
+  const [activeModelId, setActiveModelId] = useState<string>(urlModelId || "4hr-timeframe-router");
   
   // Real live states - strictly NO hardcoded fake numbers
   const [livePrice, setLivePrice] = useState<number | null>(null);
@@ -327,8 +333,22 @@ export default function TerminalPage() {
     return [...chartSymbolLiveTrades, ...chartSymbolHistTradesTagged];
   }, [chartSymbolLiveTrades, chartSymbolHistTradesTagged]);
 
-  // Synchronize selected trade when symbol or trades change
+  // Synchronize selected trade when symbol, URL query, or trades change
   useEffect(() => {
+    if (urlTradeId) {
+      const match =
+        allSymbolGraphTrades.find(
+          (t: any) => t.id === urlTradeId || t.trade_id === urlTradeId
+        ) ||
+        recentTrades.find(
+          (t: any) => t.id === urlTradeId || t.trade_id === urlTradeId
+        );
+      if (match) {
+        setSelectedChartTrade(match);
+        setChartEngineMode("pro");
+        return;
+      }
+    }
     if (chartSymbolLiveTrades.length > 0) {
       setSelectedChartTrade(chartSymbolLiveTrades[0]);
     } else if (chartSymbolHistTrades.length > 0) {
@@ -336,7 +356,7 @@ export default function TerminalPage() {
     } else {
       setSelectedChartTrade(null);
     }
-  }, [symbol, chartSymbolLiveTrades, chartSymbolHistTrades]);
+  }, [symbol, urlTradeId, allSymbolGraphTrades, recentTrades, chartSymbolLiveTrades, chartSymbolHistTrades]);
 
   // Action callback to inspect any trade directly on the chart
   const handleInspectTradeOnChart = useCallback((trade: any) => {
@@ -2378,5 +2398,22 @@ export default function TerminalPage() {
       </div>
 
     </div>
+  );
+}
+
+export default function TerminalPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen w-full items-center justify-center bg-white text-slate-500 font-mono text-xs">
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+            <span>Loading Terminal...</span>
+          </div>
+        </div>
+      }
+    >
+      <TerminalPageContent />
+    </Suspense>
   );
 }

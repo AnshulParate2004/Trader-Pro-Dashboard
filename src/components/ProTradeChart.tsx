@@ -137,6 +137,7 @@ export default function ProTradeChart({
   const [isLoadingCandles, setIsLoadingCandles] = useState<boolean>(true);
   const [currentLivePrice, setCurrentLivePrice] = useState<number | null>(null);
   const [boxCoords, setBoxCoords] = useState<PositionBoxCoords | null>(null);
+  const [showSingleTradeOnly, setShowSingleTradeOnly] = useState<boolean>(true);
 
   // Normalize Interval for Binance API
   const binanceInterval = useMemo(() => {
@@ -394,7 +395,13 @@ export default function ProTradeChart({
 
     const markers: SeriesMarker<UTCTimestamp>[] = [];
 
-    filteredTrades.forEach((trade) => {
+    // The user explicitly requested: show only the selected trade on chart, don't show all trades
+    const tradesToRender =
+      showSingleTradeOnly && selectedTrade
+        ? [selectedTrade]
+        : filteredTrades;
+
+    tradesToRender.forEach((trade) => {
       const entryMs =
         trade.entry_time_ms || (trade.entryTime ? new Date(trade.entryTime).getTime() : 0);
       if (!entryMs) return;
@@ -451,7 +458,43 @@ export default function ProTradeChart({
     } else {
       markersPluginRef.current.setMarkers(markers);
     }
-  }, [candles, filteredTrades, selectedTrade, findNearestCandleTime]);
+  }, [candles, filteredTrades, selectedTrade, showSingleTradeOnly, findNearestCandleTime]);
+
+  // Auto-scroll and center the chart time scale on the selected trade
+  useEffect(() => {
+    if (!selectedTrade || !chartInstanceRef.current || candles.length === 0) return;
+    const entryMs =
+      selectedTrade.entry_time_ms ||
+      (selectedTrade.entryTime ? new Date(selectedTrade.entryTime).getTime() : 0);
+    if (!entryMs) return;
+
+    const cEntry = findNearestCandleTime(entryMs);
+    if (!cEntry) return;
+
+    try {
+      const exitMs =
+        selectedTrade.exit_time_ms ||
+        (selectedTrade.exitTime ? new Date(selectedTrade.exitTime).getTime() : 0);
+      const cExit = exitMs && exitMs > entryMs ? findNearestCandleTime(exitMs) : null;
+      // 12 bars padding on 4H = 48 hours = 172800 sec
+      const padSec = 172800;
+      const fromTime = Math.max(
+        Math.floor(candles[0].openTime / 1000),
+        (cEntry as number) - padSec
+      ) as UTCTimestamp;
+      const toTime = Math.min(
+        Math.floor(candles[candles.length - 1].openTime / 1000) + padSec,
+        ((cExit || cEntry) as number) + padSec
+      ) as UTCTimestamp;
+
+      chartInstanceRef.current.timeScale().setVisibleRange({
+        from: fromTime,
+        to: toTime,
+      });
+    } catch (e) {
+      // ignore
+    }
+  }, [selectedTrade, findNearestCandleTime, candles]);
 
   // 5. Clean up any existing price lines (Zero infinite lines cutting across the whole screen!)
   useEffect(() => {
@@ -662,6 +705,19 @@ export default function ProTradeChart({
             }`}
           >
             Historical ({totalHistoricalCount !== undefined ? totalHistoricalCount.toLocaleString() : symbolHistCount.toLocaleString()})
+          </button>
+          <span className="text-slate-300">|</span>
+          <button
+            onClick={() => setShowSingleTradeOnly(!showSingleTradeOnly)}
+            className={`px-2 py-0.5 rounded font-bold transition-all cursor-pointer flex items-center gap-1 ${
+              showSingleTradeOnly
+                ? "bg-blue-600 text-white shadow-2xs"
+                : "text-slate-600 hover:text-slate-900 bg-white border border-slate-200"
+            }`}
+            title={showSingleTradeOnly ? "Focused on selected trade only. Click to show all markers." : "Showing all markers. Click to focus selected trade only."}
+          >
+            <Target className="w-3 h-3" />
+            <span>{showSingleTradeOnly ? "Single Trade Only" : "Show All"}</span>
           </button>
         </div>
 
