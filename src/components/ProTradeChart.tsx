@@ -137,6 +137,7 @@ export default function ProTradeChart({
   const volumeSeriesRef = useRef<any>(null);
   const markersPluginRef = useRef<any>(null);
   const priceLinesRef = useRef<IPriceLine[]>([]);
+  const lastCenteredTradeKeyRef = useRef<string>("");
 
   const [candles, setCandles] = useState<RawCandle[]>([]);
   const [isLoadingCandles, setIsLoadingCandles] = useState<boolean>(true);
@@ -325,8 +326,21 @@ export default function ProTradeChart({
       });
     }
 
+    // Capture user's current zoom/pan range before setData
+    const chart = chartInstanceRef.current;
+    const existingRange = chart ? chart.timeScale().getVisibleRange() : null;
+
     candleSeries.setData(candleData);
     volumeSeries.setData(volumeData);
+
+    // Restore user's manual zoom/pan so background polling never shifts the view
+    if (chart && existingRange && existingRange.from && existingRange.to) {
+      try {
+        chart.timeScale().setVisibleRange(existingRange);
+      } catch (e) {
+        // ignore
+      }
+    }
   }, [candles]);
 
   // Helper to determine if a trade is live
@@ -465,9 +479,17 @@ export default function ProTradeChart({
     }
   }, [candles, filteredTrades, selectedTrade, showSingleTradeOnly, findNearestCandleTime]);
 
-  // Auto-scroll and center the chart time scale on the selected trade
+  // Auto-scroll and center the chart time scale on the selected trade (strictly ONCE per selected trade)
   useEffect(() => {
     if (!selectedTrade || !chartInstanceRef.current || candles.length === 0) return;
+
+    const tradeId = selectedTrade.id || selectedTrade.trade_id || "";
+    const tradeKey = `${symbol}_${tradeId}`;
+    if (lastCenteredTradeKeyRef.current === tradeKey) {
+      // Already centered for this trade! Never hijack the user's manual zoom or revert on 15s background polling
+      return;
+    }
+
     const entryMs =
       selectedTrade.entry_time_ms ||
       (selectedTrade.entryTime ? new Date(selectedTrade.entryTime).getTime() : 0);
@@ -481,26 +503,34 @@ export default function ProTradeChart({
         selectedTrade.exit_time_ms ||
         (selectedTrade.exitTime ? new Date(selectedTrade.exitTime).getTime() : 0);
       const cExit = exitMs && exitMs > entryMs ? findNearestCandleTime(exitMs) : null;
-      // 12 bars padding on 4H = 48 hours = 172800 sec
-      const padSec = 172800;
+
+      // Provide natural, comfortable market context (~18 days before entry = ~110 4H bars)
+      const preContextSec = 18 * 86400;
       const lastCandleSec = Math.floor(candles[candles.length - 1].openTime / 1000);
+      const firstCandleSec = Math.floor(candles[0].openTime / 1000);
+
       const fromTime = Math.max(
-        Math.floor(candles[0].openTime / 1000),
-        (cEntry as number) - padSec
+        firstCandleSec,
+        (cEntry as number) - preContextSec
       ) as UTCTimestamp;
+
+      // Right padding: 8 bars (32h) for active trade or 16 bars for closed trade
+      const postPaddingSec = cExit ? 16 * 14400 : 8 * 14400;
       const toTime = Math.min(
-        lastCandleSec + 86400,
-        cExit ? (cExit as number) + padSec : lastCandleSec + 86400
+        lastCandleSec + 8 * 14400,
+        cExit ? (cExit as number) + postPaddingSec : lastCandleSec + 8 * 14400
       ) as UTCTimestamp;
 
       chartInstanceRef.current.timeScale().setVisibleRange({
         from: fromTime,
         to: toTime,
       });
+
+      lastCenteredTradeKeyRef.current = tradeKey;
     } catch (e) {
       // ignore
     }
-  }, [selectedTrade, findNearestCandleTime, candles]);
+  }, [selectedTrade, findNearestCandleTime, candles, symbol]);
 
   // 5. Compute Pixel Coordinates for Localized Risk/Reward Position Box
   const updatePositionBox = useCallback(() => {
